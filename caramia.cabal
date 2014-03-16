@@ -46,11 +46,6 @@ source-repository head
     type:            git
     location:        https://github.com/Noeda/caramia.git
 
-Flag Demos
-  Description:         Enable the building of demo programs. Useful to test if
-                       the library works on a system.
-  Default:             False
-
 library
   exposed-modules:     Caramia
                        Caramia.Resource
