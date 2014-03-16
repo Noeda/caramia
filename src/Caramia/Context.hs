@@ -3,13 +3,21 @@
 -- Caramia does not actually have any functionality about creating OpenGL
 -- contexts. You need to tell it about them with this module.
 --
+-- For user code, you probably only want to use `giveContext`. The functions
+-- about `ContextID`s and finalizers are mostly used internally but there may
+-- be some rare cases where they are useful for end users as well.
+--
 
 module Caramia.Context
-    ( giveContext
-    , runPendingFinalizers
+    (
+    -- * Running with an OpenGL context
+      giveContext
+    -- * Context IDs
     , currentContextID
-    , scheduleFinalizer
-    , ContextID )
+    , ContextID
+    -- * Finalization
+    , runPendingFinalizers
+    , scheduleFinalizer )
     where
 
 import Data.IORef
