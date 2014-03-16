@@ -15,7 +15,9 @@ module Caramia.Buffer
       -- * Manipulation
     , map
     , unmap
+    , copy
     , withMapping
+    , uploadVector
       -- * Views
     , viewSize
     , viewAllowedMappings
@@ -30,12 +32,16 @@ import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
 import Caramia.Internal.Safe
 
+import qualified Data.Vector.Storable as V
+
 import Data.Typeable
 import Data.IORef
 import Data.Bits
 import Data.Monoid
 import Data.Maybe
 import Foreign.Ptr
+import Foreign.Marshal.Utils
+import Foreign.Storable ( sizeOf )
 import Control.Monad
 import Control.Exception
 import Control.Applicative
@@ -146,7 +152,7 @@ defaultBufferCreation = BufferCreation {
   , initialData = Nothing
   , accessFlags = ReadWriteAccess }
 
--- | Creates a new buffer. Initially, the buffer contents are undefined.
+-- | Creates a new buffer according to `BufferCreation` specification.
 newBuffer :: BufferCreation
           -> IO Buffer
 newBuffer creation
@@ -192,13 +198,13 @@ newBuffer creation
 -- buffer.
 --
 -- You can not have two mappings going on at the same time.
-map :: Buffer
-    -> Int         -- ^ Offset, in bytes, from start of the buffer from where
+map :: Int         -- ^ Offset, in bytes, from start of the buffer from where
                    --   to map.
     -> Int         -- ^ How many bytes to map.
     -> AccessFlags -- ^ What access is allowed in the mapping.
+    -> Buffer
     -> IO (Ptr ())
-map buffer offset num_bytes access_flags
+map offset num_bytes access_flags buffer
     -- a lot of this implementation is just error checking...
 
     -- check that offset/num_bytes makes sense
@@ -282,15 +288,15 @@ unmap buffer = do
 -- re-throws the user exception. This unfortunately means there is no way to
 -- know if the buffer was corrupted if you threw an exception inside the
 -- action.
-withMapping :: Buffer
-            -> Int
+withMapping :: Int
             -> Int
             -> AccessFlags
+            -> Buffer
             -> (Ptr () -> IO a)   -- ^ The pointer is valid during this action.
             -> IO a
-withMapping buffer offset num_bytes access_flags action =
+withMapping offset num_bytes access_flags buffer action =
     mask $ \restore -> do
-        ptr <- map buffer offset num_bytes access_flags
+        ptr <- map offset num_bytes access_flags buffer
         did_it_work <- try $ restore $ action ptr
         did_unmapping_work <- try $ unmap buffer
         case did_it_work of
@@ -299,4 +305,71 @@ withMapping buffer offset num_bytes access_flags action =
                 case did_unmapping_work of
                     Left no -> throwIO (no :: BufferCorruption)
                     Right () -> return result
+
+-- | A convenience function to upload a storable vector to a buffer.
+--
+-- The buffer must be in an unmapped state and must be write-mappable.
+uploadVector :: V.Storable a
+             => V.Vector a    -- ^ The vector from which to pull data.
+             -> Int           -- ^ Offset, in bytes, to which point in the
+                              --   buffer to copy the data.
+             -> Buffer
+             -> IO ()
+uploadVector vec offset buffer =
+    V.unsafeWith vec $ \src_ptr ->
+        withMapping offset byte_size WriteAccess buffer $ \tgt_ptr ->
+            copyBytes tgt_ptr (castPtr src_ptr) byte_size
+  where
+    byte_size = V.length vec * sizeOf (undefined `asTypeOf` (vec V.! 0))
+
+-- | Copies bytes from one buffer to another.
+--
+-- The buffers must not be mapped; however this call can bypass the access
+-- flags set in `newBuffer`. That is, you can copy data even to a buffer that
+-- was set as not writable or copy from a buffer that was set as not readable.
+--
+-- This is faster than mapping both buffers and then doing a memcpy() style
+-- copying in system memory because this call does not require a round-trip to
+-- the driver.
+--
+-- You can use the same buffer for both destination and source but the copying
+-- area may not overlap.
+copy :: Buffer      -- ^ Destination buffer.
+     -> Int         -- ^ Offset in destination buffer.
+     -> Buffer      -- ^ Source buffer.
+     -> Int         -- ^ Offset in source buffer.
+     -> Int         -- ^ How many bytes to copy.
+     -> IO ()
+copy dst_buffer dst_offset src_buffer src_offset num_bytes
+    | dst_offset < 0 ||
+      src_offset < 0 ||
+      dst_offset + num_bytes >= viewSize dst_buffer ||
+      src_offset + num_bytes >= viewSize src_buffer ||
+      num_bytes < 0 =
+          error "copy: invalid offsets/byte sizes to make a buffer copy."
+    | overlaps = error "copy: copying area overlaps."
+    | otherwise =
+        withResource (resource dst_buffer) $ \(Buffer_ dst) ->
+            withResource (resource src_buffer) $ \(Buffer_ src) -> do
+                dst_status <- readIORef (status dst_buffer)
+                when (mapped dst_status) $
+                    error "copy: destination buffer is mapped."
+                src_status <- readIORef (status src_buffer)
+                when (mapped src_status) $
+                    error "copy: source buffer is mapped."
+
+                when (num_bytes > 0) $
+                    mglNamedCopyBufferSubData
+                        src
+                        dst
+                        (safeFromIntegral src_offset)
+                        (safeFromIntegral dst_offset)
+                        (safeFromIntegral num_bytes)
+
+  where
+    overlaps
+        | dst_buffer /= src_buffer = False
+        | dst_offset + num_bytes - 1 < src_offset ||
+          dst_offset > src_offset + num_bytes - 1 = False
+        | otherwise = True
 

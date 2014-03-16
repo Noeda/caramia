@@ -25,6 +25,7 @@ module Caramia.Internal.OpenGLCApi
     , mglInitializeGLEW
     , mglMapNamedBufferRange
     , mglUnmapNamedBuffer
+    , mglNamedCopyBufferSubData
     , has_GL_ARB_buffer_storage
     )
     where
@@ -49,6 +50,8 @@ foreign import ccall unsafe mglMapNamedBufferRange ::
     GLuint -> GLintptr -> GLsizeiptr -> GLenum -> IO (Ptr ())
 foreign import ccall unsafe mglUnmapNamedBuffer ::
     GLuint -> IO GLboolean
+foreign import ccall unsafe mglNamedCopyBufferSubData ::
+    GLuint -> GLuint -> GLintptr -> GLintptr -> GLsizeiptr -> IO ()
 
 has_GL_ARB_buffer_storage :: Bool
 has_GL_ARB_buffer_storage = c_has_GL_ARB_buffer_storage == 1
