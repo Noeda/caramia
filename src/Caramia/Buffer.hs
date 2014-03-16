@@ -254,6 +254,8 @@ instance Exception BufferCorruption
 --
 -- It is possible that the mapping become corrupt during the time it was
 -- mapped. If there was corruption, `BufferCorruption` is thrown in this call.
+--
+-- Corruption means that the contents of the buffer are now undefined.
 unmap :: Buffer -> IO ()
 unmap buffer = do
     bufstatus <- readIORef (status buffer)
