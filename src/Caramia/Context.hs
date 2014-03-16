@@ -19,6 +19,10 @@ import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import System.IO.Unsafe
+import Foreign.Marshal.Alloc
+import Foreign.Storable
+
+import Caramia.Internal.OpenGLCApi ( mglInitializeGLEW, mglGetVersion )
 
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap.Strict as IM
@@ -51,6 +55,16 @@ giveContext action = mask $ \restore -> do
     unless is_bound_thread $
         error $ "giveContext: current thread is not bound. How can it have " <>
                 "an OpenGL context?"
+
+    mglInitializeGLEW
+    alloca $ \majorv -> alloca $ \minorv -> do
+        mglGetVersion majorv minorv
+        major <- peek majorv
+        minor <- peek minorv
+
+        unless (major >= 4 || (major == 3 && minor >= 2)) $
+            error $ "OpenGL version appears to be " <> show major <> "." <>
+                    show minor <> ". I need at least 3.2"
 
     cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
     tid <- myThreadId
@@ -111,7 +125,11 @@ runPendingFinalizers = mask_ $ do
 scheduleFinalizer :: ContextID -> IO () -> IO ()
 scheduleFinalizer cid finalizer =
     atomicModifyIORef' pendingFinalizers $ \old ->
-        ( IM.adjust (flip (>>) finalizer) cid old, () )
+        ( IM.insertWith
+            (\new old -> old >> new)
+            cid
+            finalizer
+            old, () )
 
 -- used to give out new unique context IDs
 nextContextID :: IORef ContextID

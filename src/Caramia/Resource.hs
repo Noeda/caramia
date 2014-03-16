@@ -39,9 +39,7 @@ data Resource a = Resource
     , nativeCid    :: !ContextID
     }
 
--- Eq a constraint for consistency with when NO_RESOURCE_RUNTIME_CHECKS is
--- turned on.
-instance Eq a => Eq (Resource a) where
+instance Eq (Resource a) where
     res1 == res2 = rawResource res1 == rawResource res2
 
 -- | Creates a new resource.
@@ -51,8 +49,9 @@ instance Eq a => Eq (Resource a) where
 --
 -- If you throw an exception in the OpenGL finalizer, then this will disrupt
 -- Caramia context and make it invalid. So try not to throw those exceptions?
-newResource :: a                  -- ^ The raw, unmanaged resource.
-            -> IO ()              -- ^ OpenGL finalizer. Will only be called in
+newResource :: IO a               -- ^ Action that returns the raw, unmanaged
+                                  -- resource. Good place to create it.
+            -> (a -> IO ())       -- ^ OpenGL finalizer. Will only be called in
                                   -- the same thread as this `newResource` is
                                   -- called, but only if the same OpenGL
                                   -- context is still alive.
@@ -66,12 +65,16 @@ newResource :: a                  -- ^ The raw, unmanaged resource.
                                   -- finalized. This will be run even if the
                                   -- OpenGL context is gone.
             -> IO (Resource a)
-newResource resource finalizer normal_finalizer = mask_ $ do
-    ref <- newIORef (Just (resource, finalizer, normal_finalizer))
+newResource resource_creator finalizer normal_finalizer = mask_ $ do
     -- We need the context ID for correct finalization so we cannot take away
     -- this check with NO_RESOURCE_RUNTIME_CHECKS.
     maybe (error "newResource: no OpenGL context active.")
           (\cid -> do
+            resource <- resource_creator
+            let opengl_finalizer = finalizer resource
+            ref <- newIORef (Just ( resource
+                                  , opengl_finalizer
+                                  , normal_finalizer ))
             let res = Resource { rawResource = ref
                                , nativeCid = cid }
             void $ mkWeakIORef ref $ finalizeNow res

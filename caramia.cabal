@@ -46,15 +46,42 @@ source-repository head
     type:            git
     location:        https://github.com/Noeda/caramia.git
 
+Flag Demos
+  Description:         Enable the building of demo programs. Useful to test if
+                       the library works on a system.
+  Default:             False
+
 library
   exposed-modules:     Caramia
                        Caramia.Resource
                        Caramia.Context
+                       Caramia.Buffer
+  other-modules:       Caramia.Internal.OpenGLCApi
+                       Caramia.Internal.Safe
+
   ghc-options:         -Wall -fno-warn-name-shadowing
+  c-sources:           src/c/gl_api.c
+  pkgconfig-depends:   glew
+
   build-depends:       base >=4.7 && <5.0.0.0
                       ,containers ==0.5.*
+                      ,OpenGLRaw  ==1.4.*
   hs-source-dirs:      src
   default-language:    Haskell2010
   default-extensions:  AutoDeriveTypeable, OverloadedStrings, FlexibleInstances
-                      ,FlexibleContexts, LambdaCase, MultiWayIf
+                      ,FlexibleContexts, LambdaCase, MultiWayIf, ViewPatterns
+
+-- This is just a dumping ground test that does stupid things. It's used to
+-- check if things work at all.
+test-suite smoke-test
+  type:                exitcode-stdio-1.0
+  main-is:             Main.hs
+  ghc-options:         -Wall -fno-warn-name-shadowing -threaded
+  hs-source-dirs:      demos/smoke-test
+  build-depends:       base, caramia
+                      ,sdl2 ==1.0.*
+  default-language:    Haskell2010
+  default-extensions:  AutoDeriveTypeable, OverloadedStrings
+                      ,FlexibleInstances ,FlexibleContexts, LambdaCase
+                      ,MultiWayIf
 
