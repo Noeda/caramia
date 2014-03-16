@@ -1,0 +1,60 @@
+name:                caramia
+version:             0.1.0.0
+synopsis:            Caramia real-time hardware-accelerated rendering library
+homepage:            https://github.com/Noeda/caramia/
+license:             MIT
+license-file:        LICENSE
+author:              Mikko Juola
+copyright:           Copyright (c) 2014 Mikko Juola
+maintainer:          mikjuo@gmail.com
+category:            Graphics
+build-type:          Simple
+stability:           not even implemented
+cabal-version:       >=1.10
+
+description:
+    Note: at the moment these are all lies because this library was just
+          started. It's a PLAN.
+    .
+    This is a layer on top of OpenGL to provide user-friendly interface to
+    hardware-accelerated graphics. This is not an everything-binding API; it
+    strives to export a small but relevant, modern, most useful API.
+    .
+    It features:
+    .
+        * Creation and manipulation of graphics resources, with safe
+          finalizing.
+    .
+        * Buffer objects, textures, shaders and shader programs, vertex array
+          objects, framebuffers, rendering are all supported.
+    .
+        * Graphics operations are run in the IO monad (as opposed to some
+          custom GraphicsIO). Safety is provided by run-time checks.
+    .
+    This package focuses on providing the primitives of rendering only. This
+    means that things such as higher-level operations (meshes, scene
+    management, entities, etc.), creating OpenGL contexts or event handling is
+    outside the scope of this package.
+    .
+    Requirements from system:
+    .
+         * OpenGL 3.2
+    .
+         * GL_ARB_texture_storage
+
+source-repository head
+    type:            git
+    location:        https://github.com/Noeda/caramia.git
+
+library
+  exposed-modules:     Caramia
+                       Caramia.Resource
+                       Caramia.Context
+  ghc-options:         -Wall -fno-warn-name-shadowing
+  build-depends:       base >=4.7 && <5.0.0.0
+                      ,containers ==0.5.*
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  default-extensions:  AutoDeriveTypeable, OverloadedStrings, FlexibleInstances
+                      ,FlexibleContexts, LambdaCase, MultiWayIf
+
