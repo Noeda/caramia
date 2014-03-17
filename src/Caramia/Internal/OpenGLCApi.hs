@@ -16,6 +16,15 @@ module Caramia.Internal.OpenGLCApi
     , gl_MAP_WRITE_BIT
     , gl_TRUE
     , gl_FALSE
+    , gl_UNSIGNED_BYTE
+    , gl_BYTE
+    , gl_UNSIGNED_SHORT
+    , gl_SHORT
+    , gl_UNSIGNED_INT
+    , gl_INT
+    , gl_HALF_FLOAT
+    , gl_FLOAT
+    , gl_DOUBLE
       -- the actual exports
     , mglGenBuffer
     , mglDeleteBuffer
@@ -26,6 +35,10 @@ module Caramia.Internal.OpenGLCApi
     , mglMapNamedBufferRange
     , mglUnmapNamedBuffer
     , mglNamedCopyBufferSubData
+    , mglGenVertexArray
+    , mglDeleteVertexArray
+    , mglVertexArrayVertexAttribOffset
+    , mglVertexArrayVertexAttribIOffset
     , has_GL_ARB_buffer_storage
     )
     where
@@ -52,6 +65,15 @@ foreign import ccall unsafe mglUnmapNamedBuffer ::
     GLuint -> IO GLboolean
 foreign import ccall unsafe mglNamedCopyBufferSubData ::
     GLuint -> GLuint -> GLintptr -> GLintptr -> GLsizeiptr -> IO ()
+foreign import ccall unsafe mglGenVertexArray :: IO GLuint
+foreign import ccall unsafe mglDeleteVertexArray :: GLuint -> IO ()
+
+foreign import ccall unsafe mglVertexArrayVertexAttribIOffset ::
+    GLuint -> GLuint -> GLuint -> GLint -> GLenum -> GLsizei -> GLintptr
+    -> IO ()
+foreign import ccall unsafe mglVertexArrayVertexAttribOffset ::
+    GLuint -> GLuint -> GLuint -> GLint -> GLenum -> GLboolean -> GLsizei
+    -> GLintptr -> IO ()
 
 has_GL_ARB_buffer_storage :: Bool
 has_GL_ARB_buffer_storage = c_has_GL_ARB_buffer_storage == 1

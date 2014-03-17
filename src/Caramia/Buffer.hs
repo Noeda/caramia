@@ -2,6 +2,8 @@
 --
 -- These are chunks of memory (typically) kept on the GPU.
 --
+-- <https://www.opengl.org/wiki/Buffer_Object>
+--
 
 module Caramia.Buffer
     ( -- * Creation
@@ -28,6 +30,8 @@ module Caramia.Buffer
 
 import Prelude hiding ( map )
 
+import Caramia.Buffer.Internal
+
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
 import Caramia.Internal.Safe
@@ -45,22 +49,6 @@ import Foreign.Storable ( sizeOf )
 import Control.Monad
 import Control.Exception
 import Control.Applicative
-
--- | Buffer data type.
-data Buffer = Buffer
-    { resource   :: !(Resource Buffer_)
-    , status     :: !(IORef BufferStatus)
-    , viewAllowedMappings :: !AccessFlags -- ^ Returns the allowed mappings.
-    , viewSize   :: !Int -- ^ Returns the size of the buffer, in bytes.
-    }
-
-data BufferStatus = BufferStatus
-    { mapped :: !Bool }
-
-instance Eq Buffer where
-    (resource -> res1) == (resource -> res2) = res1 == res2
-
-newtype Buffer_ = Buffer_ GLuint
 
 -- | The frequency of access to a buffer.
 --
@@ -84,13 +72,6 @@ data AccessNature =
     Draw
   | Read
   | Copy
-  deriving ( Eq, Ord, Show, Read )
-
--- | Describes a style of mapping.
-data AccessFlags =
-    ReadAccess      -- ^ The mapping can be read from.
-  | WriteAccess     -- ^ The mapping can be written to.
-  | ReadWriteAccess -- ^ Both reading and writing can be done.
   deriving ( Eq, Ord, Show, Read )
 
 canMapWith :: AccessFlags -> AccessFlags -> Bool

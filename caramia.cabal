@@ -51,8 +51,11 @@ library
                        Caramia.Resource
                        Caramia.Context
                        Caramia.Buffer
+                       Caramia.VAO
   other-modules:       Caramia.Internal.OpenGLCApi
                        Caramia.Internal.Safe
+
+                       Caramia.Buffer.Internal
 
   ghc-options:         -Wall -fno-warn-name-shadowing
   c-sources:           src/c/gl_api.c

@@ -7,6 +7,7 @@ import Foreign.C.String
 import Control.Exception
 import Data.Foldable
 import Data.Bits
+import Data.Word
 
 main :: IO ()
 main =
@@ -41,5 +42,26 @@ program =
                 withMapping 23 50000 ReadAccess buf $ \_ -> return ()
                 copy buf 100 buf 500 400
                 runPendingFinalizers
+                -- Make some stupid VAOs
+                vao <- newVAO
+                vao2 <- newVAO
+                sourceVertexData buf
+                                 ((defaultSourcingType (5 :: Word16))
+                                  { offset = 123
+                                  , components = 3
+                                  , stride = 19
+                                  , attributeIndex = 3
+                                  , integerMapping = True })
+                                 vao2
+                sourceVertexData buf
+                                 ((defaultSourcingType (5 :: Word16))
+                                  { offset = 123
+                                  , components = 3
+                                  , stride = 19
+                                  , attributeIndex = 3
+                                  , normalize = True
+                                  , integerMapping = False })
+                                 vao
+
             return ()
 
