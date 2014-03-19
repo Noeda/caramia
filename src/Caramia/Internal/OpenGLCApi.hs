@@ -25,6 +25,12 @@ module Caramia.Internal.OpenGLCApi
     , gl_HALF_FLOAT
     , gl_FLOAT
     , gl_DOUBLE
+    , gl_LINK_STATUS
+    , gl_COMPILE_STATUS
+    , gl_INFO_LOG_LENGTH
+    , gl_VERTEX_SHADER
+    , gl_FRAGMENT_SHADER
+    , gl_GEOMETRY_SHADER
       -- the actual exports
     , mglGenBuffer
     , mglDeleteBuffer
@@ -37,8 +43,36 @@ module Caramia.Internal.OpenGLCApi
     , mglNamedCopyBufferSubData
     , mglGenVertexArray
     , mglDeleteVertexArray
+    , mglDeleteProgram
+    , mglCreateProgram
+    , mglGetProgramiv
+    , mglGetProgramInfoLog
+    , mglAttachShader
+    , mglLinkProgram
+    , mglCreateShader
+    , mglDeleteShader
+    , mglShaderSource
+    , mglGetShaderiv
+    , mglGetShaderInfoLog
     , mglVertexArrayVertexAttribOffset
     , mglVertexArrayVertexAttribIOffset
+    , mglCompileShader
+
+    , mglProgramUniform1ui
+    , mglProgramUniform2ui
+    , mglProgramUniform3ui
+    , mglProgramUniform4ui
+    , mglProgramUniform1i
+    , mglProgramUniform2i
+    , mglProgramUniform3i
+    , mglProgramUniform4i
+    , mglProgramUniform1f
+    , mglProgramUniform2f
+    , mglProgramUniform3f
+    , mglProgramUniform4f
+    , mglProgramUniformMatrix3fv
+    , mglProgramUniformMatrix4fv
+
     , has_GL_ARB_buffer_storage
     )
     where
@@ -74,6 +108,58 @@ foreign import ccall unsafe mglVertexArrayVertexAttribIOffset ::
 foreign import ccall unsafe mglVertexArrayVertexAttribOffset ::
     GLuint -> GLuint -> GLuint -> GLint -> GLenum -> GLboolean -> GLsizei
     -> GLintptr -> IO ()
+
+foreign import ccall unsafe mglDeleteProgram :: GLuint -> IO ()
+foreign import ccall unsafe mglCreateProgram :: IO GLuint
+foreign import ccall unsafe mglGetProgramiv ::
+    GLuint -> GLenum -> Ptr GLint -> IO ()
+foreign import ccall unsafe mglGetProgramInfoLog ::
+    GLuint -> GLsizei -> Ptr GLsizei -> Ptr GLchar -> IO ()
+foreign import ccall unsafe mglAttachShader ::
+    GLuint -> GLuint -> IO ()
+foreign import ccall unsafe mglLinkProgram ::
+    GLuint -> IO ()
+foreign import ccall unsafe mglCreateShader ::
+    GLenum -> IO GLuint
+foreign import ccall unsafe mglDeleteShader ::
+    GLuint -> IO ()
+foreign import ccall unsafe mglShaderSource ::
+    GLuint -> GLsizei -> Ptr (Ptr GLchar) -> Ptr GLint -> IO ()
+foreign import ccall unsafe mglCompileShader ::
+    GLuint -> IO ()
+foreign import ccall unsafe mglGetShaderiv ::
+    GLuint -> GLenum -> Ptr GLint -> IO ()
+foreign import ccall unsafe mglGetShaderInfoLog ::
+    GLuint -> GLsizei -> Ptr GLsizei -> Ptr GLchar -> IO ()
+
+foreign import ccall unsafe mglProgramUniform1ui ::
+    GLuint -> GLint -> GLuint -> IO ()
+foreign import ccall unsafe mglProgramUniform2ui ::
+    GLuint -> GLint -> GLuint -> GLuint -> IO ()
+foreign import ccall unsafe mglProgramUniform3ui ::
+    GLuint -> GLint -> GLuint -> GLuint -> GLuint -> IO ()
+foreign import ccall unsafe mglProgramUniform4ui ::
+    GLuint -> GLint -> GLuint -> GLuint -> GLuint -> GLuint -> IO ()
+foreign import ccall unsafe mglProgramUniform1i ::
+    GLuint -> GLint -> GLint -> IO ()
+foreign import ccall unsafe mglProgramUniform2i ::
+    GLuint -> GLint -> GLint -> GLint -> IO ()
+foreign import ccall unsafe mglProgramUniform3i ::
+    GLuint -> GLint -> GLint -> GLint -> GLint -> IO ()
+foreign import ccall unsafe mglProgramUniform4i ::
+    GLuint -> GLint -> GLint -> GLint -> GLint -> GLint -> IO ()
+foreign import ccall unsafe mglProgramUniform1f ::
+    GLuint -> GLint -> GLfloat -> IO ()
+foreign import ccall unsafe mglProgramUniform2f ::
+    GLuint -> GLint -> GLfloat -> GLfloat -> IO ()
+foreign import ccall unsafe mglProgramUniform3f ::
+    GLuint -> GLint -> GLfloat -> GLfloat -> GLfloat -> IO ()
+foreign import ccall unsafe mglProgramUniform4f ::
+    GLuint -> GLint -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> IO ()
+foreign import ccall unsafe mglProgramUniformMatrix3fv ::
+    GLuint -> GLint -> GLsizei -> GLboolean -> Ptr GLfloat -> IO ()
+foreign import ccall unsafe mglProgramUniformMatrix4fv ::
+    GLuint -> GLint -> GLsizei -> GLboolean -> Ptr GLfloat -> IO ()
 
 has_GL_ARB_buffer_storage :: Bool
 has_GL_ARB_buffer_storage = c_has_GL_ARB_buffer_storage == 1

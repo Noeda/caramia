@@ -236,6 +236,13 @@ void mglProgramUniform3i( GLuint program, GLint location
                         , GLint v0, GLint v1, GLint v2 );
 void mglProgramUniform4i( GLuint program, GLint location
                         , GLint v0, GLint v1, GLint v2, GLint v3 );
+void mglProgramUniform1ui( GLuint program, GLint location, GLuint v0 );
+void mglProgramUniform2ui( GLuint program, GLint location
+                         , GLuint v0, GLuint v1 );
+void mglProgramUniform3ui( GLuint program, GLint location
+                         , GLuint v0, GLuint v1, GLuint v2 );
+void mglProgramUniform4ui( GLuint program, GLint location
+                         , GLuint v0, GLuint v1, GLuint v2, GLuint v3 );
 void mglProgramUniformMatrix3fv( GLuint program, GLint location
                                , GLsizei count, GLboolean tmglspose
                                , const GLfloat* content );

@@ -1294,6 +1294,77 @@ void mglProgramUniform4i( GLuint program, GLint location
     }
 }
 
+void mglProgramUniform1ui( GLuint program, GLint location, GLuint v0 )
+{
+    if ( GLEW_EXT_direct_state_access ) {
+        glProgramUniform1uiEXT( program, location, v0 );
+        return;
+    }
+    glstate* state = my_glstate();
+    GLuint old = state->bound_program;
+    if ( old != program ) {
+        glUseProgram( program );
+    }
+    glUniform1ui( location, v0 );
+    if ( old != program ) {
+        glUseProgram( old );
+    }
+}
+
+void mglProgramUniform2ui( GLuint program, GLint location
+                        , GLuint v0, GLuint v1 )
+{
+    if ( GLEW_EXT_direct_state_access ) {
+        glProgramUniform2uiEXT( program, location, v0, v1 );
+        return;
+    }
+    glstate* state = my_glstate();
+    GLuint old = state->bound_program;
+    if ( old != program ) {
+        glUseProgram( program );
+    }
+    glUniform2ui( location, v0, v1 );
+    if ( old != program ) {
+        glUseProgram( old );
+    }
+}
+
+void mglProgramUniform3ui( GLuint program, GLint location
+                         , GLuint v0, GLuint v1, GLuint v2 )
+{
+    if ( GLEW_EXT_direct_state_access ) {
+        glProgramUniform3uiEXT( program, location, v0, v1, v2 );
+        return;
+    }
+    glstate* state = my_glstate();
+    GLuint old = state->bound_program;
+    if ( old != program ) {
+        glUseProgram( program );
+    }
+    glUniform3ui( location, v0, v1, v2 );
+    if ( old != program ) {
+        glUseProgram( old );
+    }
+}
+
+void mglProgramUniform4ui( GLuint program, GLint location
+                         , GLuint v0, GLuint v1, GLuint v2, GLuint v3 )
+{
+    if ( GLEW_EXT_direct_state_access ) {
+        glProgramUniform4uiEXT( program, location, v0, v1, v2, v3 );
+        return;
+    }
+    glstate* state = my_glstate();
+    GLuint old = state->bound_program;
+    if ( old != program ) {
+        glUseProgram( program );
+    }
+    glUniform4ui( location, v0, v1, v2, v3 );
+    if ( old != program ) {
+        glUseProgram( old );
+    }
+}
+
 void mglProgramUniformMatrix3fv( GLuint program, GLint location
                                , GLsizei count, GLboolean tmglspose
                                , const GLfloat* content )

@@ -1,6 +1,8 @@
 module Main ( main ) where
 
 import Caramia
+import Caramia.Math
+
 import Graphics.UI.SDL
 import qualified Graphics.UI.SDL as SDL
 import Foreign.C.String
@@ -8,6 +10,9 @@ import Control.Exception
 import Data.Foldable
 import Data.Bits
 import Data.Word
+import Data.Monoid
+import qualified Data.Text as T
+import System.Mem
 
 main :: IO ()
 main =
@@ -42,6 +47,23 @@ program =
                 withMapping 23 50000 ReadAccess buf $ \_ -> return ()
                 copy buf 100 buf 500 400
                 runPendingFinalizers
+
+                -- Compile a gazillion shaders
+                sh1 <- newShader fragmentShaderSrc Fragment
+                pipeline <- newPipeline [sh1]
+                setUniform (transpose44 identity44)
+                           0
+                           pipeline
+                setUniform identity44
+                           1
+                           pipeline
+                setUniform identity33
+                           2
+                           pipeline
+                setUniform (transpose33 identity33)
+                           3
+                           pipeline
+
                 -- Make some stupid VAOs
                 vao <- newVAO
                 vao2 <- newVAO
@@ -63,5 +85,13 @@ program =
                                   , integerMapping = False })
                                  vao
 
+            performGC
+            runPendingFinalizers
             return ()
+
+fragmentShaderSrc :: T.Text
+fragmentShaderSrc = "" <>
+    "#version 140\n" <>
+    "void main() {\n" <>
+    "}\n"
 
