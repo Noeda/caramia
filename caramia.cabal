@@ -22,6 +22,9 @@ description:
     .
     It features:
     .
+        * No implicit state. (in OpenGL you often have to \'bind\' something
+          before you can use it).
+    .
         * Creation and manipulation of graphics resources, with safe
           finalizing.
     .
