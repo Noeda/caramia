@@ -74,6 +74,7 @@ module Caramia.Internal.OpenGLCApi
     , mglProgramUniformMatrix4fv
 
     , has_GL_ARB_buffer_storage
+    , c_initialize_my_glstate_tls
     )
     where
 
@@ -160,6 +161,8 @@ foreign import ccall unsafe mglProgramUniformMatrix3fv ::
     GLuint -> GLint -> GLsizei -> GLboolean -> Ptr GLfloat -> IO ()
 foreign import ccall unsafe mglProgramUniformMatrix4fv ::
     GLuint -> GLint -> GLsizei -> GLboolean -> Ptr GLfloat -> IO ()
+foreign import ccall unsafe "initialize_my_glstate_tls"
+    c_initialize_my_glstate_tls :: IO ()
 
 has_GL_ARB_buffer_storage :: Bool
 has_GL_ARB_buffer_storage = c_has_GL_ARB_buffer_storage == 1

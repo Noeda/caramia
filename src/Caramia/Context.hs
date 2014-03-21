@@ -30,7 +30,9 @@ import System.IO.Unsafe
 import Foreign.Marshal.Alloc
 import Foreign.Storable
 
-import Caramia.Internal.OpenGLCApi ( mglInitializeGLEW, mglGetVersion )
+import Caramia.Internal.OpenGLCApi ( mglInitializeGLEW
+                                   , mglGetVersion
+                                   , c_initialize_my_glstate_tls )
 
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap.Strict as IM
@@ -73,6 +75,8 @@ giveContext action = mask $ \restore -> do
         unless (major >= 4 || (major == 3 && minor >= 2)) $
             error $ "OpenGL version appears to be " <> show major <> "." <>
                     show minor <> ". I need at least 3.2"
+
+    c_initialize_my_glstate_tls
 
     cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
     tid <- myThreadId
