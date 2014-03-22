@@ -22,7 +22,9 @@ module Caramia.Context
     , scheduleFinalizer
     -- * Context local data
     , storeContextLocalData
-    , retrieveContextLocalData )
+    , retrieveContextLocalData
+    -- * Exceptions
+    , TooOldOpenGL(..) )
     where
 
 import Data.IORef
@@ -35,6 +37,11 @@ import Control.Exception
 import Control.Monad
 import System.IO.Unsafe
 import System.Environment
+
+import Foreign.Storable
+import Foreign.Marshal.Alloc
+
+import Graphics.Rendering.OpenGL.Raw.Core32
 
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap.Strict as IM
@@ -57,6 +64,19 @@ currentContextID =
     M.lookup <$> myThreadId <*> readIORef runningContexts
 {-# INLINE currentContextID #-}
 
+-- | An exception that is thrown when the OpenGL version is too old for this
+-- library.
+data TooOldOpenGL = TooOldOpenGL
+                    { wantedVersion :: (Int, Int) -- ^ The OpenGL version this
+                                                  --   library needs.
+                    , reportedVersion :: (Int, Int)
+                    -- ^ The OpenGL version reported by current OpenGL
+                    --   context.
+                    }
+                    deriving ( Eq, Show, Read, Typeable )
+
+instance Exception TooOldOpenGL
+
 -- | Tell Caramia the current thread has an OpenGL context active.
 --
 -- When the given IO action returns, Caramia will think that the OpenGL context
@@ -71,12 +91,17 @@ currentContextID =
 -- \'GL_KHR_debug\' extension is supported, OpenGL debug output is written.
 -- Note that you might need a debug OpenGL context for there to be any
 -- messages.
+--
+-- Throws `TooOldOpenGL` if the code detects a context that does not provide
+-- OpenGL 3.3.
 giveContext :: IO a -> IO a
 giveContext action = mask $ \restore -> do
     is_bound_thread <- isCurrentThreadBound
     unless is_bound_thread $
         error $ "giveContext: current thread is not bound. How can it have " <>
                 "an OpenGL context?"
+
+    checkOpenGLVersion33
 
     c_initialize_my_glstate_tls
     maybe (pure ())
@@ -89,6 +114,26 @@ giveContext action = mask $ \restore -> do
     atomicModifyIORef' runningContexts $ \old_map ->
         ( M.insert tid cid old_map, () )
     finally (restore action) scrapContext
+
+checkOpenGLVersion33 :: IO ()
+checkOpenGLVersion33 = do
+    alloca $ \major_ptr -> alloca $ \minor_ptr -> do
+        -- in case glGetIntegerv is completely broken, set initial values for
+        -- major and minor pointers
+        poke major_ptr 0
+        poke minor_ptr 0
+
+        glGetIntegerv gl_MAJOR_VERSION major_ptr
+        glGetIntegerv gl_MAJOR_VERSION minor_ptr
+        major <- peek major_ptr
+        minor <- peek minor_ptr
+        unless (major > 3 ||
+                (major == 3 && minor >= 3)) $
+            throwIO
+                TooOldOpenGL { wantedVersion = (3, 3)
+                             , reportedVersion = ( fromIntegral major
+                                                 , fromIntegral minor )
+                             }
 
 -- | Scraps the current context.
 --
