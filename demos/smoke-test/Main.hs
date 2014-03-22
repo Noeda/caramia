@@ -52,17 +52,18 @@ program =
                 -- Compile a gazillion shaders
                 sh1 <- newShader fragmentShaderSrc Fragment
                 pipeline <- newPipeline [sh1]
+                loc <- getUniformLocation "tutturuu" pipeline
                 setUniform (transpose44 identity44)
-                           0
+                           loc
                            pipeline
                 setUniform identity44
-                           1
+                           loc
                            pipeline
                 setUniform identity33
-                           2
+                           loc
                            pipeline
                 setUniform (transpose33 identity33)
-                           3
+                           loc
                            pipeline
 
                 -- Make some stupid VAOs
@@ -93,6 +94,8 @@ program =
 fragmentShaderSrc :: T.Text
 fragmentShaderSrc = "" <>
     "#version 140\n" <>
+    "uniform mat3 tutturuu;\n" <>
     "void main() {\n" <>
+    "    gl_FragColor = vec4(tutturuu[0][0]);\n" <>
     "}\n"
 

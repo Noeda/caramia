@@ -6,6 +6,10 @@
 -- implement separate shader programs (that is,
 -- GL_ARB_separate_shader_objects).
 --
+-- At the moment, you need to use explicit attribute locations in shaders
+-- themselves. There is no functionality to retrieve attribute locations in
+-- this API; you simply have to know them.
+--
 -- <https://www.opengl.org/wiki/OpenGL_Shading_Language>
 --
 
@@ -15,9 +19,6 @@
 --
 
 {-# LANGUAGE ExistentialQuantification, UndecidableInstances #-}
--- {-# LANGUAGE OverlappingInstances #-}
--- our instances don't actually overlap (as long as we don't expose our classes
--- to public API) but GHC is not smart enough to notice that.
 
 module Caramia.Shader
     ( newShader
@@ -26,6 +27,7 @@ module Caramia.Shader
     , Pipeline()
       -- * Uniforms
     , setUniform
+    , getUniformLocation
     , Uniformable()
     , UniformLocation
       -- * Shader stages
@@ -48,6 +50,7 @@ import GHC.Float ( double2Float )
 
 import Control.Exception
 import Control.Monad
+import Control.Applicative
 import Foreign.C.Types
 import Foreign.Storable
 import Foreign.Ptr
@@ -60,7 +63,9 @@ import Data.Word
 import Data.Foldable
 import Data.List ( nub )
 import System.IO.Unsafe ( unsafePerformIO )
+import qualified Data.ByteString as B
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.Text.Foreign as T
 
 -- | A shader object for a specific shader stage.
@@ -539,4 +544,15 @@ cdouble2CFloat (CDouble dbl) = CFloat $ double2Float dbl
 {-# RULES "transpose/glProgramUniformMatrix4fv" forall (a :: Matrix44) b c.
         setUniform (transpose44 a) b c =
         setUniform (Transpose44 a) b c #-}
+
+-- | Returns a uniform location for a given name.
+--
+-- The uniform may not be in the shader or it may not be active. If this
+-- happens, a special uniform location is returned that can be used in
+-- `setUniform` to make it do nothing.
+getUniformLocation :: T.Text -> Pipeline -> IO UniformLocation
+getUniformLocation name pipeline = fromIntegral <$>
+    (withResource (resourcePL pipeline) $ \(Pipeline_ program) ->
+        B.useAsCString (T.encodeUtf8 name) $ \cstr ->
+             glGetUniformLocation program cstr)
 
