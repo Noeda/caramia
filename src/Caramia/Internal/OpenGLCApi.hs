@@ -10,8 +10,8 @@ module Caramia.Internal.OpenGLCApi
     , mglDeleteVertexArray
     , mglGenVertexArray
     , mglNamedBufferData
-    , mglVertexArrayVertexAttribOffset
-    , mglVertexArrayVertexAttribIOffset
+    , mglVertexArrayVertexAttribOffsetAndEnable
+    , mglVertexArrayVertexAttribIOffsetAndEnable
     -- GL_ARB_separate_shader_objects...but I want them even if that extension
     -- is not available.
     , mglProgramUniform1ui
@@ -91,25 +91,27 @@ withBoundVAO vao action = do
     glBindVertexArray vao
     finally action (glBindVertexArray $ fromIntegral old)
 
-mglVertexArrayVertexAttribOffset ::
+mglVertexArrayVertexAttribOffsetAndEnable ::
         GLuint -> GLuint -> GLuint -> GLint -> GLenum
      -> GLboolean -> GLsizei -> GLintptr -> IO ()
-mglVertexArrayVertexAttribOffset
+mglVertexArrayVertexAttribOffsetAndEnable
     vaobj buffer index size dtype normalized stride (CPtrdiff offset) =
 
     withBoundVAO vaobj $
-        withBoundBuffer buffer $
+        withBoundBuffer buffer $ do
+            glEnableVertexAttribArray index
             glVertexAttribPointer index size dtype normalized stride
                                   (intPtrToPtr $ fromIntegral offset)
 
-mglVertexArrayVertexAttribIOffset ::
+mglVertexArrayVertexAttribIOffsetAndEnable ::
         GLuint -> GLuint -> GLuint -> GLint -> GLenum
      -> GLsizei -> GLintptr -> IO ()
-mglVertexArrayVertexAttribIOffset
+mglVertexArrayVertexAttribIOffsetAndEnable
     vaobj buffer index size dtype stride offset =
 
     withBoundVAO vaobj $
-        withBoundBuffer buffer $
+        withBoundBuffer buffer $ do
+            glEnableVertexAttribArray index
             glVertexAttribIPointer index size dtype stride
                                    (intPtrToPtr $ fromIntegral offset)
 

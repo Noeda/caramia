@@ -242,7 +242,7 @@ sourceVertexData buffer sourcing vao = mask_ $
     ncomponents = components sourcing
 
     doIntegerMapping name bufname =
-        mglVertexArrayVertexAttribIOffset
+        mglVertexArrayVertexAttribIOffsetAndEnable
             name
             bufname
             (safeFromIntegral $ attributeIndex sourcing)
@@ -252,7 +252,7 @@ sourceVertexData buffer sourcing vao = mask_ $
             (safeFromIntegral $ offset sourcing)
 
     doOrdinaryMapping name bufname =
-        mglVertexArrayVertexAttribOffset
+        mglVertexArrayVertexAttribOffsetAndEnable
             name
             bufname
             (safeFromIntegral $ attributeIndex sourcing)
