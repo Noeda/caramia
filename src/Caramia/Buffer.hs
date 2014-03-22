@@ -5,6 +5,9 @@
 -- <https://www.opengl.org/wiki/Buffer_Object>
 --
 
+-- TODO: Add glBufferStorage based implementation.
+-- OpenGLRaw (1.4.0.0) doesn't have this yet.
+
 module Caramia.Buffer
     ( -- * Creation
       newBuffer
@@ -156,16 +159,10 @@ newBuffer creation
 
     createBuffer = do
         buf <- mglGenBuffer
-        if has_GL_ARB_buffer_storage
-          then mglNamedBufferStorage
-                   buf
-                   safe_size
-                   (castPtr initial_data)
-                   (toConstantF $ accessFlags creation)
-          else mglNamedBufferData buf
-                                  safe_size
-                                  (castPtr initial_data)
-                                  (toConstant usage access)
+        mglNamedBufferData buf
+                           safe_size
+                           (castPtr initial_data)
+                           (toConstant usage access)
         return (Buffer_ buf)
 
     assertNotNull ptr

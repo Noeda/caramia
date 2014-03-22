@@ -176,19 +176,19 @@ newShader source_code stage = mask_ $ do
                   , viewStage = stage }
   where
     deleter (CompiledShader shader) =
-       mglDeleteShader shader
+       glDeleteShader shader
 
     create = do
-        shader_name <- mglCreateShader (toConstant stage)
+        shader_name <- glCreateShader (toConstant stage)
         T.withCStringLen source_code $ \(cstr, len) -> do
             with cstr $ \cstr_ptr ->
                 with (fromIntegral len :: GLint) $ \len_ptr ->
-                mglShaderSource
+                glShaderSource
                     shader_name
                     1
                     cstr_ptr
                     len_ptr
-        mglCompileShader shader_name
+        glCompileShader shader_name
         checkCompilationErrors shader_name
         return $ CompiledShader shader_name
 
@@ -197,14 +197,14 @@ newShader source_code stage = mask_ $ do
 -- DELETES the shader if there were errors.
 checkCompilationErrors :: GLuint -> IO ()
 checkCompilationErrors shader_name = do
-    status <- gget $ mglGetShaderiv shader_name gl_COMPILE_STATUS
+    status <- gget $ glGetShaderiv shader_name gl_COMPILE_STATUS
     when (status == fromIntegral gl_FALSE) $ do
-        log_len <- gget $ mglGetShaderiv shader_name gl_INFO_LOG_LENGTH
+        log_len <- gget $ glGetShaderiv shader_name gl_INFO_LOG_LENGTH
         allocaBytes (safeFromIntegral log_len) $ \str -> do
-            mglGetShaderInfoLog shader_name log_len nullPtr str
+            glGetShaderInfoLog shader_name log_len nullPtr str
             log <- T.peekCStringLen ( str
                                     , safeFromIntegral $ max 0 $ log_len-1 )
-            mglDeleteShader shader_name
+            glDeleteShader shader_name
             throwIO $ ShaderCompilationError log
 
 -- | Same as `checkCompilationErrors` but for linking.
@@ -212,14 +212,14 @@ checkCompilationErrors shader_name = do
 -- DELETES the program if there were errors.
 checkLinkingErrors :: GLuint -> IO ()
 checkLinkingErrors program_name = do
-    status <- gget $ mglGetProgramiv program_name gl_LINK_STATUS
+    status <- gget $ glGetProgramiv program_name gl_LINK_STATUS
     when (status == fromIntegral gl_FALSE) $ do
-        log_len <- gget $ mglGetProgramiv program_name gl_INFO_LOG_LENGTH
+        log_len <- gget $ glGetProgramiv program_name gl_INFO_LOG_LENGTH
         allocaBytes (safeFromIntegral log_len) $ \str -> do
-            mglGetProgramInfoLog program_name log_len nullPtr str
+            glGetProgramInfoLog program_name log_len nullPtr str
             log <- T.peekCStringLen ( str
                                     , safeFromIntegral $ max 0 $ log_len-1)
-            mglDeleteProgram program_name
+            glDeleteProgram program_name
             throwIO $ ShaderLinkingError log
 
 -- | Creates a pipeline composed of different shaders.
@@ -245,15 +245,15 @@ newTraditionalPipeline shaders = mask_ $ do
                     , shaders = shaders }
   where
     creator = do
-        program <- mglCreateProgram
+        program <- glCreateProgram
         for_ shaders $ \shader ->
             withResource (resource shader) $ \(CompiledShader sname) ->
-                mglAttachShader program sname
-        mglLinkProgram program
+                glAttachShader program sname
+        glLinkProgram program
         checkLinkingErrors program
         return $ (Pipeline_ program)
 
-    deleter (Pipeline_ program) = mglDeleteProgram program
+    deleter (Pipeline_ program) = glDeleteProgram program
 
 gget :: Storable a => (Ptr a -> IO ()) -> IO a
 gget action = alloca $ \ptr -> action ptr >> peek ptr
@@ -504,7 +504,8 @@ instance Uniformable Quaternion where
 instance Uniformable Matrix33 where
     setUniform_ program loc m33 =
         withMatrix33Ptr m33 $
-            mglProgramUniformMatrix3fv program loc 1 (fromIntegral gl_FALSE)
+            mglProgramUniformMatrix3fv program loc 1
+                 (fromIntegral gl_FALSE)
 
 instance Uniformable Matrix44 where
     setUniform_ program loc m44 =
@@ -531,11 +532,11 @@ double2CFloat dbl = CFloat $ double2Float dbl
 cdouble2CFloat :: CDouble -> CFloat
 cdouble2CFloat (CDouble dbl) = CFloat $ double2Float dbl
 
-{-# RULES "transpose/mglProgramUniformMatrix3fv" forall (a :: Matrix33) b c.
+{-# RULES "transpose/glProgramUniformMatrix3fv" forall (a :: Matrix33) b c.
         setUniform (transpose33 a) b c =
         setUniform (Transpose33 a) b c #-}
 
-{-# RULES "transpose/mglProgramUniformMatrix4fv" forall (a :: Matrix44) b c.
+{-# RULES "transpose/glProgramUniformMatrix4fv" forall (a :: Matrix44) b c.
         setUniform (transpose44 a) b c =
         setUniform (Transpose44 a) b c #-}
 

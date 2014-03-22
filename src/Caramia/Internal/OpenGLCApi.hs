@@ -2,62 +2,18 @@
 
 module Caramia.Internal.OpenGLCApi
     ( module Graphics.Rendering.OpenGL.Raw.Types
-      -- hand-picked exports
-    , gl_STATIC_DRAW
-    , gl_STATIC_READ
-    , gl_STATIC_COPY
-    , gl_STREAM_DRAW
-    , gl_STREAM_READ
-    , gl_STREAM_COPY
-    , gl_DYNAMIC_DRAW
-    , gl_DYNAMIC_READ
-    , gl_DYNAMIC_COPY
-    , gl_MAP_READ_BIT
-    , gl_MAP_WRITE_BIT
-    , gl_TRUE
-    , gl_FALSE
-    , gl_UNSIGNED_BYTE
-    , gl_BYTE
-    , gl_UNSIGNED_SHORT
-    , gl_SHORT
-    , gl_UNSIGNED_INT
-    , gl_INT
-    , gl_HALF_FLOAT
-    , gl_FLOAT
-    , gl_DOUBLE
-    , gl_LINK_STATUS
-    , gl_COMPILE_STATUS
-    , gl_INFO_LOG_LENGTH
-    , gl_VERTEX_SHADER
-    , gl_FRAGMENT_SHADER
-    , gl_GEOMETRY_SHADER
-      -- the actual exports
-    , mglGenBuffer
+    , module Graphics.Rendering.OpenGL.Raw.Core32
+
+    -- Functions that I made up that I wish were in OpenGL.
     , mglDeleteBuffer
-    , mglNamedBufferData
-    , mglNamedBufferStorage
-    , mglGetVersion
-    , mglInitializeGLEW
-    , mglMapNamedBufferRange
-    , mglUnmapNamedBuffer
-    , mglNamedCopyBufferSubData
-    , mglGenVertexArray
+    , mglGenBuffer
     , mglDeleteVertexArray
-    , mglDeleteProgram
-    , mglCreateProgram
-    , mglGetProgramiv
-    , mglGetProgramInfoLog
-    , mglAttachShader
-    , mglLinkProgram
-    , mglCreateShader
-    , mglDeleteShader
-    , mglShaderSource
-    , mglGetShaderiv
-    , mglGetShaderInfoLog
+    , mglGenVertexArray
+    , mglNamedBufferData
     , mglVertexArrayVertexAttribOffset
     , mglVertexArrayVertexAttribIOffset
-    , mglCompileShader
-
+    -- GL_ARB_separate_shader_objects...but I want them even if that extension
+    -- is not available.
     , mglProgramUniform1ui
     , mglProgramUniform2ui
     , mglProgramUniform3ui
@@ -70,100 +26,211 @@ module Caramia.Internal.OpenGLCApi
     , mglProgramUniform2f
     , mglProgramUniform3f
     , mglProgramUniform4f
-    , mglProgramUniformMatrix3fv
     , mglProgramUniformMatrix4fv
-
-    , has_GL_ARB_buffer_storage
-    , c_initialize_my_glstate_tls
+    , mglProgramUniformMatrix3fv
+    , mglMapNamedBufferRange
+    , mglUnmapNamedBuffer
+    , mglNamedCopyBufferSubData
     )
     where
 
 import Graphics.Rendering.OpenGL.Raw.Types
 import Graphics.Rendering.OpenGL.Raw.Core32
-import Foreign.C.Types
+import Graphics.Rendering.OpenGL.Raw.ARB.SeparateShaderObjects
+import Graphics.Rendering.OpenGL.Raw.EXT.DirectStateAccess
+import Foreign.Marshal.Utils
+import Foreign.Marshal.Alloc
+import Foreign.Storable
 import Foreign.Ptr
+import Foreign.C.Types
+import Control.Applicative
+import Control.Exception
 
-foreign import ccall unsafe mglGenBuffer :: IO GLuint
-foreign import ccall unsafe
-    "has_GL_ARB_buffer_storage" c_has_GL_ARB_buffer_storage :: CInt
+import Caramia.Internal.OpenGLExtensions
 
-foreign import ccall unsafe mglDeleteBuffer :: GLuint -> IO ()
-foreign import ccall unsafe mglNamedBufferData ::
-    GLuint -> GLsizeiptr -> Ptr () -> GLenum -> IO ()
-foreign import ccall unsafe mglNamedBufferStorage ::
-    GLuint -> GLsizeiptr -> Ptr () -> GLbitfield -> IO ()
-foreign import ccall unsafe mglGetVersion :: Ptr CInt -> Ptr CInt -> IO ()
-foreign import ccall unsafe mglInitializeGLEW :: IO ()
-foreign import ccall unsafe mglMapNamedBufferRange ::
-    GLuint -> GLintptr -> GLsizeiptr -> GLenum -> IO (Ptr ())
-foreign import ccall unsafe mglUnmapNamedBuffer ::
-    GLuint -> IO GLboolean
-foreign import ccall unsafe mglNamedCopyBufferSubData ::
-    GLuint -> GLuint -> GLintptr -> GLintptr -> GLsizeiptr -> IO ()
-foreign import ccall unsafe mglGenVertexArray :: IO GLuint
-foreign import ccall unsafe mglDeleteVertexArray :: GLuint -> IO ()
+mglDeleteBuffer :: GLuint -> IO ()
+mglDeleteBuffer x = with x $ \x_ptr -> glDeleteBuffers 1 x_ptr
 
-foreign import ccall unsafe mglVertexArrayVertexAttribIOffset ::
-    GLuint -> GLuint -> GLuint -> GLint -> GLenum -> GLsizei -> GLintptr
-    -> IO ()
-foreign import ccall unsafe mglVertexArrayVertexAttribOffset ::
-    GLuint -> GLuint -> GLuint -> GLint -> GLenum -> GLboolean -> GLsizei
-    -> GLintptr -> IO ()
+mglDeleteVertexArray :: GLuint -> IO ()
+mglDeleteVertexArray x = with x $ \x_ptr -> glDeleteVertexArrays 1 x_ptr
 
-foreign import ccall unsafe mglDeleteProgram :: GLuint -> IO ()
-foreign import ccall unsafe mglCreateProgram :: IO GLuint
-foreign import ccall unsafe mglGetProgramiv ::
-    GLuint -> GLenum -> Ptr GLint -> IO ()
-foreign import ccall unsafe mglGetProgramInfoLog ::
-    GLuint -> GLsizei -> Ptr GLsizei -> Ptr GLchar -> IO ()
-foreign import ccall unsafe mglAttachShader ::
-    GLuint -> GLuint -> IO ()
-foreign import ccall unsafe mglLinkProgram ::
-    GLuint -> IO ()
-foreign import ccall unsafe mglCreateShader ::
-    GLenum -> IO GLuint
-foreign import ccall unsafe mglDeleteShader ::
-    GLuint -> IO ()
-foreign import ccall unsafe mglShaderSource ::
-    GLuint -> GLsizei -> Ptr (Ptr GLchar) -> Ptr GLint -> IO ()
-foreign import ccall unsafe mglCompileShader ::
-    GLuint -> IO ()
-foreign import ccall unsafe mglGetShaderiv ::
-    GLuint -> GLenum -> Ptr GLint -> IO ()
-foreign import ccall unsafe mglGetShaderInfoLog ::
-    GLuint -> GLsizei -> Ptr GLsizei -> Ptr GLchar -> IO ()
+mglGenBuffer :: IO GLuint
+mglGenBuffer = alloca $ \x_ptr -> glGenBuffers 1 x_ptr *> peek x_ptr
 
-foreign import ccall unsafe mglProgramUniform1ui ::
-    GLuint -> GLint -> GLuint -> IO ()
-foreign import ccall unsafe mglProgramUniform2ui ::
-    GLuint -> GLint -> GLuint -> GLuint -> IO ()
-foreign import ccall unsafe mglProgramUniform3ui ::
-    GLuint -> GLint -> GLuint -> GLuint -> GLuint -> IO ()
-foreign import ccall unsafe mglProgramUniform4ui ::
-    GLuint -> GLint -> GLuint -> GLuint -> GLuint -> GLuint -> IO ()
-foreign import ccall unsafe mglProgramUniform1i ::
-    GLuint -> GLint -> GLint -> IO ()
-foreign import ccall unsafe mglProgramUniform2i ::
-    GLuint -> GLint -> GLint -> GLint -> IO ()
-foreign import ccall unsafe mglProgramUniform3i ::
-    GLuint -> GLint -> GLint -> GLint -> GLint -> IO ()
-foreign import ccall unsafe mglProgramUniform4i ::
-    GLuint -> GLint -> GLint -> GLint -> GLint -> GLint -> IO ()
-foreign import ccall unsafe mglProgramUniform1f ::
-    GLuint -> GLint -> GLfloat -> IO ()
-foreign import ccall unsafe mglProgramUniform2f ::
-    GLuint -> GLint -> GLfloat -> GLfloat -> IO ()
-foreign import ccall unsafe mglProgramUniform3f ::
-    GLuint -> GLint -> GLfloat -> GLfloat -> GLfloat -> IO ()
-foreign import ccall unsafe mglProgramUniform4f ::
-    GLuint -> GLint -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> IO ()
-foreign import ccall unsafe mglProgramUniformMatrix3fv ::
-    GLuint -> GLint -> GLsizei -> GLboolean -> Ptr GLfloat -> IO ()
-foreign import ccall unsafe mglProgramUniformMatrix4fv ::
-    GLuint -> GLint -> GLsizei -> GLboolean -> Ptr GLfloat -> IO ()
-foreign import ccall unsafe "initialize_my_glstate_tls"
-    c_initialize_my_glstate_tls :: IO ()
+mglGenVertexArray :: IO GLuint
+mglGenVertexArray = alloca $ \x_ptr -> glGenVertexArrays 1 x_ptr *> peek x_ptr
 
-has_GL_ARB_buffer_storage :: Bool
-has_GL_ARB_buffer_storage = c_has_GL_ARB_buffer_storage == 1
+withBoundProgram :: GLuint -> IO a -> IO a
+withBoundProgram program action = do
+    old <-
+        alloca $ \x_ptr -> glGetIntegerv gl_CURRENT_PROGRAM x_ptr *> peek x_ptr
+    glUseProgram program
+    finally action (glUseProgram $ fromIntegral old)
+
+withBoundBuffer :: GLuint -> IO a -> IO a
+withBoundBuffer buf action = do
+    old <-
+        alloca $ \x_ptr -> glGetIntegerv gl_ARRAY_BUFFER_BINDING x_ptr *>
+                           peek x_ptr
+    glBindBuffer gl_ARRAY_BUFFER buf
+    finally action (glBindBuffer gl_ARRAY_BUFFER $ fromIntegral old)
+
+withBoundElementBuffer :: GLuint -> IO a -> IO a
+withBoundElementBuffer buf action = do
+    old <-
+        alloca $ \x_ptr -> glGetIntegerv gl_ELEMENT_ARRAY_BUFFER_BINDING x_ptr *>
+                           peek x_ptr
+    glBindBuffer gl_ELEMENT_ARRAY_BUFFER buf
+    finally action (glBindBuffer gl_ELEMENT_ARRAY_BUFFER $ fromIntegral old)
+
+withBoundVAO :: GLuint -> IO a -> IO a
+withBoundVAO vao action = do
+    old <-
+        alloca $ \x_ptr -> glGetIntegerv gl_VERTEX_ARRAY_BINDING x_ptr *>
+                           peek x_ptr
+    glBindVertexArray vao
+    finally action (glBindVertexArray $ fromIntegral old)
+
+mglVertexArrayVertexAttribOffset ::
+        GLuint -> GLuint -> GLuint -> GLint -> GLenum
+     -> GLboolean -> GLsizei -> GLintptr -> IO ()
+mglVertexArrayVertexAttribOffset
+    vaobj buffer index size dtype normalized stride (CPtrdiff offset) =
+
+    withBoundVAO vaobj $
+        withBoundBuffer buffer $
+            glVertexAttribPointer index size dtype normalized stride
+                                  (intPtrToPtr $ fromIntegral offset)
+
+mglVertexArrayVertexAttribIOffset ::
+        GLuint -> GLuint -> GLuint -> GLint -> GLenum
+     -> GLsizei -> GLintptr -> IO ()
+mglVertexArrayVertexAttribIOffset
+    vaobj buffer index size dtype stride offset =
+
+    withBoundVAO vaobj $
+        withBoundBuffer buffer $
+            glVertexAttribIPointer index size dtype stride
+                                   (intPtrToPtr $ fromIntegral offset)
+
+mglNamedBufferData :: GLuint
+                   -> GLsizeiptr
+                   -> Ptr ()
+                   -> GLenum
+                   -> IO ()
+mglNamedBufferData buf size ptr usage =
+    whenExt has_GL_EXT_direct_state_access
+        (glNamedBufferData buf size ptr usage)
+        (withBoundBuffer buf $ glBufferData gl_ARRAY_BUFFER size ptr usage)
+
+mglProgramUniform1ui :: GLuint -> GLint -> GLuint -> IO ()
+mglProgramUniform1ui program loc v1 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniform1ui program loc v1)
+          (withBoundProgram program $ glUniform1ui loc v1)
+
+mglProgramUniform2ui :: GLuint -> GLint -> GLuint -> GLuint -> IO ()
+mglProgramUniform2ui program loc v1 v2 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniform2ui program loc v1 v2)
+          (withBoundProgram program $ glUniform2ui loc v1 v2)
+
+mglProgramUniform3ui :: GLuint -> GLint -> GLuint -> GLuint -> GLuint -> IO ()
+mglProgramUniform3ui program loc v1 v2 v3 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniform3ui program loc v1 v2 v3)
+          (withBoundProgram program $ glUniform3ui loc v1 v2 v3)
+
+mglProgramUniform4ui :: GLuint -> GLint -> GLuint -> GLuint -> GLuint
+                     -> GLuint -> IO ()
+mglProgramUniform4ui program loc v1 v2 v3 v4 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniform4ui program loc v1 v2 v3 v4)
+          (withBoundProgram program $ glUniform4ui loc v1 v2 v3 v4)
+
+mglProgramUniform1i :: GLuint -> GLint -> GLint -> IO ()
+mglProgramUniform1i program loc v1 =
+    whenExt has_GL_ARB_separate_shader_objects (glProgramUniform1i program loc v1)
+          (withBoundProgram program $ glUniform1i loc v1)
+
+mglProgramUniform2i :: GLuint -> GLint -> GLint -> GLint -> IO ()
+mglProgramUniform2i program loc v1 v2 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniform2i program loc v1 v2)
+          (withBoundProgram program $ glUniform2i loc v1 v2)
+
+mglProgramUniform3i :: GLuint -> GLint -> GLint -> GLint -> GLint -> IO ()
+mglProgramUniform3i program loc v1 v2 v3 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniform3i program loc v1 v2 v3)
+          (withBoundProgram program $ glUniform3i loc v1 v2 v3)
+
+mglProgramUniform4i :: GLuint -> GLint -> GLint -> GLint -> GLint
+                     -> GLint -> IO ()
+mglProgramUniform4i program loc v1 v2 v3 v4 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniform4i program loc v1 v2 v3 v4)
+          (withBoundProgram program $ glUniform4i loc v1 v2 v3 v4)
+
+mglProgramUniform1f :: GLuint -> GLint -> GLfloat -> IO ()
+mglProgramUniform1f program loc v1 =
+    whenExt has_GL_ARB_separate_shader_objects
+        (glProgramUniform1f program loc v1)
+        (withBoundProgram program $ glUniform1f loc v1)
+
+mglProgramUniform2f :: GLuint -> GLint -> GLfloat -> GLfloat -> IO ()
+mglProgramUniform2f program loc v1 v2 =
+    whenExt has_GL_ARB_separate_shader_objects
+        (glProgramUniform2f program loc v1 v2)
+        (withBoundProgram program $ glUniform2f loc v1 v2)
+
+mglProgramUniform3f :: GLuint -> GLint -> GLfloat -> GLfloat -> GLfloat -> IO ()
+mglProgramUniform3f program loc v1 v2 v3 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniform3f program loc v1 v2 v3)
+          (withBoundProgram program $ glUniform3f loc v1 v2 v3)
+
+mglProgramUniform4f :: GLuint -> GLint
+                    -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> IO ()
+mglProgramUniform4f program loc v1 v2 v3 v4 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniform4f program loc v1 v2 v3 v4)
+          (withBoundProgram program $ glUniform4f loc v1 v2 v3 v4)
+
+mglProgramUniformMatrix4fv :: GLuint -> GLint
+                           -> GLsizei -> GLboolean -> Ptr GLfloat -> IO ()
+mglProgramUniformMatrix4fv program loc count transpose m44 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniformMatrix4fv program loc count transpose m44)
+          (withBoundProgram program $
+              glUniformMatrix4fv loc count transpose m44)
+
+mglProgramUniformMatrix3fv :: GLuint -> GLint
+                           -> GLsizei -> GLboolean -> Ptr GLfloat -> IO ()
+mglProgramUniformMatrix3fv program loc count transpose m33 =
+    whenExt has_GL_ARB_separate_shader_objects
+          (glProgramUniformMatrix3fv program loc count transpose m33)
+          (withBoundProgram program $
+              glUniformMatrix3fv loc count transpose m33)
+
+mglMapNamedBufferRange :: GLuint -> GLintptr
+                       -> GLsizeiptr -> GLbitfield -> IO (Ptr ())
+mglMapNamedBufferRange buffer offset length access =
+    withBoundBuffer buffer $
+        glMapBufferRange gl_ARRAY_BUFFER offset length access
+
+mglUnmapNamedBuffer :: GLuint -> IO GLboolean
+mglUnmapNamedBuffer buffer =
+    withBoundBuffer buffer $ glUnmapBuffer gl_ARRAY_BUFFER
+
+mglNamedCopyBufferSubData :: GLuint -> GLuint
+                          -> GLintptr -> GLintptr -> GLsizeiptr -> IO ()
+mglNamedCopyBufferSubData src dst src_offset dst_offset num_bytes =
+    withBoundElementBuffer src $
+        withBoundBuffer dst $
+            glCopyBufferSubData gl_ELEMENT_ARRAY_BUFFER
+                                gl_ARRAY_BUFFER
+                                src_offset
+                                dst_offset
+                                num_bytes
 

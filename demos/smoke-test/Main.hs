@@ -26,6 +26,7 @@ program =
         _ <- glSetAttribute glAttrContextMajorVersion 3
         _ <- glSetAttribute glAttrContextMinorVersion 2
         _ <- glSetAttribute glAttrContextProfileMask glProfileCore
+        _ <- glSetAttribute glAttrContextFlags glContextFlagDebug
         window <- createWindow cstr windowPosUndefined windowPosUndefined
                                     500 500
                                     (windowFlagOpenGL .|.
