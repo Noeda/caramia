@@ -57,10 +57,13 @@ library
                        Caramia.VAO
                        Caramia.Shader
                        Caramia.Math
+                       Caramia.Render
   other-modules:       Caramia.Internal.Safe
                        Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions
+                       Caramia.Shader.Internal
                        Caramia.Buffer.Internal
+                       Caramia.VAO.Internal
   c-sources:           src/c/gl_api.c
 
   ghc-options:         -Wall -fno-warn-name-shadowing

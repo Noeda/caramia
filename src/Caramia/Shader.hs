@@ -41,6 +41,8 @@ module Caramia.Shader
     )
     where
 
+import Caramia.Shader.Internal
+
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
 import Caramia.Internal.Safe
@@ -62,52 +64,13 @@ import Data.Int
 import Data.Word
 import Data.Foldable
 import Data.List ( nub )
-import System.IO.Unsafe ( unsafePerformIO )
 import qualified Data.ByteString as B
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Foreign as T
 
--- | A shader object for a specific shader stage.
---
--- OpenGL equivalent is the shader object.
-data Shader = Shader
-    { resource     :: !(Resource Shader_)
-    , viewStage    :: !ShaderStage
-    -- ^ Which stage does this shader belong to.
-    , identifier   :: !Int
-    }
-
--- | A pipeline object that references a collection of shaders.
---
--- OpenGL equivalent is the shader program object.
-data Pipeline = Pipeline
-    { resourcePL :: !(Resource (Pipeline_))
-    , shaders :: [Shader] }
-
 type UniformLocation = Int
 
-newtype Pipeline_ = Pipeline_ GLuint
-
-instance Eq Shader where
-    (resource -> res1) == (resource -> res2) = res1 == res2
-
--- | The ordering has no inherent meaning but it allows shaders to be stored
--- correctly in containers that have `Ord` constraint.
-instance Ord Shader where
-    (identifier -> id1) `compare` (identifier -> id2) = id1 `compare` id2
-
-shaderIdentifierSupply :: IORef Int
-shaderIdentifierSupply = unsafePerformIO $ newIORef 0
-{-# NOINLINE shaderIdentifierSupply #-}
-
-data Shader_ = CompiledShader !GLuint   -- OpenGL shader
-
-data ShaderStage =
-    Vertex
-  | Fragment
-  | Geometry
-  deriving ( Eq, Ord, Show, Read )
 -- TODO: add tesselation shaders
 
 toConstant :: ShaderStage -> GLenum

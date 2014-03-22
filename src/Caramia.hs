@@ -5,7 +5,8 @@ module Caramia
     , module Caramia.Context
     , module Caramia.Buffer
     , module Caramia.VAO
-    , module Caramia.Shader )
+    , module Caramia.Shader
+    , module Caramia.Render )
     where
 
 import Caramia.Resource
@@ -13,4 +14,5 @@ import Caramia.Context
 import Caramia.Buffer
 import Caramia.VAO
 import Caramia.Shader
+import Caramia.Render
 

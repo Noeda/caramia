@@ -162,6 +162,8 @@ scrapContext = mask_ $ do
 -- `runPendingFinalizers` itself runs `mask_` to run the finalizers with
 -- exceptions masked but you might still receive asynchronous exceptions with,
 -- for example, the `MVar` functions.
+--
+-- A good place to call this is right after or before swapping buffers.
 runPendingFinalizers :: IO ()
 runPendingFinalizers = mask_ $ do
     maybe_cid <- currentContextID

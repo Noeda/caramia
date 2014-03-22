@@ -21,6 +21,7 @@ module Caramia.VAO
     , sourceTypeSize )
     where
 
+import Caramia.VAO.Internal
 import Caramia.Resource
 import qualified Caramia.Buffer.Internal as Buf
 import Caramia.Internal.OpenGLCApi
@@ -34,16 +35,6 @@ import Data.List ( find )
 import Control.Exception
 import Control.Monad
 import Control.Applicative
-
--- | The vertex array object data type.
-data VAO = VAO
-    { resource :: !(Resource VAO_)
-    , boundBuffers :: !(IORef [Buf.Buffer]) }
-
-instance Eq VAO where
-    (resource -> res1) == (resource -> res2) = res1 == res2
-
-newtype VAO_ = VAO_ GLuint
 
 -- | Creates a vertex array object.
 --

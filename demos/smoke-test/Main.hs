@@ -86,6 +86,22 @@ program =
                                   , normalize = True
                                   , integerMapping = False })
                                  vao
+                draw DrawCommand {
+                     primitiveType = LineLoop
+                   , primitivesVAO = vao2
+                   , numIndices = 8
+                   , pipeline = pipeline
+                   , sourceData = PrimitivesWithIndices {
+                       indexBuffer = buf
+                     , indexOffset = 17
+                     , indexType = IWord16 } }
+                draw DrawCommand {
+                     primitiveType = LineLoop
+                   , primitivesVAO = vao2
+                   , pipeline = pipeline
+                   , numIndices = 8
+                   , sourceData = Primitives {
+                       firstIndex = 3 } }
 
             performGC
             runPendingFinalizers

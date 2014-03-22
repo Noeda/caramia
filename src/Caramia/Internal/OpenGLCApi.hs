@@ -4,6 +4,11 @@ module Caramia.Internal.OpenGLCApi
     ( module Graphics.Rendering.OpenGL.Raw.Types
     , module Graphics.Rendering.OpenGL.Raw.Core32
 
+    , withBoundVAO
+    , withBoundBuffer
+    , withBoundElementBuffer
+    , withBoundProgram
+
     -- Functions that I made up that I wish were in OpenGL.
     , mglDeleteBuffer
     , mglGenBuffer
@@ -64,38 +69,38 @@ withBoundProgram :: GLuint -> IO a -> IO a
 withBoundProgram program action = do
     old <-
         alloca $ \x_ptr -> glGetIntegerv gl_CURRENT_PROGRAM x_ptr *> peek x_ptr
-    glUseProgram program
-    finally action (glUseProgram $ fromIntegral old)
+    finally (glUseProgram program *> action)
+            (glUseProgram $ fromIntegral old)
 
 withBoundBuffer :: GLuint -> IO a -> IO a
 withBoundBuffer buf action = do
     old <-
         alloca $ \x_ptr -> glGetIntegerv gl_ARRAY_BUFFER_BINDING x_ptr *>
                            peek x_ptr
-    glBindBuffer gl_ARRAY_BUFFER buf
-    finally action (glBindBuffer gl_ARRAY_BUFFER $ fromIntegral old)
+    finally (glBindBuffer gl_ARRAY_BUFFER buf *> action)
+            (glBindBuffer gl_ARRAY_BUFFER $ fromIntegral old)
 
 withBoundElementBuffer :: GLuint -> IO a -> IO a
 withBoundElementBuffer buf action = do
     old <-
         alloca $ \x_ptr -> glGetIntegerv gl_ELEMENT_ARRAY_BUFFER_BINDING x_ptr *>
                            peek x_ptr
-    glBindBuffer gl_ELEMENT_ARRAY_BUFFER buf
-    finally action (glBindBuffer gl_ELEMENT_ARRAY_BUFFER $ fromIntegral old)
+    finally (glBindBuffer gl_ELEMENT_ARRAY_BUFFER buf *> action)
+            (glBindBuffer gl_ELEMENT_ARRAY_BUFFER $ fromIntegral old)
 
 withBoundVAO :: GLuint -> IO a -> IO a
 withBoundVAO vao action = do
     old <-
         alloca $ \x_ptr -> glGetIntegerv gl_VERTEX_ARRAY_BINDING x_ptr *>
                            peek x_ptr
-    glBindVertexArray vao
-    finally action (glBindVertexArray $ fromIntegral old)
+    finally (glBindVertexArray vao *> action)
+            (glBindVertexArray $ fromIntegral old)
 
 mglVertexArrayVertexAttribOffsetAndEnable ::
         GLuint -> GLuint -> GLuint -> GLint -> GLenum
      -> GLboolean -> GLsizei -> GLintptr -> IO ()
 mglVertexArrayVertexAttribOffsetAndEnable
-    vaobj buffer index size dtype normalized stride (CPtrdiff offset) =
+    vaobj buffer index size dtype normalized stride (CPtrdiff offset) = mask_ $
 
     withBoundVAO vaobj $
         withBoundBuffer buffer $ do
@@ -107,7 +112,7 @@ mglVertexArrayVertexAttribIOffsetAndEnable ::
         GLuint -> GLuint -> GLuint -> GLint -> GLenum
      -> GLsizei -> GLintptr -> IO ()
 mglVertexArrayVertexAttribIOffsetAndEnable
-    vaobj buffer index size dtype stride offset =
+    vaobj buffer index size dtype stride offset = mask_ $
 
     withBoundVAO vaobj $
         withBoundBuffer buffer $ do
