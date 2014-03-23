@@ -167,7 +167,7 @@ data Sourcing = Sourcing
     -- converted to floating point. If this is set, then `normalize` is ignored
     -- and not evalutated.
     , instancingDivisor :: Int
-    -- ^ When doing instanced rendering (`Caramia.Render.numInstances > 1`),
+    -- ^ When doing instanced rendering (`Caramia.Render.numInstances` > 1),
     -- this value tells how many instances must be rendered before the
     -- attribute from this source advances.
     --
