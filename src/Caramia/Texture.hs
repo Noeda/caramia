@@ -7,6 +7,7 @@ module Caramia.Texture
     (
     -- * Creating textures
       newTexture
+    , Texture()
     , TextureSpecification(..)
     , textureSpecification
     , Topology(..) )
