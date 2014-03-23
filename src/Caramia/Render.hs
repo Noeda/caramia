@@ -9,6 +9,7 @@ module Caramia.Render
       draw
     -- * Specifying what to draw
     , DrawCommand(..)
+    , drawCommand
     , SourceData(..)
     , IndexType(..)
     , Primitive(..)
@@ -91,6 +92,8 @@ instance IndexTypeable CUChar where
     toIndexType _ = IWord8
 
 -- | Contains a specification of what to draw.
+--
+-- It is recommended to use `drawCommand` instead of this constructor.
 data DrawCommand = DrawCommand
     { primitiveType :: Primitive
     , primitivesVAO :: VAO.VAO    -- ^ This is the VAO from which attributes
@@ -98,22 +101,49 @@ data DrawCommand = DrawCommand
     , numIndices    :: Int        -- ^ How many indices to render?
     , pipeline      :: Shader.Pipeline
                                   -- ^ Which shader pipeline to use.
+    , numInstances  :: Int        -- ^ How many instances to render.
     , sourceData    :: SourceData
     -- ^ How to select the attribute data from `primitivesVAO`.
     }
 
+-- | Returns a default draw command.
+--
+-- Several fields are undefined so you must set them. These are
+--
+-- * `primitiveType`
+-- * `primitivesVAO`
+-- * `numIndices`
+-- * `pipeline`
+-- * `sourceData`
+--
+-- `numInstances` is set to 1. In future versions if we add any new fields
+-- those fields will have a sane default value.
+drawCommand :: DrawCommand
+drawCommand = DrawCommand
+    { primitiveType = error "drawCommand: primitiveType is not set."
+    , primitivesVAO = error "drawCommand: primitivesVAO is not set."
+    , numIndices    = error "drawCommand: numIndices is not set."
+    , pipeline      = error "drawCommand: pipeline is not set."
+    , sourceData    = error "drawCommand: sourceData is not set."
+    , numInstances  = 1 }
+{-# INLINE drawCommand #-}
+
 -- | Values of this type tell how to select attribute data from
 -- `primitivesVAO`.
+--
+-- Future minor versions will not add any new fields or remove any fields from
+-- these values. Instead, new constructors are introduced.
 data SourceData =
     -- | Simply start from some index and continue from there, 0, 1, 2, etc.
     --
-    -- OpenGL equivalent is @ glDrawArrays() @.
+    -- OpenGL equivalent is @ glDrawArrays() @ or @ glDrawArraysInstanced() @.
     Primitives
     { firstIndex :: Int }
     -- | Use an index buffer.
     --
-    -- OpenGL equivalent is @ glDrawElements() @. Index buffer contains indices
-    -- that point to offsets in the vertex arrays.
+    -- OpenGL equivalent is @ glDrawElements() @ or @ glDrawElementsInstanced()
+    -- @. Index buffer contains indices that point to offsets in the vertex
+    -- arrays.
   | PrimitivesWithIndices
     { indexBuffer :: Buffer
     , indexOffset :: Int
@@ -128,18 +158,22 @@ draw (DrawCommand {..})
         withBoundVAO vao_name $
             case sourceData of
                 Primitives {..} -> do
-                    glDrawArrays (toConstant primitiveType)
-                                 (safeFromIntegral firstIndex)
-                                 (safeFromIntegral numIndices)
+                    glDrawArraysInstanced
+                         (toConstant primitiveType)
+                         (safeFromIntegral firstIndex)
+                         (safeFromIntegral numIndices)
+                         (safeFromIntegral numInstances)
                 PrimitivesWithIndices {..} -> do
                     withResource (resource indexBuffer) $
                             \(Buffer_ buf_name) ->
                         withBoundElementBuffer buf_name $
-                            glDrawElements (toConstant primitiveType)
-                                           (safeFromIntegral numIndices)
-                                           (toConstantIT indexType)
-                                           (intPtrToPtr $
-                                            fromIntegral indexOffset)
+                            glDrawElementsInstanced
+                                   (toConstant primitiveType)
+                                   (safeFromIntegral numIndices)
+                                   (toConstantIT indexType)
+                                   (intPtrToPtr $
+                                    fromIntegral indexOffset)
+                                   (safeFromIntegral numInstances)
 -- inline `draw` because it's probably quite common to directly construct
 -- `DrawCommand` right there, so we can avoid all sorts of boxing and checking
 -- that happens.

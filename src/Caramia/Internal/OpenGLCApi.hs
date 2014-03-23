@@ -3,6 +3,7 @@
 module Caramia.Internal.OpenGLCApi
     ( module Graphics.Rendering.OpenGL.Raw.Types
     , module Graphics.Rendering.OpenGL.Raw.Core32
+    , module Graphics.Rendering.OpenGL.Raw.ARB.InstancedArrays
 
     , withBoundVAO
     , withBoundBuffer
@@ -42,6 +43,7 @@ module Caramia.Internal.OpenGLCApi
 import Graphics.Rendering.OpenGL.Raw.Types
 import Graphics.Rendering.OpenGL.Raw.Core32
 import Graphics.Rendering.OpenGL.Raw.ARB.SeparateShaderObjects
+import Graphics.Rendering.OpenGL.Raw.ARB.InstancedArrays
 import Graphics.Rendering.OpenGL.Raw.EXT.DirectStateAccess
 import Foreign.Marshal.Utils
 import Foreign.Marshal.Alloc

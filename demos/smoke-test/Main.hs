@@ -82,24 +82,27 @@ program =
                                   { offset = 123
                                   , components = 3
                                   , stride = 19
+                                  , instancingDivisor = 19
                                   , attributeIndex = 3
                                   , normalize = True
                                   , integerMapping = False })
                                  vao
-                draw DrawCommand {
+                draw drawCommand {
                      primitiveType = LineLoop
                    , primitivesVAO = vao2
                    , numIndices = 8
+                   , numInstances = 213
                    , pipeline = pipeline
                    , sourceData = PrimitivesWithIndices {
                        indexBuffer = buf
                      , indexOffset = 17
                      , indexType = IWord16 } }
-                draw DrawCommand {
+                draw drawCommand {
                      primitiveType = LineLoop
                    , primitivesVAO = vao2
                    , pipeline = pipeline
                    , numIndices = 8
+                   , numInstances = 999
                    , sourceData = Primitives {
                        firstIndex = 3 } }
 

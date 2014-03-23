@@ -166,6 +166,15 @@ data Sourcing = Sourcing
     -- ^ Don't convert integers to floats in any way. Normally integers are
     -- converted to floating point. If this is set, then `normalize` is ignored
     -- and not evalutated.
+    , instancingDivisor :: Int
+    -- ^ When doing instanced rendering (`Caramia.Render.numInstances > 1`),
+    -- this value tells how many instances must be rendered before the
+    -- attribute from this source advances.
+    --
+    -- If zero (the default) then the attribute is advanced after every vertex.
+    --
+    -- You can look up @ glVertexAttribDivisor @ from OpenGL to find more
+    -- information about this.
     , sourceType :: SourceType
     -- ^ The data type of values in the buffer. It tells the type of a single
     -- component.
@@ -185,6 +194,7 @@ defaultSourcing = Sourcing
     , components =
         error "defaultSourcing: number of components is not set."
     , stride = 0
+    , instancingDivisor = 0
     , attributeIndex =
         error "defaultSourcing: attribute index is not set."
     , integerMapping =
@@ -218,9 +228,15 @@ sourceVertexData buffer sourcing vao = mask_ $
     withResource (resource vao) $ \(VAO_ name) -> do
         withResource (Buf.resource buffer) $ \(Buf.Buffer_ bufname) -> do
             errorChecking
+
             if isIntegerType stype && integerMapping sourcing
               then doIntegerMapping name bufname
               else doOrdinaryMapping name bufname
+
+            glVertexAttribDivisor
+                (safeFromIntegral $ attributeIndex sourcing)
+                (safeFromIntegral $ instancingDivisor sourcing)
+
             atomicModifyIORef' (boundBuffers vao) $ \old ->
                 ( addIfNotUnique buffer old, () )
   where
