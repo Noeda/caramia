@@ -6,7 +6,9 @@ module Caramia
     , module Caramia.Buffer
     , module Caramia.VAO
     , module Caramia.Shader
-    , module Caramia.Render )
+    , module Caramia.Render
+    , module Caramia.ImageFormats
+    , module Caramia.Texture )
     where
 
 import Caramia.Resource
@@ -15,4 +17,6 @@ import Caramia.Buffer
 import Caramia.VAO
 import Caramia.Shader
 import Caramia.Render
+import Caramia.ImageFormats
+import Caramia.Texture
 

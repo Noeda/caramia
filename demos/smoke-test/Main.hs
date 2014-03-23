@@ -66,6 +66,12 @@ program =
                            loc
                            pipeline
 
+                tex <- newTexture
+                    textureSpecification
+                    { topology = TexCube { widthCube = 299 }
+                    , mipmapLevels = 19
+                    , imageFormat = SRGB8_ALPHA8 }
+
                 -- Make some stupid VAOs
                 vao <- newVAO
                 vao2 <- newVAO

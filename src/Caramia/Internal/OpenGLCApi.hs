@@ -4,11 +4,19 @@ module Caramia.Internal.OpenGLCApi
     ( module Graphics.Rendering.OpenGL.Raw.Types
     , module Graphics.Rendering.OpenGL.Raw.Core32
     , module Graphics.Rendering.OpenGL.Raw.ARB.InstancedArrays
+    , module Graphics.Rendering.OpenGL.Raw.ARB.TextureMultisample
+    , module Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3tc
+    , module Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB
 
     , withBoundVAO
     , withBoundBuffer
     , withBoundElementBuffer
     , withBoundProgram
+
+    -- These are not yet in OpenGLRaw
+    , glTexStorage1D
+    , glTexStorage2D
+    , glTexStorage3D
 
     -- Functions that I made up that I wish were in OpenGL.
     , mglDeleteBuffer
@@ -44,7 +52,11 @@ import Graphics.Rendering.OpenGL.Raw.Types
 import Graphics.Rendering.OpenGL.Raw.Core32
 import Graphics.Rendering.OpenGL.Raw.ARB.SeparateShaderObjects
 import Graphics.Rendering.OpenGL.Raw.ARB.InstancedArrays
+import Graphics.Rendering.OpenGL.Raw.ARB.TextureMultisample
 import Graphics.Rendering.OpenGL.Raw.EXT.DirectStateAccess
+import Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3tc
+import Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB
+import Graphics.Rendering.OpenGL.Raw.GetProcAddress
 import Foreign.Marshal.Utils
 import Foreign.Marshal.Alloc
 import Foreign.Storable
@@ -52,6 +64,7 @@ import Foreign.Ptr
 import Foreign.C.Types
 import Control.Applicative
 import Control.Exception
+import System.IO.Unsafe
 
 import Caramia.Internal.OpenGLExtensions
 
@@ -242,4 +255,31 @@ mglNamedCopyBufferSubData src dst src_offset dst_offset num_bytes =
                                 src_offset
                                 dst_offset
                                 num_bytes
+
+type TexStorage1DF = GLenum -> GLsizei -> GLenum -> GLsizei -> IO ()
+type TexStorage2DF = GLenum -> GLsizei -> GLenum -> GLsizei -> GLsizei -> IO ()
+type TexStorage3DF = GLenum -> GLsizei -> GLenum
+                  -> GLsizei -> GLsizei -> GLsizei -> IO ()
+
+foreign import ccall unsafe "dynamic"
+    glTexStorage1D_funptr :: FunPtr TexStorage1DF -> TexStorage1DF
+foreign import ccall unsafe "dynamic"
+    glTexStorage2D_funptr :: FunPtr TexStorage2DF -> TexStorage2DF
+foreign import ccall unsafe "dynamic"
+    glTexStorage3D_funptr :: FunPtr TexStorage3DF -> TexStorage3DF
+
+glTexStorage1D :: TexStorage1DF
+glTexStorage1D = unsafePerformIO $
+    glTexStorage1D_funptr <$> getProcAddress "glTexStorage1D"
+{-# NOINLINE glTexStorage1D #-}
+
+glTexStorage2D :: TexStorage2DF
+glTexStorage2D = unsafePerformIO $
+    glTexStorage2D_funptr <$> getProcAddress "glTexStorage2D"
+{-# NOINLINE glTexStorage2D #-}
+
+glTexStorage3D :: TexStorage3DF
+glTexStorage3D = unsafePerformIO $
+    glTexStorage3D_funptr <$> getProcAddress "glTexStorage3D"
+{-# NOINLINE glTexStorage3D #-}
 

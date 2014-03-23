@@ -57,10 +57,13 @@ library
                        Caramia.VAO
                        Caramia.Shader
                        Caramia.Math
+                       Caramia.ImageFormats
                        Caramia.Render
+                       Caramia.Texture
   other-modules:       Caramia.Internal.Safe
                        Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions
+                       Caramia.ImageFormats.Internal
                        Caramia.Shader.Internal
                        Caramia.Buffer.Internal
                        Caramia.VAO.Internal
