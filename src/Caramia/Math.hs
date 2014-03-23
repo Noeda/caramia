@@ -215,7 +215,7 @@ _z = lens z (\old_vec new_z -> old_vec { z = new_z })
 
 -- | A quaternion. It's composed of four values, `qx`, `qy`, `qz` and `qw`.
 --
--- In the context of Ran, quaternions are used exclusively to represent
+-- In the context of Caramia, quaternions are used exclusively to represent
 -- rotations.
 data Quaternion = Quaternion { qx :: {-# UNPACK #-} !Float
                              , qy :: {-# UNPACK #-} !Float
@@ -583,7 +583,7 @@ matrix44ToMatrix33 !mat = {-# SCC "matrix44ToMatrix33" #-}
 -- during the given IO action.
 --
 -- The pointer points to an array of 16 floating point values. See
--- "Ran.Math#storable" for a description in which order the values appear.
+-- "Caramia.Math#storable" for a description in which order the values appear.
 withMatrix44Ptr :: Matrix44                -- ^ The matrix to marshal.
                -> (Ptr CFloat -> IO a)   -- ^ An IO action that receives a
                                          --   pointer to floating point values
@@ -1611,7 +1611,7 @@ pad wanted_len str
 -- | Returns a \"pretty\" string that represents a 4x4 matrix.
 --
 -- This could be useful for debugging (and has been used as such in the
--- development of Ran). The default `Show` instance for `Matrix44` is
+-- development of Caramia). The default `Show` instance for `Matrix44` is
 -- machine-readable but annoying for humans to read. This function returns a
 -- somewhat more human-readable string that you can display.
 --

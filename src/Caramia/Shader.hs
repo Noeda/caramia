@@ -228,7 +228,7 @@ gget action = alloca $ \ptr -> action ptr >> peek ptr
 
 -- | Class of data types that can be set to a uniform in a shader pipeline.
 --
--- We provide typeclasses for large integer values (such as `Integer`) but you
+-- We provide instances for large integer values (such as `Integer`) but you
 -- should know that uniforms are rarely larger than 32-bit. We throw a user
 -- error if you pass a value that is larger than what the OpenGL API can accept
 -- (which is 2^32-1 for unsigned integer types and 2^31-1 for signed integer
