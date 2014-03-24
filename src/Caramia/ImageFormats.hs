@@ -7,10 +7,10 @@ module Caramia.ImageFormats
     , isSRGBFormat
     , hasDepthComponent
     , hasStencilComponent
-    -- * Specification formats
-    , SpecificationFormat(..)
-    , sizeOfSpecificationFormat
-    , SpecificationFormattable(..) )
+    -- * Specification types
+    , SpecificationType(..)
+    , sizeOfSpecificationType
+    , SpecificationTypeable(..) )
     where
 
 import Caramia.ImageFormats.Internal

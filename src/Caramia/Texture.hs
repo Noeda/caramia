@@ -10,11 +10,20 @@ module Caramia.Texture
     , Texture()
     , TextureSpecification(..)
     , textureSpecification
-    , Topology(..) )
+    , Topology(..)
+    -- * Uploading to textures
+    , uploadToTexture
+    , Uploading(..)
+    , uploading1D
+    , uploading2D
+    , uploading3D
+    , UploadFormat(..)
+    , CubeSide(..) )
     where
 
 import Caramia.Internal.OpenGLCApi
 import Caramia.Internal.Safe
+import qualified Caramia.Buffer.Internal as Buf
 import Caramia.ImageFormats.Internal
 import Caramia.Resource
 import Data.Typeable
@@ -256,6 +265,278 @@ withBinding tex tex_binding tex_name action = do
 gi :: GLenum -> IO GLuint
 gi x = alloca $ \get_ptr -> glGetIntegerv x (castPtr get_ptr) *>
                             peek get_ptr
+
+-- | Specifies the format in which buffer data is for the purposes of uploading
+-- said data to a texture.
+data UploadFormat =
+    UR    -- ^ Just red.
+  | URG   -- ^ Red and green.
+  | URGB  -- ^ You know the drill.
+  | URGBA
+  | UBGR
+  | UBGRA
+  | UDEPTH_COMPONENT   -- ^ Depth values.
+  | USTENCIL_INDEX     -- ^ Stencil values.
+  deriving ( Eq, Ord, Show, Read, Typeable )
+
+-- TODO: add UDEPTH_STENCIL when `SpecificationType` has special interpretation
+-- formats.
+
+toConstantUF :: UploadFormat -> GLenum
+toConstantUF UR = gl_RED
+toConstantUF URG = gl_RG
+toConstantUF URGB = gl_RGB
+toConstantUF URGBA = gl_RGBA
+toConstantUF UBGR = gl_BGR
+toConstantUF UBGRA = gl_BGRA
+toConstantUF UDEPTH_COMPONENT = gl_DEPTH_COMPONENT
+toConstantUF USTENCIL_INDEX = gl_STENCIL_INDEX
+
+-- | Used to specify how to move the data from a `Buffer` to a `Texture` in
+-- `uploadToTexture`.
+--
+-- This is common for all texture topologies. However, some fields are ignored
+-- depending on the topology.
+--
+-- For example, if you upload into a 1D texture, then all fields that deal with
+-- higher dimensions (`yOffset`, `zOffset`, `uHeight` etc.) are ignored.
+--
+-- It is recommended that you use one of the smart constructors as they
+-- implement the common use cases so you don't have to fill all these fields by
+-- yourself.
+data Uploading = Uploading
+    { fromBuffer    :: !Buf.Buffer  -- ^ From which buffer to upload.
+    , bufferOffset  :: !Int     -- ^ Offset in the buffer, in bytes,
+                                --   from where to start uploading.
+    , toMipmapLevel :: !Int     -- ^ To which mipmap level to upload.
+                                --   (0 = base level).
+    , specificationType :: !SpecificationType
+    -- ^ What data type is used for each component value in a pixel.
+    , uploadFormat  :: !UploadFormat
+    -- ^ What format is the source data in.
+    , xOffset       :: !Int     -- ^ X offset where to put the data.
+    , yOffset       :: !Int     -- ^ Y offset where to put the data.
+    , zOffset       :: !Int     -- ^ Z offset where to put the data.
+    , uWidth        :: !Int     -- ^ Width of the data to put.
+    , uHeight       :: !Int     -- ^ Height of the data to put.
+    , uDepth        :: !Int     -- ^ Number of 2D images to put.
+    , cubeSide      :: CubeSide  -- ^ Only used for cube map textures.
+                                 -- Specifies which side of the cube to upload.
+                                 -- Not evaluated if the texture is not a cube
+                                 -- texture.
+    , numColumns    :: !Int
+    -- ^ Number of columns in the image in the source buffer. This value is
+    -- also sometimes known as \'pitch\'. It is the same as `uWidth` except in
+    -- cases where the next row in source data does not come immediately after
+    -- the current row but after `numColumns` from the first pixel in the row.
+    , numRows       :: !Int
+    -- ^ Same as `numColumns` but for images in 3D uploading.
+    , pixelAlignment     :: !Int
+    -- ^ Alignment in which the source texture data is. Every row is aligned to
+    -- this value. Allowed values are 1, 2, 4 and 8. The default value in smart
+    -- constructors is 1.
+    }
+    deriving ( Eq, Typeable )
+
+-- | Values of this type refer to sides of a cube.
+data CubeSide =
+    PositiveY
+  | NegativeY
+  | PositiveX
+  | NegativeX
+  | PositiveZ
+  | NegativeZ
+    deriving ( Eq, Ord, Show, Read, Typeable )
+
+toConstantCS :: CubeSide -> GLenum
+toConstantCS PositiveX = gl_TEXTURE_CUBE_MAP_POSITIVE_X
+toConstantCS NegativeX = gl_TEXTURE_CUBE_MAP_NEGATIVE_X
+toConstantCS PositiveY = gl_TEXTURE_CUBE_MAP_POSITIVE_Y
+toConstantCS NegativeY = gl_TEXTURE_CUBE_MAP_NEGATIVE_Y
+toConstantCS PositiveZ = gl_TEXTURE_CUBE_MAP_POSITIVE_Z
+toConstantCS NegativeZ = gl_TEXTURE_CUBE_MAP_NEGATIVE_Z
+
+-- | Constructs a common 1D uploading.
+uploading1D :: Buf.Buffer
+            -> Int     -- ^ How many pixels to upload.
+            -> SpecificationType
+            -> UploadFormat
+            -> Uploading
+uploading1D buffer pixels stype uf =
+    Uploading {
+         fromBuffer = buffer
+       , bufferOffset = 0
+       , specificationType = stype
+       , uploadFormat = uf
+       , toMipmapLevel = 0
+       , xOffset = 0
+       , yOffset = 0
+       , zOffset = 0
+       , uWidth = pixels
+       , uHeight = 1
+       , uDepth = 1
+       , numColumns = pixels
+       , cubeSide = PositiveY
+       , numRows = 1
+       , pixelAlignment = 1 }
+
+-- | Constructs a common 2D uploading.
+--
+-- This can also be used for uploading into 1D texture arrays.
+uploading2D :: Buf.Buffer
+            -> Int     -- ^ Width of the image to upload.
+            -> Int     -- ^ Height of the image to upload.
+            -> SpecificationType
+            -> UploadFormat
+            -> Uploading
+uploading2D buffer width height stype uf =
+    Uploading {
+         fromBuffer = buffer
+       , bufferOffset = 0
+       , specificationType = stype
+       , uploadFormat = uf
+       , toMipmapLevel = 0
+       , xOffset = 0
+       , yOffset = 0
+       , zOffset = 0
+       , uWidth = width
+       , uHeight = height
+       , uDepth = 1
+       , numColumns = width
+       , cubeSide = PositiveY
+       , numRows = height
+       , pixelAlignment = 1 }
+
+-- | Constructs a common 3D uploading.
+--
+-- This can also be used for uploading into 2D texture arrays.
+uploading3D :: Buf.Buffer
+            -> Int     -- ^ Width of the image to upload.
+            -> Int     -- ^ Height of the image to upload.
+            -> Int     -- ^ Number of images to upload.
+            -> SpecificationType
+            -> UploadFormat
+            -> Uploading
+uploading3D buffer width height depth stype uf =
+    Uploading {
+         fromBuffer = buffer
+       , bufferOffset = 0
+       , specificationType = stype
+       , uploadFormat = uf
+       , toMipmapLevel = 0
+       , xOffset = 0
+       , yOffset = 0
+       , zOffset = 0
+       , uWidth = width
+       , uHeight = height
+       , uDepth = depth
+       , numColumns = width
+       , cubeSide = PositiveY
+       , numRows = height
+       , pixelAlignment = 1 }
+
+-- | Uploads an image to a texture.
+uploadToTexture :: Uploading
+                -> Texture
+                -> IO ()
+uploadToTexture uploading tex = mask_ $
+    withResource (Buf.resource (fromBuffer uploading)) $ \(Buf.Buffer_ buf) ->
+    withBoundPixelUnpackBuffer buf $ do
+        old_num_cols  <- fromIntegral <$> gi gl_UNPACK_ROW_LENGTH
+        old_num_rows  <- fromIntegral <$> gi gl_UNPACK_IMAGE_HEIGHT
+        old_alignment <- fromIntegral <$> gi gl_UNPACK_ALIGNMENT
+        glPixelStorei gl_UNPACK_ROW_LENGTH
+                      (safeFromIntegral $ numColumns uploading)
+        flip finally (glPixelStorei gl_UNPACK_ROW_LENGTH old_num_cols) $ do
+         glPixelStorei gl_UNPACK_IMAGE_HEIGHT
+                       (safeFromIntegral $ numRows uploading)
+         flip finally (glPixelStorei gl_UNPACK_IMAGE_HEIGHT old_num_rows) $ do
+          glPixelStorei gl_UNPACK_ALIGNMENT
+                        (safeFromIntegral $ pixelAlignment uploading)
+          flip finally (glPixelStorei gl_UNPACK_ALIGNMENT old_alignment) $
+           withResource (resource tex) $ \(Texture_ texname) -> do
+            case topology $ viewSpecification tex of
+                Tex1D {..} ->
+                    upload1D gl_TEXTURE_1D gl_TEXTURE_BINDING_1D
+                             texname uploading
+                Tex2D {..} ->
+                    upload2D gl_TEXTURE_2D gl_TEXTURE_BINDING_2D
+                             texname uploading
+                Tex3D {..} ->
+                    upload3D gl_TEXTURE_3D gl_TEXTURE_BINDING_3D
+                             texname uploading
+                Tex1DArray {..} ->
+                    upload2D gl_TEXTURE_1D_ARRAY gl_TEXTURE_BINDING_1D_ARRAY
+                             texname uploading
+                Tex2DArray {..} ->
+                    upload3D gl_TEXTURE_2D_ARRAY gl_TEXTURE_BINDING_2D_ARRAY
+                             texname uploading
+                Tex2DMultisample {..} ->
+                    error $ "uploadToTexture: cannot upload to " <>
+                            "multisampling textures."
+                Tex2DMultisampleArray {..} ->
+                    error $ "uploadToTexture: cannot upload to " <>
+                            "multisampling array textures."
+                TexCube {..} ->
+                    uploadCube gl_TEXTURE_CUBE_MAP
+                               gl_TEXTURE_BINDING_CUBE_MAP
+                               texname uploading
+
+upload1D :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
+upload1D target binding tex (Uploading {..}) = do
+    withBinding target binding tex $
+        glTexSubImage1D target
+                        (safeFromIntegral toMipmapLevel)
+                        (safeFromIntegral xOffset)
+                        (safeFromIntegral uWidth)
+                        (toConstantUF uploadFormat)
+                        (toConstantST specificationType)
+                        (intPtrToPtr $
+                         fromIntegral bufferOffset)
+
+upload2D :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
+upload2D target binding tex (Uploading {..}) = do
+    withBinding target binding tex $
+        glTexSubImage2D target
+                        (safeFromIntegral toMipmapLevel)
+                        (safeFromIntegral xOffset)
+                        (safeFromIntegral yOffset)
+                        (safeFromIntegral uWidth)
+                        (safeFromIntegral uHeight)
+                        (toConstantUF uploadFormat)
+                        (toConstantST specificationType)
+                        (intPtrToPtr $
+                         fromIntegral bufferOffset)
+
+upload3D :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
+upload3D target binding tex (Uploading {..}) = do
+    withBinding target binding tex $
+        glTexSubImage3D target
+                        (safeFromIntegral toMipmapLevel)
+                        (safeFromIntegral xOffset)
+                        (safeFromIntegral yOffset)
+                        (safeFromIntegral zOffset)
+                        (safeFromIntegral uWidth)
+                        (safeFromIntegral uHeight)
+                        (safeFromIntegral uDepth)
+                        (toConstantUF uploadFormat)
+                        (toConstantST specificationType)
+                        (intPtrToPtr $
+                         fromIntegral bufferOffset)
+
+uploadCube :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
+uploadCube target binding tex (Uploading {..}) = do
+    withBinding target binding tex $
+        glTexSubImage2D (toConstantCS cubeSide)
+                        (safeFromIntegral toMipmapLevel)
+                        (safeFromIntegral xOffset)
+                        (safeFromIntegral yOffset)
+                        (safeFromIntegral uWidth)
+                        (safeFromIntegral uHeight)
+                        (toConstantUF uploadFormat)
+                        (toConstantST specificationType)
+                        (intPtrToPtr $
+                         fromIntegral bufferOffset)
 
 {-
 nextMipmapLevel :: Int -> Int

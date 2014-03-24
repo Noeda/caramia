@@ -237,7 +237,7 @@ toConstantIF DEPTH24_STENCIL8 = gl_DEPTH24_STENCIL8
 -- | Specification formats.
 --
 -- These formats specify the type of the data passed from Haskell to GPU.
-data SpecificationFormat =
+data SpecificationType =
     FWord8
   | FWord16
   | FWord32
@@ -248,65 +248,65 @@ data SpecificationFormat =
   | FHalfFloat
   deriving ( Eq, Ord, Show, Read, Typeable )
 
-toConstantSF :: SpecificationFormat -> GLenum
-toConstantSF FWord8 = gl_UNSIGNED_BYTE
-toConstantSF FWord16 = gl_UNSIGNED_SHORT
-toConstantSF FWord32 = gl_UNSIGNED_INT
-toConstantSF FInt8 = gl_BYTE
-toConstantSF FInt16 = gl_SHORT
-toConstantSF FInt32 = gl_INT
-toConstantSF FFloat = gl_FLOAT
-toConstantSF FHalfFloat = gl_HALF_FLOAT
+toConstantST :: SpecificationType -> GLenum
+toConstantST FWord8 = gl_UNSIGNED_BYTE
+toConstantST FWord16 = gl_UNSIGNED_SHORT
+toConstantST FWord32 = gl_UNSIGNED_INT
+toConstantST FInt8 = gl_BYTE
+toConstantST FInt16 = gl_SHORT
+toConstantST FInt32 = gl_INT
+toConstantST FFloat = gl_FLOAT
+toConstantST FHalfFloat = gl_HALF_FLOAT
 
--- TODO: add special interpretation formats to `SpecificationFormat`.
+-- TODO: add special interpretation formats to `SpecificationType`.
 --
 
 -- | Given a specification format, returns the number of bytes one element
 -- uses.
-sizeOfSpecificationFormat :: SpecificationFormat -> Int
-sizeOfSpecificationFormat FWord8 = 1
-sizeOfSpecificationFormat FWord16 = 2
-sizeOfSpecificationFormat FWord32 = 2
-sizeOfSpecificationFormat FInt8 = 1
-sizeOfSpecificationFormat FInt16 = 2
-sizeOfSpecificationFormat FInt32 = 4
-sizeOfSpecificationFormat FFloat = 4
-sizeOfSpecificationFormat FHalfFloat = 2
+sizeOfSpecificationType :: SpecificationType -> Int
+sizeOfSpecificationType FWord8 = 1
+sizeOfSpecificationType FWord16 = 2
+sizeOfSpecificationType FWord32 = 2
+sizeOfSpecificationType FInt8 = 1
+sizeOfSpecificationType FInt16 = 2
+sizeOfSpecificationType FInt32 = 4
+sizeOfSpecificationType FFloat = 4
+sizeOfSpecificationType FHalfFloat = 2
 
--- | Class that turns Haskell types into `SpecificationFormat`.
-class SpecificationFormattable a where
-    -- | Returns the corresponding `SpecificationFormat` for a Haskell type.
-    toSpecificationFormat :: a  -- ^ Used to pass the type; not evaluated.
-                          -> SpecificationFormat
+-- | Class that turns Haskell types into `SpecificationType`.
+class SpecificationTypeable a where
+    -- | Returns the corresponding `SpecificationType` for a Haskell type.
+    toSpecificationType :: a  -- ^ Used to pass the type; not evaluated.
+                        -> SpecificationType
 
-instance SpecificationFormattable Word8 where
-    toSpecificationFormat _ = FWord8
+instance SpecificationTypeable Word8 where
+    toSpecificationType _ = FWord8
 
-instance SpecificationFormattable Word16 where
-    toSpecificationFormat _ = FWord16
+instance SpecificationTypeable Word16 where
+    toSpecificationType _ = FWord16
 
-instance SpecificationFormattable Word32 where
-    toSpecificationFormat _ = FWord32
+instance SpecificationTypeable Word32 where
+    toSpecificationType _ = FWord32
 
-instance SpecificationFormattable Int8 where
-    toSpecificationFormat _ = FInt8
+instance SpecificationTypeable Int8 where
+    toSpecificationType _ = FInt8
 
-instance SpecificationFormattable Int16 where
-    toSpecificationFormat _ = FInt16
+instance SpecificationTypeable Int16 where
+    toSpecificationType _ = FInt16
 
-instance SpecificationFormattable Int32 where
-    toSpecificationFormat _ = FInt32
+instance SpecificationTypeable Int32 where
+    toSpecificationType _ = FInt32
 
-instance SpecificationFormattable CInt where
-    toSpecificationFormat _ = FInt32
+instance SpecificationTypeable CInt where
+    toSpecificationType _ = FInt32
 
-instance SpecificationFormattable CUInt where
-    toSpecificationFormat _ = FWord32
+instance SpecificationTypeable CUInt where
+    toSpecificationType _ = FWord32
 
-instance SpecificationFormattable Float where
-    toSpecificationFormat _ = FFloat
+instance SpecificationTypeable Float where
+    toSpecificationType _ = FFloat
 
-instance SpecificationFormattable CFloat where
-    toSpecificationFormat _ = FFloat
+instance SpecificationTypeable CFloat where
+    toSpecificationType _ = FFloat
 
 

@@ -11,6 +11,7 @@ module Caramia.Internal.OpenGLCApi
     , withBoundVAO
     , withBoundBuffer
     , withBoundElementBuffer
+    , withBoundPixelUnpackBuffer
     , withBoundProgram
 
     -- These are not yet in OpenGLRaw
@@ -102,6 +103,14 @@ withBoundElementBuffer buf action = do
                            peek x_ptr
     finally (glBindBuffer gl_ELEMENT_ARRAY_BUFFER buf *> action)
             (glBindBuffer gl_ELEMENT_ARRAY_BUFFER $ fromIntegral old)
+
+withBoundPixelUnpackBuffer :: GLuint -> IO a -> IO a
+withBoundPixelUnpackBuffer buf action = do
+    old <-
+        alloca $ \x_ptr -> glGetIntegerv gl_PIXEL_UNPACK_BUFFER_BINDING x_ptr *>
+                           peek x_ptr
+    finally (glBindBuffer gl_PIXEL_UNPACK_BUFFER buf *> action)
+            (glBindBuffer gl_PIXEL_UNPACK_BUFFER $ fromIntegral old)
 
 withBoundVAO :: GLuint -> IO a -> IO a
 withBoundVAO vao action = do

@@ -69,8 +69,15 @@ program =
                 tex <- newTexture
                     textureSpecification
                     { topology = TexCube { widthCube = 299 }
-                    , mipmapLevels = 19
+                    , mipmapLevels = 5
                     , imageFormat = SRGB8_ALPHA8 }
+
+                uploadToTexture
+                    (uploading2D buf 28 28 FWord32 UBGRA)
+                    {
+                        cubeSide = NegativeX
+                    }
+                    tex
 
                 -- Make some stupid VAOs
                 vao <- newVAO
