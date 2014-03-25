@@ -24,7 +24,9 @@ module Caramia.Texture
     , viewWidth
     , viewHeight
     , viewDepth
-    , viewMipmapLevels )
+    , viewMipmapLevels
+    -- * Utilities
+    , maxMipmapLevels )
     where
 
 import Caramia.Internal.OpenGLCApi
@@ -609,6 +611,12 @@ isValidMipmap w level
     | level < 0 = False
     | level > floor (logBase (2 :: Double) (fromIntegral w)) + 1 = False
     | otherwise = True
+
+-- | Returns the maximal number of mipmap levels when given a side length.
+maxMipmapLevels :: Int -> Int
+maxMipmapLevels width
+    | width <= 0 = 0
+    | otherwise = floor (logBase (2 :: Double) (fromIntegral width)) + 1
 
 {-
 nextMipmapLevel :: Int -> Int
