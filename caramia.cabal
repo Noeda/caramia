@@ -60,6 +60,7 @@ library
                        Caramia.ImageFormats
                        Caramia.Render
                        Caramia.Texture
+                       Caramia.Memory
   other-modules:       Caramia.Internal.Safe
                        Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions

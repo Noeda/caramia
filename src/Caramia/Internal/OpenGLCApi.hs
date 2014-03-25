@@ -8,6 +8,10 @@ module Caramia.Internal.OpenGLCApi
     , module Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3tc
     , module Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB
 
+    , gl_TEXTURE_FREE_MEMORY
+    , gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM
+    , gl_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM
+
     , withBoundVAO
     , withBoundBuffer
     , withBoundElementBuffer
@@ -291,4 +295,15 @@ glTexStorage3D :: TexStorage3DF
 glTexStorage3D = unsafePerformIO $
     glTexStorage3D_funptr <$> getProcAddress "glTexStorage3D"
 {-# NOINLINE glTexStorage3D #-}
+
+-- GL_NVX_gpu_memory_info
+gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM :: GLenum
+gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM = 0x9047
+
+gl_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM :: GLenum
+gl_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM = 0x9049
+
+-- GL_ATI_meminfo
+gl_TEXTURE_FREE_MEMORY :: GLenum
+gl_TEXTURE_FREE_MEMORY = 0x87FC
 

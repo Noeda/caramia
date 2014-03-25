@@ -6,6 +6,8 @@ module Caramia.Internal.OpenGLExtensions
     , has_GL_ARB_separate_shader_objects
     , has_GL_ARB_buffer_storage
     , has_GL_KHR_debug
+    , has_GL_ATI_meminfo
+    , has_GL_NVX_gpu_memory_info
     , whenExt )
     where
 
@@ -26,7 +28,9 @@ data ExtensionTable = ExtensionTable
     { has_GL_EXT_direct_state_access_ :: !Bool
     , has_GL_ARB_separate_shader_objects_ :: !Bool
     , has_GL_ARB_buffer_storage_ :: !Bool
-    , has_GL_KHR_debug_ :: !Bool }
+    , has_GL_KHR_debug_ :: !Bool
+    , has_GL_ATI_meminfo_ :: !Bool
+    , has_GL_NVX_gpu_memory_info_ :: !Bool }
     deriving ( Eq, Ord, Show, Read, Typeable )
 
 emptyExtensionTable :: ExtensionTable
@@ -34,7 +38,10 @@ emptyExtensionTable = ExtensionTable
     { has_GL_EXT_direct_state_access_ = False
     , has_GL_ARB_separate_shader_objects_ = False
     , has_GL_ARB_buffer_storage_ = False
-    , has_GL_KHR_debug_ = False }
+    , has_GL_KHR_debug_ = False
+    , has_GL_ATI_meminfo_ = False
+    , has_GL_NVX_gpu_memory_info_ = False
+    }
 
 getExtensionTable :: IO ExtensionTable
 getExtensionTable =
@@ -58,6 +65,10 @@ getExtensionTable =
         modify (\old -> old { has_GL_ARB_buffer_storage_ = True })
     handle "GL_KHR_debug" =
         modify (\old -> old { has_GL_KHR_debug_ = True })
+    handle "GL_ATI_meminfo" =
+        modify (\old -> old { has_GL_ATI_meminfo_ = True })
+    handle "GL_NVX_gpu_memory_info" =
+        modify (\old -> old { has_GL_NVX_gpu_memory_info_ = True })
 
     handle _ = return ()
 
@@ -80,6 +91,16 @@ has_GL_KHR_debug :: IO Bool
 has_GL_KHR_debug =
     has_GL_KHR_debug_ <$> getExtensionTable
 {-# INLINE has_GL_KHR_debug #-}
+
+has_GL_ATI_meminfo :: IO Bool
+has_GL_ATI_meminfo =
+    has_GL_ATI_meminfo_ <$> getExtensionTable
+{-# INLINE has_GL_ATI_meminfo #-}
+
+has_GL_NVX_gpu_memory_info :: IO Bool
+has_GL_NVX_gpu_memory_info =
+    has_GL_NVX_gpu_memory_info_ <$> getExtensionTable
+{-# INLINE has_GL_NVX_gpu_memory_info #-}
 
 whenExt :: IO Bool -> IO a -> IO a -> IO a
 whenExt ext_check first second = do

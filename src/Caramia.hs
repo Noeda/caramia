@@ -8,7 +8,8 @@ module Caramia
     , module Caramia.Shader
     , module Caramia.Render
     , module Caramia.ImageFormats
-    , module Caramia.Texture )
+    , module Caramia.Texture
+    , module Caramia.Memory )
     where
 
 import Caramia.Resource
@@ -19,4 +20,5 @@ import Caramia.Shader
 import Caramia.Render
 import Caramia.ImageFormats
 import Caramia.Texture
+import Caramia.Memory
 
