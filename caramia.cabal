@@ -61,9 +61,11 @@ library
                        Caramia.Render
                        Caramia.Texture
                        Caramia.Memory
+                       Caramia.Framebuffer
   other-modules:       Caramia.Internal.Safe
                        Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions
+                       Caramia.Texture.Internal
                        Caramia.ImageFormats.Internal
                        Caramia.Shader.Internal
                        Caramia.Buffer.Internal

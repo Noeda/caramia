@@ -119,6 +119,10 @@ program =
                    , sourceData = Primitives {
                        firstIndex = 3 } }
 
+                fbuf <- newFramebuffer [ (ColorAttachment 3
+                                       , frontTextureTarget tex) ]
+                return ()
+
             performGC
             runPendingFinalizers
             return ()

@@ -29,6 +29,7 @@ module Caramia.Texture
     , maxMipmapLevels )
     where
 
+import Caramia.Texture.Internal
 import Caramia.Internal.OpenGLCApi
 import Caramia.Internal.Safe
 import qualified Caramia.Buffer.Internal as Buf
@@ -44,76 +45,12 @@ import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
 import Foreign.Storable
 import Foreign.Ptr
-import System.IO.Unsafe
-
-data Texture = Texture
-    { resource :: !(Resource (Texture_))
-    , ordIndex :: !Int
-    , viewSpecification :: !TextureSpecification }
-    deriving ( Typeable )
-
-newtype Texture_ = Texture_ GLuint
-
-ordIndices :: IORef Int
-ordIndices = unsafePerformIO $ newIORef 0
-{-# NOINLINE ordIndices #-}
-
-instance Eq Texture where
-    tex1 == tex2 = resource tex1 == resource tex2
-
-instance Ord Texture where
-    tex1 `compare` tex2 = ordIndex tex1 `compare` ordIndex tex2
-
--- | Specification on what the texture should be like.
---
--- Use `textureSpecification` and set at least `topology` and `imageFormat`.
--- Future minor versions remain compatible if you use `textureSpecification`
--- instead of the constructor directly.
-data TextureSpecification = TextureSpecification
-    { topology     :: Topology
-    , imageFormat  :: ImageFormat
-    , mipmapLevels :: Int -- ^ How many mipmap levels including the base
-                          --  level? Must be at least 1.
-                          --
-                          --  Ignored and not evaluated for multisampling
-                          --  textures.
-    }
-    deriving ( Eq, Ord, Show, Read, Typeable )
 
 textureSpecification :: TextureSpecification
 textureSpecification = TextureSpecification {
     topology = error "textureSpecification: topology is not set."
   , imageFormat = error "textureSpecification: image format is not set."
   , mipmapLevels = 1 }
-
--- | Specifies a topology of a texture.
-data Topology =
-    Tex1D { width1D  :: !Int }
-  | Tex2D { width2D  :: !Int
-          , height2D :: !Int }
-  | Tex3D { width3D  :: !Int
-          , height3D :: !Int
-          , depth3D  :: !Int }
-  | Tex1DArray
-          { width1DArray :: !Int
-          , layers1D :: !Int }
-  | Tex2DArray
-          { width2DArray :: !Int
-          , height2DArray :: !Int
-          , layers2D :: !Int }
-  | Tex2DMultisample
-          { width2DMS :: !Int
-          , height2DMS :: !Int
-          , samples2DMS :: !Int
-          , fixedSampleLocations2DMS :: !Bool }
-  | Tex2DMultisampleArray
-          { width2DMSArray :: !Int
-          , height2DMSArray :: !Int
-          , layers2DMS :: !Int
-          , samples2DMSArray :: !Int
-          , fixedSampleLocations2DMSArray :: !Bool }
-  | TexCube { widthCube  :: Int }
-  deriving ( Eq, Ord, Show, Read, Typeable )
 
 -- | Returns the width of a texture.
 viewWidth :: Texture -> Int
@@ -328,10 +265,6 @@ withBinding tex tex_binding tex_name action = do
         (glBindTexture tex tex_name *>
          action)
         (glBindTexture tex old)
-
-gi :: GLenum -> IO GLuint
-gi x = alloca $ \get_ptr -> glGetIntegerv x (castPtr get_ptr) *>
-                            peek get_ptr
 
 -- | Specifies the format in which buffer data is for the purposes of uploading
 -- said data to a texture.

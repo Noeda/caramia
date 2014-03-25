@@ -4,6 +4,7 @@ module Caramia.ImageFormats
       ImageFormat(..)
     , isRenderTargettable
     , isCompressed
+    , isColorFormat
     , isSRGBFormat
     , hasDepthComponent
     , hasStencilComponent

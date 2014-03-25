@@ -9,7 +9,8 @@ module Caramia
     , module Caramia.Render
     , module Caramia.ImageFormats
     , module Caramia.Texture
-    , module Caramia.Memory )
+    , module Caramia.Memory
+    , module Caramia.Framebuffer )
     where
 
 import Caramia.Resource
@@ -21,4 +22,5 @@ import Caramia.Render
 import Caramia.ImageFormats
 import Caramia.Texture
 import Caramia.Memory
+import Caramia.Framebuffer
 

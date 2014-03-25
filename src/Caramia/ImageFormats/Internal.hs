@@ -72,6 +72,15 @@ isCompressed COMPRESSED_SRGB_ALPHA_S3TC_DXT3 = True
 isCompressed COMPRESSED_SRGB_ALPHA_S3TC_DXT5 = True
 isCompressed _ = False
 
+-- | Returns true if the given format is a color format.
+isColorFormat :: ImageFormat -> Bool
+isColorFormat DEPTH_COMPONENT32F = False
+isColorFormat DEPTH_COMPONENT24 = False
+isColorFormat DEPTH_COMPONENT16 = False
+isColorFormat DEPTH32F_STENCIL8 = False
+isColorFormat DEPTH24_STENCIL8 = False
+isColorFormat _ = True
+
 -- | Returns true if the given format has a depth component.
 hasDepthComponent :: ImageFormat -> Bool
 hasDepthComponent DEPTH_COMPONENT32F = True

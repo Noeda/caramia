@@ -8,6 +8,8 @@ module Caramia.Internal.OpenGLCApi
     , module Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3tc
     , module Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB
 
+    , gi
+
     , gl_TEXTURE_FREE_MEMORY
     , gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM
     , gl_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM
@@ -17,6 +19,7 @@ module Caramia.Internal.OpenGLCApi
     , withBoundElementBuffer
     , withBoundPixelUnpackBuffer
     , withBoundProgram
+    , withBoundDrawFramebuffer
 
     -- These are not yet in OpenGLRaw
     , glTexStorage1D
@@ -28,6 +31,8 @@ module Caramia.Internal.OpenGLCApi
     , mglGenBuffer
     , mglDeleteVertexArray
     , mglGenVertexArray
+    , mglDeleteFramebuffer
+    , mglGenFramebuffer
     , mglNamedBufferData
     , mglVertexArrayVertexAttribOffsetAndEnable
     , mglVertexArrayVertexAttribIOffsetAndEnable
@@ -84,6 +89,18 @@ mglGenBuffer = alloca $ \x_ptr -> glGenBuffers 1 x_ptr *> peek x_ptr
 
 mglGenVertexArray :: IO GLuint
 mglGenVertexArray = alloca $ \x_ptr -> glGenVertexArrays 1 x_ptr *> peek x_ptr
+
+mglGenFramebuffer :: IO GLuint
+mglGenFramebuffer = alloca $ \x_ptr -> glGenFramebuffers 1 x_ptr *> peek x_ptr
+
+mglDeleteFramebuffer :: GLuint -> IO ()
+mglDeleteFramebuffer x = with x $ \x_ptr -> glDeleteFramebuffers 1 x_ptr
+
+withBoundDrawFramebuffer :: GLuint -> IO a -> IO a
+withBoundDrawFramebuffer x action = do
+    old <- gi gl_DRAW_FRAMEBUFFER_BINDING
+    finally (glBindFramebuffer gl_DRAW_FRAMEBUFFER x *> action)
+            (glBindFramebuffer gl_DRAW_FRAMEBUFFER old)
 
 withBoundProgram :: GLuint -> IO a -> IO a
 withBoundProgram program action = do
@@ -306,4 +323,9 @@ gl_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM = 0x9049
 -- GL_ATI_meminfo
 gl_TEXTURE_FREE_MEMORY :: GLenum
 gl_TEXTURE_FREE_MEMORY = 0x87FC
+
+-- | Shortcut to `glGetIntegerv` when you query only one integer.
+gi :: GLenum -> IO GLuint
+gi x = alloca $ \get_ptr -> glGetIntegerv x (castPtr get_ptr) *>
+                            peek get_ptr
 
