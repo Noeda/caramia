@@ -18,7 +18,13 @@ module Caramia.Texture
     , uploading2D
     , uploading3D
     , UploadFormat(..)
-    , CubeSide(..) )
+    , CubeSide(..)
+    -- * Views
+    , viewSpecification
+    , viewWidth
+    , viewHeight
+    , viewDepth
+    , viewMipmapLevels )
     where
 
 import Caramia.Internal.OpenGLCApi
@@ -107,6 +113,52 @@ data Topology =
   | TexCube { widthCube  :: Int }
   deriving ( Eq, Ord, Show, Read, Typeable )
 
+-- | Returns the width of a texture.
+viewWidth :: Texture -> Int
+viewWidth (viewSpecification -> spec) = viewWidth' (topology spec)
+  where
+    viewWidth' (Tex1D {..}) = width1D
+    viewWidth' (Tex2D {..}) = width2D
+    viewWidth' (Tex3D {..}) = width3D
+    viewWidth' (Tex1DArray {..}) = width1DArray
+    viewWidth' (Tex2DArray {..}) = width2DArray
+    viewWidth' (Tex2DMultisample {..}) = width2DMS
+    viewWidth' (Tex2DMultisampleArray {..}) = width2DMSArray
+    viewWidth' (TexCube {..}) = widthCube
+
+-- | Returns the height of a texture.
+--
+-- This is 1 for one-dimensional textures.
+viewHeight :: Texture -> Int
+viewHeight (viewSpecification -> spec) = viewHeight' (topology spec)
+  where
+    viewHeight' (Tex1D {..}) = 1
+    viewHeight' (Tex2D {..}) = height2D
+    viewHeight' (Tex3D {..}) = height3D
+    viewHeight' (Tex1DArray {..}) = 1
+    viewHeight' (Tex2DArray {..}) = height2DArray
+    viewHeight' (Tex2DMultisample {..}) = height2DMS
+    viewHeight' (Tex2DMultisampleArray {..}) = height2DMSArray
+    viewHeight' (TexCube {..}) = widthCube
+
+-- | Returns the depth of a 3D texture or number of layers in array textures.
+--
+-- This is 1 for any other type of texture.
+viewDepth :: Texture -> Int
+viewDepth (viewSpecification -> spec) = viewDepth' (topology spec)
+  where
+    viewDepth' (Tex1D {..}) = 1
+    viewDepth' (Tex2D {..}) = 1
+    viewDepth' (Tex3D {..}) = depth3D
+    viewDepth' (Tex1DArray {..}) = layers1D
+    viewDepth' (Tex2DArray {..}) = layers2D
+    viewDepth' (Tex2DMultisample {..}) = 1
+    viewDepth' (Tex2DMultisampleArray {..}) = layers2DMS
+    viewDepth' (TexCube {..}) = 1
+
+viewMipmapLevels :: Texture -> Int
+viewMipmapLevels = mipmapLevels . viewSpecification
+
 isMultisamplingTopology :: Topology -> Bool
 isMultisamplingTopology (Tex2DMultisample {..}) = True
 isMultisamplingTopology (Tex2DMultisampleArray {..}) = True
@@ -139,19 +191,27 @@ newTexture spec = mask_ $ do
     -- a lot of code just to check that all the dimensions are positive...
     topologySanityCheck t@(Tex1D {..})
         | width1D <= 0 = badTopology t
+        | not (isValidMipmap width1D num_mipmaps) = badMipmaps
         | otherwise = return ()
     topologySanityCheck t@(Tex2D {..})
         | width2D <= 0 || height2D <= 0 = badTopology t
+        | not (isValidMipmap (max width2D height2D) num_mipmaps) = badMipmaps
         | otherwise = return ()
     topologySanityCheck t@(Tex3D {..})
         | width3D <= 0 || height3D <= 0 || depth3D <= 0 = badTopology t
+        | not (isValidMipmap (max width3D $ max height3D depth3D) num_mipmaps) =
+              badMipmaps
         | otherwise = return ()
     topologySanityCheck t@(Tex1DArray {..})
         | width1DArray <= 0 || layers1D <= 0 = badTopology t
+        | not (isValidMipmap width1DArray num_mipmaps) =
+              badMipmaps
         | otherwise = return ()
     topologySanityCheck t@(Tex2DArray {..})
         | width2DArray <= 0 || height2DArray <= 0 ||
           layers2D <= 0 = badTopology t
+        | not (isValidMipmap (max width2DArray height2DArray) num_mipmaps) =
+              badMipmaps
         | otherwise = return ()
     topologySanityCheck t@(Tex2DMultisample {..})
         | width2DMS <= 0 || height2DMS <= 0 = badTopology t
@@ -162,10 +222,15 @@ newTexture spec = mask_ $ do
         | otherwise = return ()
     topologySanityCheck t@(TexCube {..})
         | widthCube <= 0 = badTopology t
+        | not (isValidMipmap widthCube num_mipmaps) =
+              badMipmaps
         | otherwise = return ()
 
     badTopology topology =
-        error $ "newTexture: bad topology " <> show topology
+        error $ "newTexture: bad topology: " <> show topology
+
+    badMipmaps =
+        error $ "newTexture: bad number of mipmap levels: " <> show num_mipmaps
 
     deleter (Texture_ name) =
         with name $ glDeleteTextures 1
@@ -537,6 +602,13 @@ uploadCube target binding tex (Uploading {..}) = do
                         (toConstantST specificationType)
                         (intPtrToPtr $
                          fromIntegral bufferOffset)
+
+isValidMipmap :: Int -> Int -> Bool
+isValidMipmap w level
+    | w <= 0 = False
+    | level < 0 = False
+    | level > floor (logBase (2 :: Double) (fromIntegral w)) + 1 = False
+    | otherwise = True
 
 {-
 nextMipmapLevel :: Int -> Int
