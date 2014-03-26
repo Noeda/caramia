@@ -18,6 +18,8 @@ module Caramia.Render
 
 import qualified Caramia.VAO.Internal as VAO
 import qualified Caramia.Shader.Internal as Shader
+import qualified Caramia.Framebuffer as FBuf
+import qualified Caramia.Framebuffer.Internal as FBuf
 import Caramia.Resource
 import Caramia.Buffer.Internal
 import Caramia.Internal.OpenGLCApi
@@ -104,6 +106,8 @@ data DrawCommand = DrawCommand
     , numInstances  :: Int        -- ^ How many instances to render.
     , sourceData    :: SourceData
     -- ^ How to select the attribute data from `primitivesVAO`.
+    , targetFramebuffer :: FBuf.Framebuffer
+    -- ^ Where do you want to render?
     }
 
 -- | Returns a default draw command.
@@ -118,6 +122,8 @@ data DrawCommand = DrawCommand
 --
 -- `numInstances` is set to 1. In future versions if we add any new fields
 -- those fields will have a sane default value.
+--
+-- `targetFramebuffer` is the screen framebuffer by default.
 drawCommand :: DrawCommand
 drawCommand = DrawCommand
     { primitiveType = error "drawCommand: primitiveType is not set."
@@ -125,6 +131,7 @@ drawCommand = DrawCommand
     , numIndices    = error "drawCommand: numIndices is not set."
     , pipeline      = error "drawCommand: pipeline is not set."
     , sourceData    = error "drawCommand: sourceData is not set."
+    , targetFramebuffer = FBuf.screenFramebuffer
     , numInstances  = 1 }
 {-# INLINE drawCommand #-}
 
@@ -156,6 +163,7 @@ draw (DrawCommand {..})
     | otherwise = withPipeline pipeline $
     withResource (VAO.resource primitivesVAO) $ \(VAO.VAO_ vao_name) ->
         withBoundVAO vao_name $
+            FBuf.withBinding targetFramebuffer $
             case sourceData of
                 Primitives {..} -> do
                     glDrawArraysInstanced

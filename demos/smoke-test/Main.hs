@@ -110,6 +110,9 @@ program =
                        indexBuffer = buf
                      , indexOffset = 17
                      , indexType = IWord16 } }
+
+                fbuf <- newFramebuffer [ (ColorAttachment 3
+                                       , frontTextureTarget tex) ]
                 draw drawCommand {
                      primitiveType = LineLoop
                    , primitivesVAO = vao2
@@ -117,11 +120,9 @@ program =
                    , numIndices = 8
                    , numInstances = 999
                    , sourceData = Primitives {
-                       firstIndex = 3 } }
+                       firstIndex = 3 }
+                   , targetFramebuffer = fbuf }
 
-                fbuf <- newFramebuffer [ (ColorAttachment 3
-                                       , frontTextureTarget tex) ]
-                return ()
 
             performGC
             runPendingFinalizers

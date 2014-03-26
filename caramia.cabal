@@ -65,6 +65,7 @@ library
   other-modules:       Caramia.Internal.Safe
                        Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions
+                       Caramia.Framebuffer.Internal
                        Caramia.Texture.Internal
                        Caramia.ImageFormats.Internal
                        Caramia.Shader.Internal
