@@ -244,9 +244,11 @@ storeContextLocalData value =
     maybe (error "storeContextLocalData: not in a context.")
           (\cid ->
               atomicModifyIORef' contextLocalData $ \old ->
-                  ( IM.update (Just .
-                               M.insert (typeOf value)
-                                        (toDyn value))
+                  ( IM.alter (maybe (Just $ M.singleton
+                                            (typeOf value)
+                                            (toDyn value))
+                                    (Just . M.insert (typeOf value)
+                                                     (toDyn value)))
                               cid
                               old
                   , () ) )
