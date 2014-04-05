@@ -9,6 +9,7 @@ module Caramia.Shader.Internal
 
 import Caramia.Resource
 import Data.IORef
+import Data.Typeable
 import System.IO.Unsafe
 import Caramia.Internal.OpenGLCApi
 
@@ -21,9 +22,15 @@ data Shader = Shader
     -- ^ Which stage does this shader belong to.
     , identifier   :: !Int
     }
+    deriving ( Typeable )
 
 instance Eq Shader where
     (resource -> res1) == (resource -> res2) = res1 == res2
+
+-- | The ordering has no inherent meaning but it allows shaders to be stored
+-- correctly in containers that have `Ord` constraint.
+instance Ord Shader where
+    (identifier -> id1) `compare` (identifier -> id2) = id1 `compare` id2
 
 data Shader_ = CompiledShader !GLuint   -- OpenGL shader
 
@@ -32,18 +39,21 @@ data Shader_ = CompiledShader !GLuint   -- OpenGL shader
 -- OpenGL equivalent is the shader program object.
 data Pipeline = Pipeline
     { resourcePL :: !(Resource (Pipeline_))
+    , pipelineIdentifier :: !Int
     , shaders :: [Shader] }
+    deriving ( Typeable )
+
+instance Eq Pipeline where
+    p1 == p2 = resourcePL p1 == resourcePL p2
+
+instance Ord Pipeline where
+    p1 `compare` p2 = pipelineIdentifier p1 `compare` pipelineIdentifier p2
 
 newtype Pipeline_ = Pipeline_ GLuint
 
 shaderIdentifierSupply :: IORef Int
 shaderIdentifierSupply = unsafePerformIO $ newIORef 0
 {-# NOINLINE shaderIdentifierSupply #-}
-
--- | The ordering has no inherent meaning but it allows shaders to be stored
--- correctly in containers that have `Ord` constraint.
-instance Ord Shader where
-    (identifier -> id1) `compare` (identifier -> id2) = id1 `compare` id2
 
 data ShaderStage =
     Vertex

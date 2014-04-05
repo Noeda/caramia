@@ -209,7 +209,10 @@ newTraditionalPipeline shaders = mask_ $ do
     res <- newResource creator
                        deleter
                        (return ())
+    nid <- atomicModifyIORef' shaderIdentifierSupply $ \old ->
+        ( old+1, old )
     return Pipeline { resourcePL = res
+                    , pipelineIdentifier = nid
                     , shaders = shaders }
   where
     creator = do
