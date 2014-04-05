@@ -18,6 +18,10 @@ module Caramia.Framebuffer
     , layerTextureTarget
     , TextureTarget()
     , Attachment(..)
+    -- * Clearing framebuffers
+    , clear
+    , Clearing(..)
+    , clearing
     -- * Special framebuffers
     , screenFramebuffer
     -- * Hardware limits
@@ -27,6 +31,7 @@ module Caramia.Framebuffer
     where
 
 import Caramia.Context
+import Caramia.Color
 import Caramia.Resource
 import Caramia.Framebuffer.Internal
 import qualified Caramia.Texture.Internal as Tex
@@ -34,14 +39,21 @@ import Caramia.ImageFormats
 import Caramia.Internal.Safe
 import Caramia.Internal.OpenGLCApi
 import Control.Exception
+import Control.Applicative
 import Control.Monad hiding ( forM_, forM )
 import Data.List ( nub )
 import Data.Foldable
+import Data.Int
+import Data.Bits
 import Data.IORef
 import Data.Monoid
+import Data.Typeable
 import System.IO.Unsafe
 import Foreign.Storable
+import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
+import Foreign.C.Types
+import GHC.Float
 import qualified Data.IntSet as IS
 
 -- | Returns the screen framebuffer.
@@ -200,4 +212,68 @@ getMaximumDrawBuffers = do
     -- number of attachments
     num_attachments <- gi gl_MAX_COLOR_ATTACHMENTS
     return (fromIntegral $ min num_drawbuffers num_attachments)
+
+-- | Specifies what to clear in a `clear` invocation.
+--
+-- Use `clearing` smart constructor instead for forward-compatibility.
+--
+-- Each member of this data type is a `Maybe` value; if any value is `Just`
+-- then that value is cleared, otherwise it is not touched.
+data Clearing = Clearing
+    { clearDepth :: !(Maybe Float)
+    -- ^ Clear depth buffer to this value.
+    , clearStencil :: !(Maybe Int32)
+    -- ^ Clear stencil buffer to this value.
+    , clearColor :: !(Maybe Color)
+    -- ^ Clear (all) color buffers to some color.
+    }
+    deriving ( Eq, Ord, Show, Read, Typeable )
+
+-- TODO: selective clearing for different color buffers.
+
+-- | Smart constructor for `Clearing`. All members are `Nothing`.
+clearing :: Clearing
+clearing = Clearing { clearDepth = Nothing
+                    , clearStencil = Nothing
+                    , clearColor = Nothing }
+
+-- | Clears values in a framebuffer.
+clear :: Clearing -> Framebuffer -> IO ()
+clear clearing fbuf = withBinding fbuf $ mask_ $
+    recColor (clearColor clearing)
+  where
+    bits = maybe 0 (const gl_COLOR_BUFFER_BIT) (clearColor clearing) .|.
+           maybe 0 (const gl_DEPTH_BUFFER_BIT) (clearDepth clearing) .|.
+           maybe 0 (const gl_STENCIL_BUFFER_BIT) (clearStencil clearing)
+
+    recColor Nothing = recDepth (clearDepth clearing)
+    recColor (Just (viewRgba -> (r, g, b, a))) =
+        allocaArray 4 $ \ptr -> do
+            glGetFloatv gl_COLOR_CLEAR_VALUE ptr
+            glClearColor (CFloat r)
+                         (CFloat g)
+                         (CFloat b)
+                         (CFloat a)
+            recDepth (clearDepth clearing)
+            nr <- peekElemOff ptr 0
+            ng <- peekElemOff ptr 1
+            nb <- peekElemOff ptr 2
+            na <- peekElemOff ptr 3
+            glClearColor (nr :: CFloat) ng nb na
+
+    recDepth Nothing = recStencil (clearStencil clearing)
+    recDepth (Just depth) = do
+        old_depth <- alloca $ \ptr ->
+            glGetDoublev gl_DEPTH_CLEAR_VALUE ptr *> peek ptr
+        glClearDepth (CDouble $ float2Double depth)
+        recStencil (clearStencil clearing)
+        glClearDepth old_depth
+
+    recStencil Nothing = glClear bits
+    recStencil (Just stencil) = do
+        old_stencil <- alloca $ \ptr ->
+            glGetIntegerv gl_STENCIL_CLEAR_VALUE ptr *> peek ptr
+        glClearStencil (safeFromIntegral stencil)
+        glClear bits
+        glClearStencil old_stencil
 
