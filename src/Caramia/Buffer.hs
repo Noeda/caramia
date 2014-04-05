@@ -188,8 +188,12 @@ map offset num_bytes access_flags buffer
     -- check that offset/num_bytes makes sense
     | offset < 0 || offset >= viewSize buffer ||
       num_bytes <= 0 ||
-      offset + num_bytes >= viewSize buffer =
-          error "map: requested mapping has invalid offset and/or range."
+      offset + num_bytes > viewSize buffer =
+          error $ "map: requested mapping has invalid offset " <>
+                  "and/or range. " <>
+                  "Buffer size is " <> show (viewSize buffer) <> ", " <>
+                  "requested mapping was [" <> show offset <> ".." <>
+                  show (offset + num_bytes - 1) <> "]."
     | otherwise =
     withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
         bufstatus <- readIORef (status buffer)
