@@ -31,5 +31,7 @@ data AccessFlags =
     ReadAccess      -- ^ The mapping can be read from.
   | WriteAccess     -- ^ The mapping can be written to.
   | ReadWriteAccess -- ^ Both reading and writing can be done.
+  | NoAccess        -- ^ No access; you cannot map the buffer at all after
+                    --   creation.
   deriving ( Eq, Ord, Show, Read )
 

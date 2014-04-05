@@ -83,6 +83,8 @@ canMapWith WriteAccess WriteAccess = True
 canMapWith WriteAccess _ = False
 canMapWith ReadAccess ReadAccess = True
 canMapWith ReadAccess _ = False
+canMapWith NoAccess NoAccess = True
+canMapWith NoAccess _ = False
 
 toConstant :: AccessFrequency -> AccessNature -> GLuint
 toConstant Stream Draw = gl_STREAM_DRAW
@@ -99,6 +101,7 @@ toConstantF :: AccessFlags -> GLbitfield
 toConstantF ReadAccess      = gl_MAP_READ_BIT
 toConstantF WriteAccess     = gl_MAP_WRITE_BIT
 toConstantF ReadWriteAccess = gl_MAP_READ_BIT .|. gl_MAP_WRITE_BIT
+toConstantF NoAccess        = 0
 
 -- | This data describes how a buffer should behave and what operations can be
 -- done with it.
