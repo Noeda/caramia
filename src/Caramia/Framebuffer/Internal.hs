@@ -14,6 +14,7 @@ data Framebuffer =
         resource :: !(Resource Framebuffer_)
       , ordIndex :: !Int
       , viewTargets :: [(Attachment, TextureTarget)]
+      , dimensions :: !(Int, Int)
       , binder :: forall a. IO a -> IO a
     }
     deriving ( Typeable )

@@ -18,6 +18,8 @@ module Caramia.Framebuffer
     , layerTextureTarget
     , TextureTarget()
     , Attachment(..)
+    -- * Size query
+    , getDimensions
     -- * Clearing framebuffers
     , clear
     , Clearing(..)
@@ -33,6 +35,7 @@ module Caramia.Framebuffer
 import Caramia.Context
 import Caramia.Color
 import Caramia.Resource
+import Caramia.Texture
 import Caramia.Framebuffer.Internal
 import qualified Caramia.Texture.Internal as Tex
 import Caramia.ImageFormats
@@ -124,6 +127,8 @@ toConstantA StencilAttachment = gl_STENCIL_ATTACHMENT
 newFramebuffer :: [(Attachment, TextureTarget)]
                -> IO Framebuffer
 newFramebuffer targets
+    | null targets =
+        error "newFramebuffer: no texture targets specified."
     | nub (fmap fst targets) /= fmap fst targets =
         error "newFramebuffer: there are duplicate attachments."
     | otherwise = mask_ $ do
@@ -138,8 +143,17 @@ newFramebuffer targets
         return Framebuffer { resource = res
                            , ordIndex = index
                            , viewTargets = targets
+                           , dimensions = calculatedDimensions
                            , binder = withThisFramebuffer res }
   where
+    calculatedDimensions =
+        foldl' (\(lowest_w, lowest_h) (w, h) ->
+                   (min lowest_w w, min lowest_h h))
+               (maxBound, maxBound)
+               (fmap (\(snd -> tex) ->
+                         (viewWidth $ texture tex, viewHeight $ texture tex))
+                     targets)
+
     creator max_bufs =
         bracketOnError mglGenFramebuffer
                        mglDeleteFramebuffer $ \fbuf_name -> do
@@ -276,4 +290,16 @@ clear clearing fbuf = withBinding fbuf $ mask_ $
         glClearStencil (safeFromIntegral stencil)
         glClear bits
         glClearStencil old_stencil
+
+-- | Returns the size of a framebuffer.
+--
+-- This is an `IO` action because it can change for the screen framebuffer.
+getDimensions :: Framebuffer -> IO (Int, Int)
+getDimensions ScreenFramebuffer = do
+    allocaArray 4 $ \vptr -> do
+        glGetIntegerv gl_VIEWPORT vptr
+        w <- peekElemOff vptr 2
+        h <- peekElemOff vptr 3
+        return (fromIntegral w, fromIntegral h)
+getDimensions fbuf = return $ dimensions fbuf
 
