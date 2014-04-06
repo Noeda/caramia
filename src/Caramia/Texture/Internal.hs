@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+
 module Caramia.Texture.Internal where
 
 import Caramia.Resource
@@ -6,6 +8,8 @@ import Caramia.ImageFormats
 import Data.IORef
 import Data.Typeable
 import System.IO.Unsafe
+import Control.Exception
+import Control.Applicative
 
 data Texture = Texture
     { resource :: !(Resource (Texture_))
@@ -14,6 +18,12 @@ data Texture = Texture
     deriving ( Typeable )
 
 newtype Texture_ = Texture_ GLuint
+
+-- | The type of a texture unit.
+--
+-- The minimum valid value is 0 and maximum is implementation dependant but
+-- in OpenGL at least 48 units will work at the same time in shaders.
+type TextureUnit = Int
 
 ordIndices :: IORef Int
 ordIndices = unsafePerformIO $ newIORef 0
@@ -69,4 +79,55 @@ data Topology =
           , fixedSampleLocations2DMSArray :: !Bool }
   | TexCube { widthCube  :: Int }
   deriving ( Eq, Ord, Show, Read, Typeable )
+
+withBinding :: GLenum -> GLenum -> GLuint -> IO a -> IO a
+withBinding tex tex_binding tex_name action = do
+    old <- gi tex_binding
+    finally
+        (glBindTexture tex tex_name *>
+         action)
+        (glBindTexture tex old)
+
+withBindingByTopology :: Texture -> (GLenum -> IO a) -> IO a
+withBindingByTopology tex action =
+    withResource (resource tex) $ \(Texture_ name) ->
+        case topo of
+            Tex1D {..} -> withBinding gl_TEXTURE_1D
+                                      gl_TEXTURE_BINDING_1D
+                                      name $ action gl_TEXTURE_1D
+            Tex2D {..} -> withBinding gl_TEXTURE_2D
+                                      gl_TEXTURE_BINDING_2D
+                                      name $ action gl_TEXTURE_2D
+            Tex3D {..} -> withBinding gl_TEXTURE_3D
+                                      gl_TEXTURE_BINDING_3D
+                                      name $ action gl_TEXTURE_3D
+            Tex1DArray {..} -> withBinding gl_TEXTURE_1D_ARRAY
+                                           gl_TEXTURE_BINDING_1D_ARRAY
+                                           name $ action gl_TEXTURE_1D_ARRAY
+            Tex2DArray {..} -> withBinding gl_TEXTURE_2D_ARRAY
+                                           gl_TEXTURE_BINDING_2D_ARRAY
+                                           name $ action gl_TEXTURE_2D_ARRAY
+            Tex2DMultisample {..} -> withBinding
+                                       gl_TEXTURE_2D_MULTISAMPLE
+                                       gl_TEXTURE_BINDING_2D_MULTISAMPLE
+                                       name $ action
+                                              gl_TEXTURE_2D_MULTISAMPLE
+            Tex2DMultisampleArray {..} -> withBinding
+                                       gl_TEXTURE_2D_MULTISAMPLE_ARRAY
+                                       gl_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
+                                       name $ action
+                                              gl_TEXTURE_2D_MULTISAMPLE_ARRAY
+            TexCube {..} -> withBinding gl_TEXTURE_CUBE_MAP
+                                        gl_TEXTURE_BINDING_CUBE_MAP
+                                        name $ action gl_TEXTURE_CUBE_MAP
+
+  where
+    topo = topology $ viewSpecification tex
+
+withTextureBinding :: Texture -> TextureUnit -> IO a -> IO a
+withTextureBinding tex unit action = do
+    old_active <- gi gl_ACTIVE_TEXTURE
+    glActiveTexture (gl_TEXTURE0 + fromIntegral unit)
+    finally (withBindingByTopology tex $ const action) $
+        glActiveTexture old_active
 

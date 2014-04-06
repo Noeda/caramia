@@ -20,6 +20,9 @@ import qualified Caramia.VAO.Internal as VAO
 import qualified Caramia.Shader.Internal as Shader
 import qualified Caramia.Framebuffer as FBuf
 import qualified Caramia.Framebuffer.Internal as FBuf
+import qualified Data.IntMap.Strict as IM
+import Caramia.Texture
+import Caramia.Texture.Internal ( withTextureBinding )
 import Caramia.Resource
 import Caramia.Buffer.Internal
 import Caramia.Internal.OpenGLCApi
@@ -108,6 +111,10 @@ data DrawCommand = DrawCommand
     -- ^ How to select the attribute data from `primitivesVAO`.
     , targetFramebuffer :: FBuf.Framebuffer
     -- ^ Where do you want to render?
+    , bindTextures  :: IM.IntMap Texture
+    -- ^ Which textures do you want to bind? The keys in this integer map are
+    -- `TextureUnit`s and tell which texture units you want to bind given
+    -- textures.
     }
 
 -- | Returns a default draw command.
@@ -123,6 +130,8 @@ data DrawCommand = DrawCommand
 -- `numInstances` is set to 1. In future versions if we add any new fields
 -- those fields will have a sane default value.
 --
+-- No textures are bound by default.
+--
 -- `targetFramebuffer` is the screen framebuffer by default.
 drawCommand :: DrawCommand
 drawCommand = DrawCommand
@@ -132,6 +141,7 @@ drawCommand = DrawCommand
     , pipeline      = error "drawCommand: pipeline is not set."
     , sourceData    = error "drawCommand: sourceData is not set."
     , targetFramebuffer = FBuf.screenFramebuffer
+    , bindTextures  = IM.empty
     , numInstances  = 1 }
 {-# INLINE drawCommand #-}
 
@@ -161,6 +171,7 @@ draw :: DrawCommand -> IO ()
 draw (DrawCommand {..})
     | numIndices == 0 = return ()
     | otherwise = withPipeline pipeline $
+    withBoundTextures bindTextures $
     withResource (VAO.resource primitivesVAO) $ \(VAO.VAO_ vao_name) ->
         withBoundVAO vao_name $
             FBuf.withBinding targetFramebuffer $
@@ -186,6 +197,13 @@ draw (DrawCommand {..})
 -- `DrawCommand` right there, so we can avoid all sorts of boxing and checking
 -- that happens.
 {-# INLINE draw #-}
+
+withBoundTextures :: IM.IntMap Texture -> IO a -> IO a
+withBoundTextures (IM.assocs -> bindings) action = rec bindings
+  where
+    rec [] = action
+    rec ((unit, tex):rest) =
+        withTextureBinding tex unit $ rec rest
 
 withPipeline :: Shader.Pipeline -> IO a -> IO a
 withPipeline pipeline action =

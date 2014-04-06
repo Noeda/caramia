@@ -19,6 +19,8 @@ module Caramia.Texture
     , uploading3D
     , UploadFormat(..)
     , CubeSide(..)
+    -- * Texture units
+    , TextureUnit
     -- * Mipmapping
     , generateMipmaps
     -- * Views
@@ -259,50 +261,6 @@ newTexture spec = mask_ $ do
                            (fromIntegral $ toConstantIF (imageFormat spec))
                            (safeFromIntegral widthCube)
                            (safeFromIntegral widthCube)
-
-withBinding :: GLenum -> GLenum -> GLuint -> IO a -> IO a
-withBinding tex tex_binding tex_name action = do
-    old <- gi tex_binding
-    finally
-        (glBindTexture tex tex_name *>
-         action)
-        (glBindTexture tex old)
-
-withBindingByTopology :: Texture -> (GLenum -> IO a) -> IO a
-withBindingByTopology tex action =
-    withResource (resource tex) $ \(Texture_ name) ->
-        case topo of
-            Tex1D {..} -> withBinding gl_TEXTURE_1D
-                                      gl_TEXTURE_BINDING_1D
-                                      name $ action gl_TEXTURE_1D
-            Tex2D {..} -> withBinding gl_TEXTURE_2D
-                                      gl_TEXTURE_BINDING_2D
-                                      name $ action gl_TEXTURE_2D
-            Tex3D {..} -> withBinding gl_TEXTURE_3D
-                                      gl_TEXTURE_BINDING_3D
-                                      name $ action gl_TEXTURE_3D
-            Tex1DArray {..} -> withBinding gl_TEXTURE_1D_ARRAY
-                                           gl_TEXTURE_BINDING_1D_ARRAY
-                                           name $ action gl_TEXTURE_1D_ARRAY
-            Tex2DArray {..} -> withBinding gl_TEXTURE_2D_ARRAY
-                                           gl_TEXTURE_BINDING_2D_ARRAY
-                                           name $ action gl_TEXTURE_2D_ARRAY
-            Tex2DMultisample {..} -> withBinding
-                                       gl_TEXTURE_2D_MULTISAMPLE
-                                       gl_TEXTURE_BINDING_2D_MULTISAMPLE
-                                       name $ action
-                                              gl_TEXTURE_2D_MULTISAMPLE
-            Tex2DMultisampleArray {..} -> withBinding
-                                       gl_TEXTURE_2D_MULTISAMPLE_ARRAY
-                                       gl_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
-                                       name $ action
-                                              gl_TEXTURE_2D_MULTISAMPLE_ARRAY
-            TexCube {..} -> withBinding gl_TEXTURE_CUBE_MAP
-                                        gl_TEXTURE_BINDING_CUBE_MAP
-                                        name $ action gl_TEXTURE_CUBE_MAP
-
-  where
-    topo = topology $ viewSpecification tex
 
 -- | Generate all mipmaps for a texture. If mipmap levels were specified, that
 -- is.
