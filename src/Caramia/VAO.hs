@@ -265,7 +265,9 @@ sourceVertexData buffer sourcing vao = mask_ $
             (safeFromIntegral $ attributeIndex sourcing)
             (safeFromIntegral ncomponents)
             (toConstant stype)
-            (fromIntegral $ if normalize sourcing then gl_TRUE else gl_FALSE)
+            (fromIntegral $ if isIntegerType stype && normalize sourcing
+                              then gl_TRUE
+                              else gl_FALSE)
             (safeFromIntegral $ stride sourcing)
             (safeFromIntegral $ offset sourcing)
 
