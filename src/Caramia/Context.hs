@@ -109,6 +109,11 @@ giveContext action = mask $ \restore -> do
           =<<
           lookupEnv "CARAMIA_OPENGL_DEBUG"
 
+    -- Enable sRGB framebuffers
+    -- There seems to be no reason not to enable it; you can turn off sRGB
+    -- handling in other ways.
+    glEnable gl_FRAMEBUFFER_SRGB
+
     cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
     tid <- myThreadId
     atomicModifyIORef' runningContexts $ \old_map ->
