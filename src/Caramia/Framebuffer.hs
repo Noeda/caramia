@@ -146,7 +146,7 @@ newFramebuffer targets
                            , dimensions = calculatedDimensions
                            , binder = withThisFramebuffer res }
   where
-    calculatedDimensions =
+    calculatedDimensions@(fw, fh) =
         foldl' (\(lowest_w, lowest_h) (w, h) ->
                    (min lowest_w w, min lowest_h h))
                (maxBound, maxBound)
@@ -209,11 +209,19 @@ newFramebuffer targets
     withThisFramebuffer res action = mask $ \restore -> do
         old_draw_framebuffer <- gi gl_DRAW_FRAMEBUFFER_BINDING
         old_read_framebuffer <- gi gl_READ_FRAMEBUFFER_BINDING
-        withResource res $ \(Framebuffer_ fbuf_name) -> do
-            glBindFramebuffer gl_FRAMEBUFFER fbuf_name
-            finally (restore action) $ do
-                glBindFramebuffer gl_DRAW_FRAMEBUFFER old_draw_framebuffer
-                glBindFramebuffer gl_READ_FRAMEBUFFER old_read_framebuffer
+        allocaArray 4 $ \viewport_ptr -> do
+            glGetIntegerv gl_VIEWPORT viewport_ptr
+            withResource res $ \(Framebuffer_ fbuf_name) -> do
+                glBindFramebuffer gl_FRAMEBUFFER fbuf_name
+                x <- peekElemOff viewport_ptr 0
+                y <- peekElemOff viewport_ptr 1
+                w <- peekElemOff viewport_ptr 2
+                h <- peekElemOff viewport_ptr 3
+                glViewport 0 0 (fromIntegral fw) (fromIntegral fh)
+                finally (restore action) $ do
+                    glViewport x y w h
+                    glBindFramebuffer gl_DRAW_FRAMEBUFFER old_draw_framebuffer
+                    glBindFramebuffer gl_READ_FRAMEBUFFER old_read_framebuffer
 
 -- | Returns the maximum number of draw buffers in the current context.
 --
