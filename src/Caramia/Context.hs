@@ -113,6 +113,7 @@ giveContext action = mask $ \restore -> do
     -- There seems to be no reason not to enable it; you can turn off sRGB
     -- handling in other ways.
     glEnable gl_FRAMEBUFFER_SRGB
+    glEnable gl_BLEND
 
     cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
     tid <- myThreadId

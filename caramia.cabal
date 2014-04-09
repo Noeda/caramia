@@ -63,6 +63,7 @@ library
                        Caramia.Memory
                        Caramia.Framebuffer
                        Caramia.Color
+                       Caramia.Blend
   other-modules:       Caramia.Internal.Safe
                        Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions
@@ -71,6 +72,7 @@ library
                        Caramia.ImageFormats.Internal
                        Caramia.Shader.Internal
                        Caramia.Buffer.Internal
+                       Caramia.Blend.Internal
                        Caramia.VAO.Internal
   c-sources:           src/c/gl_api.c
 

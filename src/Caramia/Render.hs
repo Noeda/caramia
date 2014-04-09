@@ -21,6 +21,8 @@ import qualified Caramia.Shader.Internal as Shader
 import qualified Caramia.Framebuffer as FBuf
 import qualified Caramia.Framebuffer.Internal as FBuf
 import qualified Data.IntMap.Strict as IM
+import Caramia.Blend
+import Caramia.Blend.Internal
 import Caramia.Texture
 import Caramia.Texture.Internal ( withTextureBinding )
 import Caramia.Resource
@@ -108,6 +110,7 @@ data DrawCommand = DrawCommand
                                   -- ^ Which shader pipeline to use.
     , numInstances  :: Int        -- ^ How many instances to render.
     , sourceData    :: SourceData
+    , blending      :: BlendSpec  -- ^ Which blending to use.
     -- ^ How to select the attribute data from `primitivesVAO`.
     , targetFramebuffer :: FBuf.Framebuffer
     -- ^ Where do you want to render?
@@ -132,6 +135,8 @@ data DrawCommand = DrawCommand
 --
 -- No textures are bound by default.
 --
+-- Blending mode is premultiplied alpha by default.
+--
 -- `targetFramebuffer` is the screen framebuffer by default.
 drawCommand :: DrawCommand
 drawCommand = DrawCommand
@@ -141,6 +146,7 @@ drawCommand = DrawCommand
     , pipeline      = error "drawCommand: pipeline is not set."
     , sourceData    = error "drawCommand: sourceData is not set."
     , targetFramebuffer = FBuf.screenFramebuffer
+    , blending      = preMultipliedAlpha
     , bindTextures  = IM.empty
     , numInstances  = 1 }
 {-# INLINE drawCommand #-}
@@ -169,8 +175,14 @@ data SourceData =
 -- | Draws according to a `DrawCommand`.
 draw :: DrawCommand -> IO ()
 draw (DrawCommand {..})
+    -- TODO:
+    -- this call has super high overhead. Just look at all these withX
+    -- functions and all the OpenGL bindings they do! We could do better if we
+    -- used a special structure for tracking state changes that can be
+    -- unwrapped to the IO monad to contain those state changes.
     | numIndices == 0 = return ()
     | otherwise = withPipeline pipeline $
+    withBlendings blending $
     withBoundTextures bindTextures $
     withResource (VAO.resource primitivesVAO) $ \(VAO.VAO_ vao_name) ->
         withBoundVAO vao_name $
