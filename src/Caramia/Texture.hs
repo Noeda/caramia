@@ -1,7 +1,7 @@
 -- | Textures.
 --
 
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, ScopedTypeVariables #-}
 
 module Caramia.Texture
     (
@@ -23,6 +23,15 @@ module Caramia.Texture
     , TextureUnit
     -- * Mipmapping
     , generateMipmaps
+    -- * Texture parameters
+    , setWrapping
+    , getWrapping
+    , setMinFilter
+    , setMagFilter
+    , getMinFilter
+    , getMagFilter
+    , setAnisotropy
+    , getAnisotropy
     -- * Views
     , viewSpecification
     , viewWidth
@@ -49,6 +58,7 @@ import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
 import Foreign.Storable
 import Foreign.Ptr
+import Foreign.C.Types
 
 textureSpecification :: TextureSpecification
 textureSpecification = TextureSpecification {
@@ -551,6 +561,114 @@ maxMipmapLevels :: Int -> Int
 maxMipmapLevels width
     | width <= 0 = 0
     | otherwise = floor (logBase (2 :: Double) (fromIntegral width)) + 1
+
+class TexParam a where
+    tpEnum :: a -> GLenum
+    tpToConstant :: a -> GLenum
+    tpFromConstant :: GLenum -> a
+
+data MinFilter =
+    MiNearest
+  | MiLinear
+  | MiNearestMipmapNearest
+  | MiLinearMipmapNearest
+  | MiNearestMipmapLinear
+  | MiLinearMipmapLinear
+  deriving ( Eq, Ord, Show, Read, Typeable )
+
+data MagFilter =
+   MaNearest
+ | MaLinear
+ deriving ( Eq, Ord, Show, Read, Typeable )
+
+data Wrapping =
+   Clamp
+ | Repeat
+ deriving ( Eq, Ord, Show, Read, Typeable )
+
+toConstantW :: Wrapping -> GLenum
+toConstantW Clamp = gl_CLAMP_TO_EDGE
+toConstantW Repeat = gl_REPEAT
+
+instance TexParam MinFilter where
+    tpEnum _ = gl_TEXTURE_MIN_FILTER
+    tpToConstant MiNearest = gl_NEAREST
+    tpToConstant MiLinear  = gl_LINEAR
+    tpToConstant MiNearestMipmapNearest = gl_NEAREST_MIPMAP_NEAREST
+    tpToConstant MiLinearMipmapNearest = gl_LINEAR_MIPMAP_NEAREST
+    tpToConstant MiNearestMipmapLinear = gl_NEAREST_MIPMAP_LINEAR
+    tpToConstant MiLinearMipmapLinear = gl_LINEAR_MIPMAP_LINEAR
+    tpFromConstant c
+        | c == gl_NEAREST = MiNearest
+        | c == gl_LINEAR  = MiLinear
+        | c == gl_NEAREST_MIPMAP_NEAREST = MiNearestMipmapNearest
+        | c == gl_LINEAR_MIPMAP_NEAREST = MiLinearMipmapNearest
+        | c == gl_NEAREST_MIPMAP_LINEAR = MiNearestMipmapLinear
+        | c == gl_LINEAR_MIPMAP_LINEAR = MiLinearMipmapLinear
+        | otherwise = error "MinFilter: unexpected filtering value."
+
+instance TexParam MagFilter where
+    tpEnum _ = gl_TEXTURE_MAG_FILTER
+    tpToConstant MaNearest = gl_NEAREST
+    tpToConstant MaLinear = gl_LINEAR
+
+    tpFromConstant c
+        | c == gl_NEAREST = MaNearest
+        | c == gl_LINEAR  = MaLinear
+        | otherwise = error "MagFilter: unexpected filtering value."
+
+setMinFilter :: MinFilter -> Texture -> IO ()
+setMinFilter = setTexParam
+
+setMagFilter :: MagFilter -> Texture -> IO ()
+setMagFilter = setTexParam
+
+getMinFilter :: Texture -> IO MinFilter
+getMinFilter = getTexParam
+
+getMagFilter :: Texture -> IO MagFilter
+getMagFilter = getTexParam
+
+setTexParam :: TexParam a => a -> Texture -> IO ()
+setTexParam param tex = withBindingByTopology tex $ \target ->
+    glTexParameteri target (tpEnum param) (fromIntegral $ tpToConstant param)
+
+getTexParam :: forall a. TexParam a => Texture -> IO a
+getTexParam tex = withBindingByTopology tex $ \target ->
+    alloca $ \result_ptr -> do
+        glGetTexParameteriv target (tpEnum (undefined :: a)) result_ptr
+        tpFromConstant . fromIntegral <$> peek result_ptr
+
+setWrapping :: Wrapping -> Texture -> IO ()
+setWrapping wrapping tex = withBindingByTopology tex $ \target -> do
+    glTexParameteri target gl_TEXTURE_WRAP_S
+                           (fromIntegral $ toConstantW wrapping)
+    glTexParameteri target gl_TEXTURE_WRAP_T
+                           (fromIntegral $ toConstantW wrapping)
+    glTexParameteri target gl_TEXTURE_WRAP_R
+                           (fromIntegral $ toConstantW wrapping)
+
+getWrapping :: Texture -> IO Wrapping
+getWrapping tex = withBindingByTopology tex $ \target -> do
+    alloca $ \result_ptr -> do
+        glGetTexParameteriv target gl_TEXTURE_WRAP_S result_ptr
+        result <- fromIntegral <$> peek result_ptr
+        return $ if
+            | result == gl_CLAMP_TO_EDGE -> Clamp
+            | result == gl_REPEAT -> Repeat
+            | otherwise -> error "getWrapping: unexpected wrapping mode."
+
+setAnisotropy :: Float -> Texture -> IO ()
+setAnisotropy ani tex = withBindingByTopology tex $ \target ->
+    glTexParameterf target gl_TEXTURE_MAX_ANISOTROPY (CFloat ani)
+
+getAnisotropy :: Texture -> IO Float
+getAnisotropy tex = withBindingByTopology tex $ \target ->
+    alloca $ \ani_ptr -> do
+        glGetTexParameterfv target gl_TEXTURE_MAX_ANISOTROPY ani_ptr
+        unwrap <$> peek ani_ptr
+  where
+    unwrap (CFloat f) = f
 
 {-
 nextMipmapLevel :: Int -> Int
