@@ -1,4 +1,5 @@
 dist
 *.trace
 /smoke-test
+default.nix
 
