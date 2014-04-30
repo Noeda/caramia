@@ -24,7 +24,7 @@ module Caramia.Color
 import Data.Typeable
 import Foreign.Storable
 import Foreign.Ptr
-import Control.Lens
+import Caramia.Internal.Lens
 
 -- | The color data type.
 --

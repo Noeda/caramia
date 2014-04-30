@@ -67,6 +67,7 @@ library
   other-modules:       Caramia.Internal.Safe
                        Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions
+                       Caramia.Internal.Lens
                        Caramia.Framebuffer.Internal
                        Caramia.Texture.Internal
                        Caramia.ImageFormats.Internal
@@ -84,7 +85,6 @@ library
                       ,vector       ==0.10.*
                       ,OpenGLRaw    ==1.4.*
                       ,text         ==1.1.*
-                      ,lens         ==4.0.*
                       ,transformers ==0.3.*
   hs-source-dirs:      src
   default-language:    Haskell2010

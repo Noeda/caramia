@@ -158,11 +158,11 @@ module Caramia.Math
 -- Hlint likes to complain about this file, mostly about the repetitions.
 --
 
-import Control.Lens
 import Foreign.Ptr ( Ptr, castPtr )
 import Foreign.Storable ( pokeElemOff, Storable(..) )
 import Foreign.Marshal.Array ( allocaArray )
 import Foreign.C.Types ( CFloat(..) )
+import Caramia.Internal.Lens
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
 
