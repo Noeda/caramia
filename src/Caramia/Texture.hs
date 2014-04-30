@@ -32,6 +32,9 @@ module Caramia.Texture
     , getMagFilter
     , setAnisotropy
     , getAnisotropy
+    , MinFilter(..)
+    , MagFilter(..)
+    , Wrapping(..)
     -- * Views
     , viewSpecification
     , viewWidth
