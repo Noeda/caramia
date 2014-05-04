@@ -34,6 +34,8 @@ module Caramia.Shader
     , ShaderStage(..)
       -- * Views
     , viewStage
+      -- * Misc
+    , nopPipeline
       -- * Exception
     , ShaderCompilationError(..)
     , ShaderLinkingError(..)
@@ -43,6 +45,7 @@ module Caramia.Shader
 
 import Caramia.Shader.Internal
 
+import Caramia.Context
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
 import Caramia.Internal.Safe
@@ -521,4 +524,23 @@ getUniformLocation name pipeline = fromIntegral <$>
     (withResource (resourcePL pipeline) $ \(Pipeline_ program) ->
         B.useAsCString (T.encodeUtf8 name) $ \cstr ->
              glGetUniformLocation program cstr)
+
+-- context local pipeline
+newtype CLNopPipeline = CLNopPipeline { unwrapCLNop :: Pipeline }
+                        deriving ( Typeable )
+
+-- | Returns a pipeline that does not do anything.
+--
+-- Within the same context, this returns the same pipeline for each invocation.
+nopPipeline :: IO Pipeline
+nopPipeline =
+    unwrapCLNop <$> retrieveContextLocalData (CLNopPipeline <$> cr)
+  where
+    cr = do
+        vsh <- newShader vsh_src Vertex
+        fsh <- newShader fsh_src Fragment
+        newPipeline [vsh, fsh]
+      where
+        vsh_src = "#version 330\nvoid main() { }\n"
+        fsh_src = "#version 330\nvoid main() { }\n"
 
