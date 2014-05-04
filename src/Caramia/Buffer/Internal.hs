@@ -2,11 +2,13 @@ module Caramia.Buffer.Internal
     ( Buffer(..)
     , Buffer_(..)
     , BufferStatus(..)
-    , AccessFlags(..) )
+    , AccessFlags(..)
+    , bufferOrdIndex )
     where
 
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
+import System.IO.Unsafe
 
 import Data.IORef
 
@@ -16,7 +18,15 @@ data Buffer = Buffer
     , status     :: !(IORef BufferStatus)
     , viewAllowedMappings :: !AccessFlags -- ^ Returns the allowed mappings.
     , viewSize   :: !Int -- ^ Returns the size of the buffer, in bytes.
+    , ordIndex   :: !Int
     }
+
+bufferOrdIndex :: IORef Int
+bufferOrdIndex = unsafePerformIO $ newIORef 0
+{-# NOINLINE bufferOrdIndex #-}
+
+instance Ord Buffer where
+    (ordIndex -> o1) `compare` (ordIndex -> o2) = o1 `compare` o2
 
 data BufferStatus = BufferStatus
     { mapped :: !Bool }

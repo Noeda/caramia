@@ -151,10 +151,12 @@ newBuffer creation
                         (\(Buffer_ bufname) -> mglDeleteBuffer bufname)
                         (return ())
         initial_status <- newIORef BufferStatus { mapped = False }
+        oi <- atomicModifyIORef' bufferOrdIndex $ \old -> ( old+1, old )
         return Buffer { resource = resource
                       , status = initial_status
                       , viewAllowedMappings = accessFlags creation
-                      , viewSize = size creation }
+                      , viewSize = size creation
+                      , ordIndex = oi }
   where
     initial_data = fromMaybe nullPtr (assertNotNull <$> initialData creation)
     safe_size = safeFromIntegral $ size creation
