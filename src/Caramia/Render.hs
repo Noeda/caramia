@@ -1,15 +1,22 @@
 -- | Rendering things.
 --
 
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, GeneralizedNewtypeDeriving #-}
 
 module Caramia.Render
     ( 
     -- * The drawing functions
       draw
+    , runDraws
+    -- * Draw command stream
+    , Draw()
+    , drawR
+    , setPipeline
     -- * Specifying what to draw
     , DrawCommand(..)
     , drawCommand
+    , DrawParams(..)
+    , defaultDrawParams
     , SourceData(..)
     , IndexType(..)
     , Primitive(..)
@@ -35,9 +42,14 @@ import Caramia.Resource
 import Caramia.Buffer.Internal
 import Caramia.Internal.OpenGLCApi
 import Caramia.Internal.Safe
+import Control.Monad.IO.Class
+import Control.Monad.Trans.State.Strict
+import Control.Applicative
+import Control.Monad
 import Foreign.Ptr
 import Foreign.C.Types
 import Data.Word
+import Data.Typeable
 
 -- | The different types of primitives you can use for rendering.
 --
@@ -104,18 +116,13 @@ instance IndexTypeable CUShort where
 instance IndexTypeable CUChar where
     toIndexType _ = IWord8
 
--- | Contains a specification of what to draw.
+-- | Contains drawing parameters.
 --
--- It is recommended to use `drawCommand` instead of this constructor.
-data DrawCommand = DrawCommand
-    { primitiveType :: Primitive
-    , primitivesVAO :: VAO.VAO    -- ^ This is the VAO from which attributes
-                                  --   are retrieved in the shader pipeline.
-    , numIndices    :: Int        -- ^ How many indices to render?
-    , pipeline      :: Shader.Pipeline
-                                  -- ^ Which shader pipeline to use.
-    , numInstances  :: Int        -- ^ How many instances to render.
-    , sourceData    :: SourceData
+-- You can use `defaultDrawParams` to obtain default draw parameters.
+data DrawParams = DrawParams
+    {
+      pipeline      :: Shader.Pipeline
+    -- ^ Which shader pipeline to use.
     , fragmentPassTests :: !FragmentPassTests
     -- ^ What kind of fragment pass tests to use.
     , blending      :: BlendSpec  -- ^ Which blending to use.
@@ -127,6 +134,37 @@ data DrawCommand = DrawCommand
     -- `TextureUnit`s and tell which texture units you want to bind given
     -- textures.
     }
+    deriving ( Eq, Typeable )
+
+-- | Default drawing parameters.
+--
+-- `pipeline` is not set (that is, it's undefined). You must set it.
+--
+-- No textures are bound.
+--
+-- Blending mode is premultiplied alpha.
+--
+-- `targetFramebuffer` is the screen framebuffer.
+defaultDrawParams :: DrawParams
+defaultDrawParams = DrawParams {
+    pipeline = error "defaultDrawParams: pipeline is not set."
+  , fragmentPassTests = defaultFragmentPassTests
+  , blending = preMultipliedAlpha
+  , bindTextures = IM.empty
+  , targetFramebuffer = FBuf.screenFramebuffer }
+
+-- | Contains a specification of what to draw.
+--
+-- It is recommended to use `drawCommand` instead of this constructor.
+data DrawCommand = DrawCommand
+    { primitiveType :: Primitive
+    , primitivesVAO :: VAO.VAO    -- ^ This is the VAO from which attributes
+                                  --   are retrieved in the shader pipeline.
+    , numIndices    :: Int        -- ^ How many indices to render?
+    , numInstances  :: Int        -- ^ How many instances to render.
+    , sourceData    :: SourceData
+    }
+    deriving ( Eq, Typeable )
 
 -- | Returns a default draw command.
 --
@@ -135,28 +173,16 @@ data DrawCommand = DrawCommand
 -- * `primitiveType`
 -- * `primitivesVAO`
 -- * `numIndices`
--- * `pipeline`
 -- * `sourceData`
 --
--- `numInstances` is set to 1. In future versions if we add any new fields
--- those fields will have a sane default value.
---
--- No textures are bound by default.
---
--- Blending mode is premultiplied alpha by default.
---
--- `targetFramebuffer` is the screen framebuffer by default.
+-- `numInstances` is set to 1. In future (minor) versions if we add any new
+-- fields those fields will have a sane default value.
 drawCommand :: DrawCommand
 drawCommand = DrawCommand
     { primitiveType = error "drawCommand: primitiveType is not set."
     , primitivesVAO = error "drawCommand: primitivesVAO is not set."
     , numIndices    = error "drawCommand: numIndices is not set."
-    , pipeline      = error "drawCommand: pipeline is not set."
     , sourceData    = error "drawCommand: sourceData is not set."
-    , targetFramebuffer = FBuf.screenFramebuffer
-    , blending      = preMultipliedAlpha
-    , bindTextures  = IM.empty
-    , fragmentPassTests = defaultFragmentPassTests
     , numInstances  = 1 }
 {-# INLINE drawCommand #-}
 
@@ -180,23 +206,22 @@ data SourceData =
     { indexBuffer :: Buffer
     , indexOffset :: Int
     , indexType   :: IndexType }
+  deriving ( Eq, Ord, Typeable )
 
 -- | Draws according to a `DrawCommand`.
-draw :: DrawCommand -> IO ()
-draw (DrawCommand {..})
-    -- TODO:
-    -- this call has super high overhead. Just look at all these withX
-    -- functions and all the OpenGL bindings they do! We could do better if we
-    -- used a special structure for tracking state changes that can be
-    -- unwrapped to the IO monad to contain those state changes.
+--
+-- There is a very large overhead in doing a single `draw` call. You probably
+-- want to use `runDraws` and `drawR` instead.
+draw :: DrawCommand -> DrawParams -> IO ()
+draw cmd params = runDraws params (drawR cmd)
+
+-- | Same as `draw` but in a `Draw` command stream.
+drawR :: DrawCommand -> Draw ()
+drawR (DrawCommand {..})
     | numIndices == 0 = return ()
-    | otherwise = withPipeline pipeline $
-    withFragmentPassTests fragmentPassTests $
-    withBlendings blending $
-    withBoundTextures bindTextures $
+    | otherwise = liftIO $
     withResource (VAO.resource primitivesVAO) $ \(VAO.VAO_ vao_name) ->
         withBoundVAO vao_name $
-            FBuf.withBinding targetFramebuffer $
             case sourceData of
                 Primitives {..} -> do
                     glDrawArraysInstanced
@@ -219,6 +244,60 @@ draw (DrawCommand {..})
 -- `DrawCommand` right there, so we can avoid all sorts of boxing and checking
 -- that happens.
 {-# INLINE draw #-}
+
+withParams :: DrawParams -> IO a -> IO a
+withParams (DrawParams {..}) action =
+    FBuf.withBinding targetFramebuffer $
+    withPipeline pipeline $
+    withFragmentPassTests fragmentPassTests $
+    withBlendings blending $
+    withBoundTextures bindTextures $
+    action
+
+-- We use a state to keep track of what we have bound. Why? For garbage
+-- collection! If we don't keep references, it's possible things get garbage
+-- collected under our feet because `runDraws` might have bound resources in
+-- OpenGL with no Haskell values pointing to them.
+data DrawState = DrawState
+    { boundPipeline :: !Shader.Pipeline }
+
+newtype Draw a = Draw (StateT DrawState IO a)
+                 deriving ( Monad, Applicative, Functor, Typeable )
+
+-- | Using `liftIO` is safe inside a `Draw` stream. It is possible to run
+-- nested `Draw` streams this way as well.
+--
+-- One useful thing to do is to set uniforms to pipelines with `setUniform`.
+instance MonadIO Draw where
+    liftIO = Draw . liftIO
+
+-- | Runs a drawing specification.
+--
+-- You can think of this as running many `draw` commands with similar draw
+-- command specifications. This call is an optimization to `draw` which has a
+-- high overhead by itself.
+--
+-- Another way to think of this is a place where the functional, \"no hidden
+-- state\" design of the Caramia API is relaxed inside the `Draw` stream.
+runDraws :: DrawParams      -- ^ Initial drawing parameters. These can be
+                            --   changed in the `Draw` command stream.
+         -> Draw a          -- ^ Draw command stream.
+         -> IO a
+runDraws params (Draw cmd_stream) =
+    withParams params $ do
+        (result, st) <-
+            runStateT cmd_stream DrawState { boundPipeline = pipeline params }
+        st `seq` return result
+
+-- | Changes the pipeline in a `Draw` command stream.
+setPipeline :: Shader.Pipeline -> Draw ()
+setPipeline pl = Draw $ do
+    old_pl <- boundPipeline <$> get
+    when (old_pl /= pl) $ do
+        liftIO $ withResource (Shader.resourcePL pl) $
+            \(Shader.Pipeline_ program) ->
+                setBoundProgram program
+        modify (\old -> old { boundPipeline = pl })
 
 withBoundTextures :: IM.IntMap Texture -> IO a -> IO a
 withBoundTextures (IM.assocs -> bindings) action = rec bindings

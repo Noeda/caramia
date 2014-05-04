@@ -22,6 +22,8 @@ module Caramia.Internal.OpenGLCApi
     , withBoundProgram
     , withBoundDrawFramebuffer
 
+    , setBoundProgram
+
     -- These are not yet in OpenGLRaw
     , glTexStorage1D
     , glTexStorage2D
@@ -110,6 +112,9 @@ withBoundProgram program action = do
         alloca $ \x_ptr -> glGetIntegerv gl_CURRENT_PROGRAM x_ptr *> peek x_ptr
     finally (glUseProgram program *> action)
             (glUseProgram $ fromIntegral old)
+
+setBoundProgram :: GLuint -> IO ()
+setBoundProgram program = glUseProgram program
 
 withBoundBuffer :: GLuint -> IO a -> IO a
 withBoundBuffer buf action = do

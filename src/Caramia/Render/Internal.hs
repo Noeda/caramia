@@ -156,6 +156,7 @@ data FragmentPassTests = FragmentPassTests {
   -- ^ What to do with the stencil buffer if stencil and depth test passes, or
   -- if depth buffer is not present or depth test is disabled.
   }
+  deriving ( Eq, Ord, Show, Read, Typeable )
 
 -- | Returns the default fragment pass tests.
 --
