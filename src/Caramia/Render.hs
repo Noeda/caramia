@@ -13,7 +13,12 @@ module Caramia.Render
     , SourceData(..)
     , IndexType(..)
     , Primitive(..)
-    , IndexTypeable(..) )
+    , IndexTypeable(..)
+    -- * Fragment pass tests
+    , FragmentPassTests(..)
+    , defaultFragmentPassTests
+    , ComparisonFunc(..)
+    , StencilOp(..) )
     where
 
 import qualified Caramia.VAO.Internal as VAO
@@ -21,6 +26,7 @@ import qualified Caramia.Shader.Internal as Shader
 import qualified Caramia.Framebuffer as FBuf
 import qualified Caramia.Framebuffer.Internal as FBuf
 import qualified Data.IntMap.Strict as IM
+import Caramia.Render.Internal
 import Caramia.Blend
 import Caramia.Blend.Internal
 import Caramia.Texture
@@ -110,6 +116,8 @@ data DrawCommand = DrawCommand
                                   -- ^ Which shader pipeline to use.
     , numInstances  :: Int        -- ^ How many instances to render.
     , sourceData    :: SourceData
+    , fragmentPassTests :: !FragmentPassTests
+    -- ^ What kind of fragment pass tests to use.
     , blending      :: BlendSpec  -- ^ Which blending to use.
     -- ^ How to select the attribute data from `primitivesVAO`.
     , targetFramebuffer :: FBuf.Framebuffer
@@ -148,6 +156,7 @@ drawCommand = DrawCommand
     , targetFramebuffer = FBuf.screenFramebuffer
     , blending      = preMultipliedAlpha
     , bindTextures  = IM.empty
+    , fragmentPassTests = defaultFragmentPassTests
     , numInstances  = 1 }
 {-# INLINE drawCommand #-}
 
@@ -182,6 +191,7 @@ draw (DrawCommand {..})
     -- unwrapped to the IO monad to contain those state changes.
     | numIndices == 0 = return ()
     | otherwise = withPipeline pipeline $
+    withFragmentPassTests fragmentPassTests $
     withBlendings blending $
     withBoundTextures bindTextures $
     withResource (VAO.resource primitivesVAO) $ \(VAO.VAO_ vao_name) ->

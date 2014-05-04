@@ -68,6 +68,7 @@ library
                        Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions
                        Caramia.Internal.Lens
+                       Caramia.Render.Internal
                        Caramia.Framebuffer.Internal
                        Caramia.Texture.Internal
                        Caramia.ImageFormats.Internal
