@@ -23,6 +23,7 @@ module Caramia.Internal.OpenGLCApi
     , withBoundDrawFramebuffer
 
     , setBoundProgram
+    , setBoundElementBuffer
 
     -- These are not yet in OpenGLRaw
     , glTexStorage1D
@@ -123,6 +124,10 @@ withBoundBuffer buf action = do
                            peek x_ptr
     finally (glBindBuffer gl_ARRAY_BUFFER buf *> action)
             (glBindBuffer gl_ARRAY_BUFFER $ fromIntegral old)
+
+setBoundElementBuffer :: GLuint -> IO ()
+setBoundElementBuffer =
+    glBindBuffer gl_ELEMENT_ARRAY_BUFFER
 
 withBoundElementBuffer :: GLuint -> IO a -> IO a
 withBoundElementBuffer buf action = do

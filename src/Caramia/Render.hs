@@ -219,8 +219,10 @@ draw cmd params = runDraws params (drawR cmd)
 drawR :: DrawCommand -> Draw ()
 drawR (DrawCommand {..})
     | numIndices == 0 = return ()
-    | otherwise = liftIO $
-    withResource (VAO.resource primitivesVAO) $ \(VAO.VAO_ vao_name) ->
+    | otherwise = Draw $ do
+    old_ebo <- boundEbo <$> get
+    liftIO $
+        withResource (VAO.resource primitivesVAO) $ \(VAO.VAO_ vao_name) ->
         withBoundVAO vao_name $
             case sourceData of
                 Primitives {..} -> do
@@ -231,35 +233,28 @@ drawR (DrawCommand {..})
                          (safeFromIntegral numInstances)
                 PrimitivesWithIndices {..} -> do
                     withResource (resource indexBuffer) $
-                            \(Buffer_ buf_name) ->
-                        withBoundElementBuffer buf_name $
-                            glDrawElementsInstanced
-                                   (toConstant primitiveType)
-                                   (safeFromIntegral numIndices)
-                                   (toConstantIT indexType)
-                                   (intPtrToPtr $
-                                    fromIntegral indexOffset)
-                                   (safeFromIntegral numInstances)
+                            \(Buffer_ buf_name) -> do
+                        when (buf_name /= old_ebo) $
+                            setBoundElementBuffer buf_name
+                        glDrawElementsInstanced
+                                (toConstant primitiveType)
+                                (safeFromIntegral numIndices)
+                                (toConstantIT indexType)
+                                (intPtrToPtr $
+                                fromIntegral indexOffset)
+                                (safeFromIntegral numInstances)
 -- inline `draw` because it's probably quite common to directly construct
 -- `DrawCommand` right there, so we can avoid all sorts of boxing and checking
 -- that happens.
 {-# INLINE draw #-}
-
-withParams :: DrawParams -> IO a -> IO a
-withParams (DrawParams {..}) action =
-    FBuf.withBinding targetFramebuffer $
-    withPipeline pipeline $
-    withFragmentPassTests fragmentPassTests $
-    withBlendings blending $
-    withBoundTextures bindTextures $
-    action
 
 -- We use a state to keep track of what we have bound. Why? For garbage
 -- collection! If we don't keep references, it's possible things get garbage
 -- collected under our feet because `runDraws` might have bound resources in
 -- OpenGL with no Haskell values pointing to them.
 data DrawState = DrawState
-    { boundPipeline :: !Shader.Pipeline }
+    { boundPipeline :: !Shader.Pipeline
+    , boundEbo :: !GLuint }
 
 newtype Draw a = Draw (StateT DrawState IO a)
                  deriving ( Monad, Applicative, Functor, Typeable )
@@ -286,8 +281,19 @@ runDraws :: DrawParams      -- ^ Initial drawing parameters. These can be
 runDraws params (Draw cmd_stream) =
     withParams params $ do
         (result, st) <-
-            runStateT cmd_stream DrawState { boundPipeline = pipeline params }
+            runStateT cmd_stream DrawState { boundPipeline = pipeline params
+                                           , boundEbo = 0 }
         st `seq` return result
+
+withParams :: DrawParams -> IO a -> IO a
+withParams (DrawParams {..}) action =
+    FBuf.withBinding targetFramebuffer $
+    withPipeline pipeline $
+    withFragmentPassTests fragmentPassTests $
+    withBlendings blending $
+    withBoundTextures bindTextures $
+    withBoundElementBuffer 0 $
+    action
 
 -- | Changes the pipeline in a `Draw` command stream.
 setPipeline :: Shader.Pipeline -> Draw ()
