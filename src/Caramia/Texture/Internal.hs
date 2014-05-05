@@ -2,14 +2,13 @@
 
 module Caramia.Texture.Internal where
 
+import Caramia.Prelude
+
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
 import Caramia.ImageFormats
-import Data.IORef
-import Data.Typeable
 import System.IO.Unsafe
 import Control.Exception
-import Control.Applicative
 
 data Texture = Texture
     { resource :: !(Resource (Texture_))

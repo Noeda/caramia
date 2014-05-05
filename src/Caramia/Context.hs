@@ -27,20 +27,14 @@ module Caramia.Context
     , TooOldOpenGL(..) )
     where
 
-import Data.IORef
-import Data.Monoid
-import Data.Typeable
+import Caramia.Prelude
+
 import Data.Dynamic
-import Control.Applicative
 import Control.Concurrent
 import Control.Exception
-import Control.Monad
 import System.IO.Unsafe
 import System.Environment
-
-import Foreign.Storable
-import Foreign.Marshal.Alloc
-
+import Foreign
 import Graphics.Rendering.OpenGL.Raw.Core32
 
 import qualified Data.Map.Strict as M

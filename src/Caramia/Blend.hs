@@ -13,6 +13,7 @@ module Caramia.Blend
     , preMultipliedAlpha )
     where
 
+--import Caramia.Prelude
 import Caramia.Blend.Internal
 import Caramia.Color
 

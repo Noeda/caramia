@@ -11,16 +11,12 @@ module Caramia.Internal.OpenGLExtensions
     , whenExt )
     where
 
+import Caramia.Prelude
 import Caramia.Context
 
 import Graphics.Rendering.OpenGL.Raw.Core32
-import Foreign.Marshal.Alloc
-import Foreign.Storable
+import Foreign
 import Foreign.C.String
-import Foreign.Ptr
-import Data.Foldable
-import Data.Typeable
-import Control.Applicative
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class
 

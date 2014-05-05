@@ -64,8 +64,8 @@ library
                        Caramia.Framebuffer
                        Caramia.Color
                        Caramia.Blend
-  other-modules:       Caramia.Internal.Safe
-                       Caramia.Internal.OpenGLCApi
+                       Caramia.Prelude
+  other-modules:       Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions
                        Caramia.Internal.Lens
                        Caramia.Render.Internal
@@ -87,10 +87,12 @@ library
                       ,OpenGLRaw    ==1.4.*
                       ,text         ==1.1.*
                       ,transformers ==0.3.*
+                      ,semigroups   ==0.*
   hs-source-dirs:      src
   default-language:    Haskell2010
   default-extensions:  AutoDeriveTypeable, OverloadedStrings, FlexibleInstances
                       ,FlexibleContexts, LambdaCase, MultiWayIf, ViewPatterns
+                      ,NoImplicitPrelude
 
 -- This is just a dumping ground test that does stupid things. It's used to
 -- check if things work at all.

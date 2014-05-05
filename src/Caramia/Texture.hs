@@ -45,22 +45,15 @@ module Caramia.Texture
     , maxMipmapLevels )
     where
 
+import Caramia.Prelude
+
 import Caramia.Texture.Internal
 import Caramia.Internal.OpenGLCApi
-import Caramia.Internal.Safe
 import qualified Caramia.Buffer.Internal as Buf
 import Caramia.ImageFormats.Internal
 import Caramia.Resource
-import Data.Typeable
-import Data.IORef
-import Data.Monoid
-import Control.Monad
 import Control.Exception
-import Control.Applicative
-import Foreign.Marshal.Alloc
-import Foreign.Marshal.Utils
-import Foreign.Storable
-import Foreign.Ptr
+import Foreign
 import Foreign.C.Types
 
 textureSpecification :: TextureSpecification

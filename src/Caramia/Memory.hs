@@ -8,7 +8,7 @@ module Caramia.Memory
     , MemoryInfo(..) )
     where
 
-import Data.Typeable
+import Caramia.Prelude
 import Caramia.Context
 import Caramia.Internal.OpenGLCApi
 import Caramia.Internal.OpenGLExtensions

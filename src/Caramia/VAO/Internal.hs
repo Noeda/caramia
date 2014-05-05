@@ -3,10 +3,11 @@ module Caramia.VAO.Internal
     , VAO_(..) )
     where
 
+import Caramia.Prelude
+
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
 import qualified Caramia.Buffer.Internal as Buf
-import Data.IORef
 
 -- | The vertex array object data type.
 data VAO = VAO

@@ -2,10 +2,9 @@
 
 module Caramia.Render.Internal where
 
-import Control.Applicative
+import Caramia.Prelude
+
 import Caramia.Internal.OpenGLCApi
-import Data.Typeable
-import Data.Word
 import Control.Exception
 
 -- | A comparison function. Incoming value is compared with this function to

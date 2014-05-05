@@ -21,20 +21,13 @@ module Caramia.VAO
     , sourceTypeSize )
     where
 
+import Caramia.Prelude
+
 import Caramia.VAO.Internal
 import Caramia.Resource
 import qualified Caramia.Buffer.Internal as Buf
 import Caramia.Internal.OpenGLCApi
-import Caramia.Internal.Safe
-
-import Data.Monoid
-import Data.Word
-import Data.Int
-import Data.IORef
-import Data.List ( find )
 import Control.Exception
-import Control.Monad
-import Control.Applicative
 
 -- | Creates a vertex array object.
 --

@@ -22,13 +22,9 @@ module Caramia.Resource
     , withResource )
     where
 
+import Caramia.Prelude
 import Caramia.Context
-
-import Data.Monoid
-import Data.IORef
 import Control.Exception
-import Control.Monad
-import Control.Applicative
 
 -- | The data type of a Caramia resource.
 data Resource a = Resource

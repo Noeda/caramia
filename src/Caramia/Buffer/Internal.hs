@@ -6,11 +6,11 @@ module Caramia.Buffer.Internal
     , bufferOrdIndex )
     where
 
+import Caramia.Prelude
+
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
 import System.IO.Unsafe
-
-import Data.IORef
 
 -- | Buffer data type.
 data Buffer = Buffer

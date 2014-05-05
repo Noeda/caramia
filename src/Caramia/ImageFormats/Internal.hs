@@ -5,10 +5,9 @@
 
 module Caramia.ImageFormats.Internal where
 
+import Caramia.Prelude
+
 import Caramia.Internal.OpenGLCApi
-import Data.Typeable
-import Data.Word
-import Data.Int
 import Foreign.C.Types
 
 -- | Given a format, returns `True` if that format can be rendered to. That is,

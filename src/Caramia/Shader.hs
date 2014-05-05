@@ -43,29 +43,20 @@ module Caramia.Shader
     )
     where
 
+import Caramia.Prelude
+
 import Caramia.Shader.Internal
 
 import Caramia.Context
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
-import Caramia.Internal.Safe
 import Caramia.Math
 
 import GHC.Float ( double2Float )
 
 import Control.Exception
-import Control.Monad
-import Control.Applicative
+import Foreign
 import Foreign.C.Types
-import Foreign.Storable
-import Foreign.Ptr
-import Foreign.Marshal.Alloc
-import Foreign.Marshal.Utils
-import Data.Typeable ( cast, Typeable )
-import Data.IORef
-import Data.Int
-import Data.Word
-import Data.Foldable
 import Data.List ( nub )
 import qualified Data.ByteString as B
 import qualified Data.Text as T

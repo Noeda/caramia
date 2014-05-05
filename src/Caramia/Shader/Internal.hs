@@ -7,9 +7,9 @@ module Caramia.Shader.Internal
     , shaderIdentifierSupply )
     where
 
+import Caramia.Prelude
+
 import Caramia.Resource
-import Data.IORef
-import Data.Typeable
 import System.IO.Unsafe
 import Caramia.Internal.OpenGLCApi
 

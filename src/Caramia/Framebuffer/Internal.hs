@@ -2,10 +2,11 @@
 
 module Caramia.Framebuffer.Internal where
 
+import Caramia.Prelude
+
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
 import qualified Caramia.Texture.Internal as Tex
-import Data.Typeable
 import Control.Exception
 
 data Framebuffer =

@@ -158,6 +158,8 @@ module Caramia.Math
 -- Hlint likes to complain about this file, mostly about the repetitions.
 --
 
+import Caramia.Prelude
+
 import Foreign.Ptr ( Ptr, castPtr )
 import Foreign.Storable ( pokeElemOff, Storable(..) )
 import Foreign.Marshal.Array ( allocaArray )

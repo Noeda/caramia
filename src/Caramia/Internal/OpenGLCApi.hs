@@ -62,6 +62,8 @@ module Caramia.Internal.OpenGLCApi
     )
     where
 
+import Caramia.Prelude
+
 import Graphics.Rendering.OpenGL.Raw.Types
 import Graphics.Rendering.OpenGL.Raw.Core32
 import Graphics.Rendering.OpenGL.Raw.ARB.SeparateShaderObjects
@@ -72,12 +74,8 @@ import Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3tc
 import Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB
 import Graphics.Rendering.OpenGL.Raw.EXT.TextureFilterAnisotropic
 import Graphics.Rendering.OpenGL.Raw.GetProcAddress
-import Foreign.Marshal.Utils
-import Foreign.Marshal.Alloc
-import Foreign.Storable
-import Foreign.Ptr
+import Foreign
 import Foreign.C.Types
-import Control.Applicative
 import Control.Exception
 import System.IO.Unsafe
 

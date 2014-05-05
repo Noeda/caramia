@@ -21,7 +21,7 @@ module Caramia.Color
     , viewAlpha )
     where
 
-import Data.Typeable
+import Caramia.Prelude
 import Foreign.Storable
 import Foreign.Ptr
 import Caramia.Internal.Lens

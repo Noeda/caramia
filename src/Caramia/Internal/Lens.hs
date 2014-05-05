@@ -11,6 +11,8 @@ module Caramia.Internal.Lens
     , lens )
     where
 
+import Caramia.Prelude
+
 type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
 type Lens' s a = Lens s s a a
 

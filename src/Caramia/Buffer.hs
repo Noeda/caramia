@@ -31,27 +31,17 @@ module Caramia.Buffer
     )
     where
 
-import Prelude hiding ( map )
-
+import Caramia.Prelude hiding ( map )
 import Caramia.Buffer.Internal
 
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
-import Caramia.Internal.Safe
 
 import qualified Data.Vector.Storable as V
 
-import Data.Typeable
-import Data.IORef
 import Data.Bits
-import Data.Monoid
-import Data.Maybe
-import Foreign.Ptr
-import Foreign.Marshal.Utils
-import Foreign.Storable ( sizeOf )
-import Control.Monad
+import Foreign
 import Control.Exception
-import Control.Applicative
 
 -- | The frequency of access to a buffer.
 --

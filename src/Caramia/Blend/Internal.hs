@@ -2,12 +2,12 @@
 
 module Caramia.Blend.Internal where
 
+import Caramia.Prelude
+
 import Caramia.Internal.OpenGLCApi
 import Caramia.Color
 import Control.Exception
-import Data.Typeable
-import Foreign.Marshal.Array
-import Foreign.Storable
+import Foreign
 import Foreign.C.Types
 
 -- | Describes which equation to use in blending.

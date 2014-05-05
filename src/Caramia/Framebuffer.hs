@@ -32,6 +32,7 @@ module Caramia.Framebuffer
     , viewTargets )
     where
 
+import Caramia.Prelude
 import Caramia.Context
 import Caramia.Color
 import Caramia.Resource
@@ -39,22 +40,12 @@ import Caramia.Texture
 import Caramia.Framebuffer.Internal
 import qualified Caramia.Texture.Internal as Tex
 import Caramia.ImageFormats
-import Caramia.Internal.Safe
 import Caramia.Internal.OpenGLCApi
 import Control.Exception
-import Control.Applicative
-import Control.Monad hiding ( forM_, forM )
 import Data.List ( nub )
-import Data.Foldable
-import Data.Int
 import Data.Bits
-import Data.IORef
-import Data.Monoid
-import Data.Typeable
 import System.IO.Unsafe
-import Foreign.Storable
-import Foreign.Marshal.Alloc
-import Foreign.Marshal.Array
+import Foreign
 import Foreign.C.Types
 import GHC.Float
 import qualified Data.IntSet as IS

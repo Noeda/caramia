@@ -29,6 +29,8 @@ module Caramia.Render
     , Culling(..) )
     where
 
+import Caramia.Prelude
+
 import qualified Caramia.VAO.Internal as VAO
 import qualified Caramia.Shader.Internal as Shader
 import qualified Caramia.Framebuffer as FBuf
@@ -42,15 +44,10 @@ import Caramia.Texture.Internal ( withTextureBinding )
 import Caramia.Resource
 import Caramia.Buffer.Internal
 import Caramia.Internal.OpenGLCApi
-import Caramia.Internal.Safe
 import Control.Monad.IO.Class
 import Control.Monad.Trans.State.Strict
-import Control.Applicative
-import Control.Monad
-import Foreign.Ptr
+import Foreign
 import Foreign.C.Types
-import Data.Word
-import Data.Typeable
 
 -- | The different types of primitives you can use for rendering.
 --
