@@ -17,6 +17,8 @@ module Caramia.Buffer
     , AccessFlags(..)
     , BufferCreation(..)
     , defaultBufferCreation
+      -- * Invalidation
+    , invalidateBuffer
       -- * Manipulation
     , map
     , unmap
@@ -36,6 +38,7 @@ import Caramia.Buffer.Internal
 
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
+import Caramia.Internal.OpenGLExtensions
 
 import qualified Data.Vector.Storable as V
 
@@ -349,4 +352,24 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
         | dst_offset + num_bytes - 1 < src_offset ||
           dst_offset > src_offset + num_bytes - 1 = False
         | otherwise = True
+
+-- | Invalidates the contents of a buffer.
+--
+-- This is you saying: \"I don't care what's in this buffer anymore. You can do
+-- whatever you want with it.\".
+--
+-- The data may be gone or it may not be gone. Use this as a hint to the
+-- implementation that you will not use the _current_ contents of the buffer
+-- anymore.
+--
+-- This requires the OpenGL extension \"GL_ARB_invalidate_subdata\" but if this
+-- extension is not present, then this simply does nothing.
+--
+-- See <https://www.opengl.org/wiki/Buffer_Object#Invalidation>.
+invalidateBuffer :: Buffer -> IO ()
+invalidateBuffer buf = do
+    has_it <- has_GL_ARB_invalidate_subdata
+    when has_it $ do
+        withResource (resource buf) $ \(Buffer_ name) ->
+            glInvalidateBufferData name
 

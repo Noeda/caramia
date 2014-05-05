@@ -29,6 +29,7 @@ module Caramia.Internal.OpenGLCApi
     , glTexStorage1D
     , glTexStorage2D
     , glTexStorage3D
+    , glInvalidateBufferData
 
     -- Functions that I made up that I wish were in OpenGL.
     , mglDeleteBuffer
@@ -300,6 +301,7 @@ type TexStorage1DF = GLenum -> GLsizei -> GLenum -> GLsizei -> IO ()
 type TexStorage2DF = GLenum -> GLsizei -> GLenum -> GLsizei -> GLsizei -> IO ()
 type TexStorage3DF = GLenum -> GLsizei -> GLenum
                   -> GLsizei -> GLsizei -> GLsizei -> IO ()
+type InvalidateBufferDataF = GLuint -> IO ()
 
 foreign import ccall unsafe "dynamic"
     glTexStorage1D_funptr :: FunPtr TexStorage1DF -> TexStorage1DF
@@ -307,6 +309,9 @@ foreign import ccall unsafe "dynamic"
     glTexStorage2D_funptr :: FunPtr TexStorage2DF -> TexStorage2DF
 foreign import ccall unsafe "dynamic"
     glTexStorage3D_funptr :: FunPtr TexStorage3DF -> TexStorage3DF
+foreign import ccall unsafe "dynamic"
+    glInvalidateBufferData_funptr :: FunPtr InvalidateBufferDataF
+                                  -> InvalidateBufferDataF
 
 glTexStorage1D :: TexStorage1DF
 glTexStorage1D = unsafePerformIO $
@@ -322,6 +327,11 @@ glTexStorage3D :: TexStorage3DF
 glTexStorage3D = unsafePerformIO $
     glTexStorage3D_funptr <$> getProcAddress "glTexStorage3D"
 {-# NOINLINE glTexStorage3D #-}
+
+glInvalidateBufferData :: InvalidateBufferDataF
+glInvalidateBufferData = unsafePerformIO $
+    glInvalidateBufferData_funptr <$> getProcAddress "glInvalidateBufferData"
+{-# NOINLINE glInvalidateBufferData_funptr #-}
 
 -- GL_NVX_gpu_memory_info
 gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM :: GLenum
