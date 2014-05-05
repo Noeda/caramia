@@ -124,7 +124,6 @@ data DrawParams = DrawParams
     , fragmentPassTests :: !FragmentPassTests
     -- ^ What kind of fragment pass tests to use.
     , blending      :: BlendSpec  -- ^ Which blending to use.
-    -- ^ How to select the attribute data from `primitivesVAO`.
     , targetFramebuffer :: FBuf.Framebuffer
     -- ^ Where do you want to render?
     , bindTextures  :: IM.IntMap Texture
@@ -161,6 +160,7 @@ data DrawCommand = DrawCommand
     , numIndices    :: Int        -- ^ How many indices to render?
     , numInstances  :: Int        -- ^ How many instances to render.
     , sourceData    :: SourceData
+    -- ^ How to select the attribute data from `primitivesVAO`.
     }
     deriving ( Eq, Typeable )
 
