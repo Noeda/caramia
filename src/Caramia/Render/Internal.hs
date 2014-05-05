@@ -92,6 +92,22 @@ withStencilFunc func op1 op2 op3 ref mask action = do
                       (fromIntegral mask)
         sop
 
+withCulling :: Culling -> IO a -> IO a
+withCulling culling action = do
+    old_culling <- gi gl_CULL_FACE_MODE
+    was_enabled <- glIsEnabled gl_CULL_FACE
+    finally (setCulling culling *> action)
+            (do if was_enabled == fromIntegral gl_TRUE
+                  then glEnable gl_CULL_FACE
+                  else glDisable gl_CULL_FACE
+                glCullFace old_culling)
+
+setCulling :: Culling -> IO ()
+setCulling NoCulling = glDisable gl_CULL_FACE
+setCulling x = mask_ $
+    glEnable gl_CULL_FACE *>
+    glCullFace (cullingToConstant x)
+
 withDepthFunc :: ComparisonFunc -> Bool -> IO a -> IO a
 withDepthFunc func write_depth action = do
     old_depth_func <- gi gl_DEPTH_FUNC
@@ -132,7 +148,21 @@ withFragmentPassTests (FragmentPassTests {..}) action = do
               then glEnable gl_STENCIL_TEST
               else glDisable gl_STENCIL_TEST
 
-    next' = action
+    next' = withCulling cullFace action
+
+data Culling =
+    Back
+  | Front
+  | FrontAndBack  -- ^ This stops the drawing of any faces but points and lines
+                  -- (or other non-facey like primitives) are drawn.
+  | NoCulling
+  deriving ( Eq, Ord, Show, Read, Typeable )
+
+cullingToConstant :: Culling -> GLenum
+cullingToConstant Back = gl_BACK
+cullingToConstant Front = gl_FRONT
+cullingToConstant FrontAndBack = gl_FRONT_AND_BACK
+cullingToConstant NoCulling = 0
 
 -- | Specifies the tests that are run on a fragment to decide if it should be
 -- seen.
@@ -155,6 +185,8 @@ data FragmentPassTests = FragmentPassTests {
   , depthPassStencilOp :: !StencilOp
   -- ^ What to do with the stencil buffer if stencil and depth test passes, or
   -- if depth buffer is not present or depth test is disabled.
+  , cullFace :: !Culling
+  -- ^ What kind of face culling should we do.
   }
   deriving ( Eq, Ord, Show, Read, Typeable )
 
@@ -164,6 +196,8 @@ data FragmentPassTests = FragmentPassTests {
 -- that value is only used if you specify with depth test to use.
 --
 -- All stencil operations are set to `Keep`.
+--
+-- Culling is set to `Back`.
 defaultFragmentPassTests :: FragmentPassTests
 defaultFragmentPassTests = FragmentPassTests
     { depthTest = Nothing
@@ -173,7 +207,8 @@ defaultFragmentPassTests = FragmentPassTests
     , stencilMask = 0xffffffff
     , failStencilOp = Keep
     , depthFailStencilOp = Keep
-    , depthPassStencilOp = Keep }
+    , depthPassStencilOp = Keep
+    , cullFace = Back }
 
 -- TODO: separate stencil tests for backsides of triangles
 -- (glStencilOpSeparate)

@@ -25,7 +25,8 @@ module Caramia.Render
     , FragmentPassTests(..)
     , defaultFragmentPassTests
     , ComparisonFunc(..)
-    , StencilOp(..) )
+    , StencilOp(..)
+    , Culling(..) )
     where
 
 import qualified Caramia.VAO.Internal as VAO
