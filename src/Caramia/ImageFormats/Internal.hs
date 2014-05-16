@@ -48,6 +48,7 @@ isRenderTargettable RGBA8 = True
 isRenderTargettable RGBA8UI = True
 isRenderTargettable SRGB8_ALPHA8 = True
 isRenderTargettable RGB10_A2 = True
+isRenderTargettable DEPTH_COMPONENT32 = True
 isRenderTargettable DEPTH_COMPONENT32F = True
 isRenderTargettable DEPTH_COMPONENT24 = True
 isRenderTargettable DEPTH_COMPONENT16 = True
@@ -73,6 +74,7 @@ isCompressed _ = False
 
 -- | Returns true if the given format is a color format.
 isColorFormat :: ImageFormat -> Bool
+isColorFormat DEPTH_COMPONENT32 = False
 isColorFormat DEPTH_COMPONENT32F = False
 isColorFormat DEPTH_COMPONENT24 = False
 isColorFormat DEPTH_COMPONENT16 = False
@@ -82,6 +84,7 @@ isColorFormat _ = True
 
 -- | Returns true if the given format has a depth component.
 hasDepthComponent :: ImageFormat -> Bool
+hasDepthComponent DEPTH_COMPONENT32 = True
 hasDepthComponent DEPTH_COMPONENT32F = True
 hasDepthComponent DEPTH_COMPONENT24 = True
 hasDepthComponent DEPTH_COMPONENT16 = True
@@ -169,6 +172,7 @@ data ImageFormat =
   | COMPRESSED_SRGB_ALPHA_S3TC_DXT1
   | COMPRESSED_SRGB_ALPHA_S3TC_DXT3
   | COMPRESSED_SRGB_ALPHA_S3TC_DXT5
+  | DEPTH_COMPONENT32
   | DEPTH_COMPONENT32F
   | DEPTH_COMPONENT24
   | DEPTH_COMPONENT16
@@ -236,6 +240,7 @@ toConstantIF COMPRESSED_SRGB_ALPHA_S3TC_DXT3 =
     gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT3
 toConstantIF COMPRESSED_SRGB_ALPHA_S3TC_DXT5 =
     gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT5
+toConstantIF DEPTH_COMPONENT32 = gl_DEPTH_COMPONENT32
 toConstantIF DEPTH_COMPONENT32F = gl_DEPTH_COMPONENT32F
 toConstantIF DEPTH_COMPONENT24 = gl_DEPTH_COMPONENT24
 toConstantIF DEPTH_COMPONENT16 = gl_DEPTH_COMPONENT16
