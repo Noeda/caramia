@@ -23,6 +23,7 @@
 module Caramia.Shader
     ( newShader
     , newPipeline
+    , newPipelineVF
     , Shader()
     , Pipeline()
       -- * Uniforms
@@ -183,6 +184,17 @@ checkLinkingErrors program_name = do
                                     , safeFromIntegral $ max 0 $ log_len-1)
             glDeleteProgram program_name
             throwIO $ ShaderLinkingError log
+
+-- | Creates a pipeline from vertex and fragment shader source.
+--
+-- This is a convenience function for a common use case.
+newPipelineVF :: T.Text      -- ^ Vertex shader source.
+              -> T.Text      -- ^ Fragment shader source.
+              -> IO Pipeline
+newPipelineVF vert_src frag_src = do
+    vsh <- newShader vert_src Vertex
+    fsh <- newShader frag_src Fragment
+    newPipeline [vsh, fsh]
 
 -- | Creates a pipeline composed of different shaders.
 --
