@@ -32,7 +32,7 @@ description:
           objects, framebuffers, rendering are all supported.
     .
         * Graphics operations are run in the IO monad (as opposed to some
-          custom GraphicsIO). Safety is provided by run-time checks.
+          custom GraphicsIO).
     .
     This package focuses on providing the primitives of rendering only. This
     means that things such as higher-level operations (meshes, scene
