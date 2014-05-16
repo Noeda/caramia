@@ -12,6 +12,7 @@ module Caramia.Render
     , Draw()
     , drawR
     , setPipeline
+    , setTextureBindings
     -- * Specifying what to draw
     , DrawCommand(..)
     , drawCommand
@@ -35,6 +36,7 @@ import qualified Caramia.VAO.Internal as VAO
 import qualified Caramia.Shader.Internal as Shader
 import qualified Caramia.Framebuffer as FBuf
 import qualified Caramia.Framebuffer.Internal as FBuf
+import qualified Caramia.Texture.Internal as Texture
 import qualified Data.IntMap.Strict as IM
 import Caramia.Render.Internal
 import Caramia.Blend
@@ -46,6 +48,7 @@ import Caramia.Buffer.Internal
 import Caramia.Internal.OpenGLCApi
 import Control.Monad.IO.Class
 import Control.Monad.Trans.State.Strict
+import Control.Exception
 import Foreign
 import Foreign.C.Types
 
@@ -252,7 +255,9 @@ drawR (DrawCommand {..})
 -- OpenGL with no Haskell values pointing to them.
 data DrawState = DrawState
     { boundPipeline :: !Shader.Pipeline
-    , boundEbo :: !GLuint }
+    , boundEbo :: !GLuint
+    , boundTextures :: !(IM.IntMap Texture)
+    , activeTexture :: !GLuint }
 
 newtype Draw a = Draw (StateT DrawState IO a)
                  deriving ( Monad, Applicative, Functor, Typeable )
@@ -280,7 +285,11 @@ runDraws params (Draw cmd_stream) =
     withParams params $ do
         (result, st) <-
             runStateT cmd_stream DrawState { boundPipeline = pipeline params
-                                           , boundEbo = 0 }
+                                           , boundEbo = 0
+                                           , boundTextures =
+                                                bindTextures params
+                                           , activeTexture = 0
+                                           }
         st `seq` return result
 
 withParams :: DrawParams -> IO a -> IO a
@@ -290,8 +299,66 @@ withParams (DrawParams {..}) action =
     withFragmentPassTests fragmentPassTests $
     withBlendings blending $
     withBoundTextures bindTextures $
-    withBoundElementBuffer 0 $
-    action
+    withBoundElementBuffer 0 $ do
+        old_active <- gi gl_ACTIVE_TEXTURE
+        finally (glActiveTexture gl_TEXTURE0 *>
+                 action)
+                (glActiveTexture old_active)
+
+-- | Sets the active texture (not public API! What would they use this for
+-- anyway?).
+setActiveTexture :: GLuint -> Draw ()
+setActiveTexture unit = Draw $ do
+    old_active <- activeTexture <$> get
+    when (old_active /= unit) $
+        liftIO (glActiveTexture $ gl_TEXTURE0 + unit) *>
+        modify (\old -> old { activeTexture = unit })
+
+-- | Sets new texture bindings.
+setTextureBindings :: IM.IntMap Texture -> Draw ()
+setTextureBindings texes = do
+    old_texes <- Draw $ boundTextures <$> get
+    -- Iterate over the old bindings.
+    for_ (IM.assocs old_texes) $ \(index, tex) ->
+        case IM.lookup index texes of
+            -- A texture was bound previously, new bindings don't bind the
+            -- texture at this unit.
+            Nothing -> setActiveTexture (safeFromIntegral index) *>
+                let (bind_target, _) =
+                        Texture.getTopologyBindPoints $
+                        topology $ viewSpecification tex
+                 in liftIO $ glBindTexture bind_target 0
+            -- A texture was bound previously, new bindings also bind some
+            -- texture here.
+            Just new_tex -> do
+                old_name <-
+                    liftIO $ withResource (Texture.resource tex) $
+                        \(Texture.Texture_ old_name) -> return old_name
+                name <-
+                    liftIO $ withResource (Texture.resource new_tex) $
+                        \(Texture.Texture_ name) -> return name
+                -- Only bind if the texture changed.
+                when (name /= old_name) $ do
+                    setActiveTexture (safeFromIntegral index)
+                    let (bind_target, _) =
+                            Texture.getTopologyBindPoints $
+                            topology $ viewSpecification new_tex
+                        in liftIO $ glBindTexture bind_target name
+    -- Iterate over new bindings. We need to only check those that were not
+    -- part of the old bindings.
+    for_ (IM.assocs texes) $ \(index, tex) ->
+        case IM.lookup index old_texes of
+            Just _ -> pure ()   -- already handled in the above for_
+            Nothing -> do
+                name <- liftIO $ withResource (Texture.resource tex) $
+                            \(Texture.Texture_ name) -> return name
+                setActiveTexture (safeFromIntegral index)
+                let (bind_target, _) =
+                        Texture.getTopologyBindPoints $
+                        topology $ viewSpecification tex
+                 in liftIO $ glBindTexture bind_target name
+
+    Draw $ modify (\old -> old { boundTextures = texes })
 
 -- | Changes the pipeline in a `Draw` command stream.
 setPipeline :: Shader.Pipeline -> Draw ()
