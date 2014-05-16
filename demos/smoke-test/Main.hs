@@ -1,5 +1,6 @@
 module Main ( main ) where
 
+import Caramia.Prelude
 import Caramia
 import Caramia.Math
 
@@ -7,15 +8,22 @@ import Graphics.UI.SDL
 import qualified Graphics.UI.SDL as SDL
 import Foreign.C.String
 import Control.Exception
-import Data.Foldable
 import Data.Bits
-import Data.Word
-import Data.Monoid
 import qualified Data.Text as T
 import System.Mem
 
 main :: IO ()
-main =
+main = do
+    putStrLn $ "This will run the smoke test. The smoke test merely tests " <>
+               "that " <>
+               "things don't crash and burn when trying to heavily draw " <>
+               "something."
+    putStrLn $ "However with some drivers it can drive the computer to " <>
+               "become unresponsive and difficult to recover without a " <>
+               "reboot."
+    putStrLn "Press enter to start the smoke test."
+    _ <- getLine
+    putStrLn "Running the smoke test..."
     bracket (SDL.init initFlagVideo)
             (\_ -> quit)
             (\_ -> program)
@@ -34,14 +42,16 @@ program =
         _ <- glCreateContext window
         giveContext $ do
             -- Make some buffers.
-            for_ [1..10000 :: Integer] $ \_ -> do
+            for_ [1..100 :: Integer] $ \idx -> do
                 buf <- newBuffer defaultBufferCreation { size = 1024
                                                        , accessFlags =
                                                            WriteAccess }
                 withMapping 0 500 WriteAccess buf $ \_ -> return ()
                 runPendingFinalizers
+                putStrLn $ "Buffer creation: " <> show idx <> "/100"
+
             -- Make some buffers but with much larger size and ReadAccess
-            for_ [1..10000 :: Integer] $ \_ -> do
+            for_ [1..100 :: Integer] $ \idx -> do
                 buf <- newBuffer defaultBufferCreation { size = 102400
                                                        , accessFlags =
                                                            ReadAccess }
@@ -105,24 +115,28 @@ program =
                    , primitivesVAO = vao2
                    , numIndices = 8
                    , numInstances = 213
-                   , pipeline = pipeline
                    , sourceData = PrimitivesWithIndices {
                        indexBuffer = buf
                      , indexOffset = 17
                      , indexType = IWord16 } }
+                     defaultDrawParams {
+                     pipeline = pipeline
+                     }
 
                 fbuf <- newFramebuffer [ (ColorAttachment 3
                                        , frontTextureTarget tex) ]
                 draw drawCommand {
                      primitiveType = LineLoop
                    , primitivesVAO = vao2
-                   , pipeline = pipeline
                    , numIndices = 8
                    , numInstances = 999
                    , sourceData = Primitives {
-                       firstIndex = 3 }
-                   , targetFramebuffer = fbuf }
-
+                       firstIndex = 3 } }
+                     defaultDrawParams {
+                     pipeline = pipeline
+                   , targetFramebuffer = fbuf
+                     }
+                putStrLn $ "Drawing: " <> show idx <> "/100"
 
             performGC
             runPendingFinalizers
