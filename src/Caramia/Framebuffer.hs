@@ -135,7 +135,8 @@ newFramebuffer targets
                            , ordIndex = index
                            , viewTargets = targets
                            , dimensions = calculatedDimensions
-                           , binder = withThisFramebuffer res }
+                           , binder = withThisFramebuffer res
+                           , setter = setThisFramebuffer res }
   where
     calculatedDimensions@(fw, fh) =
         foldl' (\(lowest_w, lowest_h) (w, h) ->
@@ -196,6 +197,11 @@ newFramebuffer targets
                         "stencil component but was attempted to be " <>
                         "attached to stencil attachment."
             _ -> return ()
+
+    setThisFramebuffer res = do
+        withResource res $ \(Framebuffer_ fbuf_name) ->
+            glBindFramebuffer gl_FRAMEBUFFER fbuf_name
+        glViewport 0 0 (fromIntegral fw) (fromIntegral fh)
 
     withThisFramebuffer res action = mask $ \restore -> do
         old_draw_framebuffer <- gi gl_DRAW_FRAMEBUFFER_BINDING
@@ -289,16 +295,4 @@ clear clearing fbuf = withBinding fbuf $ mask_ $
         glClearStencil (safeFromIntegral stencil)
         glClear bits
         glClearStencil old_stencil
-
--- | Returns the size of a framebuffer.
---
--- This is an `IO` action because it can change for the screen framebuffer.
-getDimensions :: Framebuffer -> IO (Int, Int)
-getDimensions ScreenFramebuffer = do
-    allocaArray 4 $ \vptr -> do
-        glGetIntegerv gl_VIEWPORT vptr
-        w <- peekElemOff vptr 2
-        h <- peekElemOff vptr 3
-        return (fromIntegral w, fromIntegral h)
-getDimensions fbuf = return $ dimensions fbuf
 

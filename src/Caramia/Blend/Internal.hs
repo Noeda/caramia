@@ -77,10 +77,23 @@ data BlendSpec = BlendSpec
     , blendColor    :: !Color }
     deriving ( Eq, Ord, Show, Read, Typeable )
 
+setBlendings :: BlendSpec -> IO ()
+setBlendings (BlendSpec{..}) = do
+    glBlendFuncSeparate (toConstantBF srcColorFunc)
+                        (toConstantBF dstColorFunc)
+                        (toConstantBF srcAlphaFunc)
+                        (toConstantBF dstAlphaFunc)
+    glBlendEquationSeparate (toConstantBE colorEquation)
+                            (toConstantBE alphaEquation)
+    glBlendColor (CFloat $ viewRed blendColor)
+                 (CFloat $ viewGreen blendColor)
+                 (CFloat $ viewBlue blendColor)
+                 (CFloat $ viewAlpha blendColor)
+
 withBlendings :: BlendSpec
               -> IO a
               -> IO a
-withBlendings (BlendSpec {..}) action = do
+withBlendings spec@(BlendSpec {..}) action = do
     old_be_color <- gi gl_BLEND_EQUATION_RGB
     old_be_alpha <- gi gl_BLEND_EQUATION_ALPHA
     old_src_color <- gi gl_BLEND_SRC_RGB
@@ -93,18 +106,7 @@ withBlendings (BlendSpec {..}) action = do
         g <- peekElemOff color_ptr 1
         b <- peekElemOff color_ptr 2
         a <- peekElemOff color_ptr 3
-        finally (do
-            glBlendFuncSeparate (toConstantBF srcColorFunc)
-                                (toConstantBF dstColorFunc)
-                                (toConstantBF srcAlphaFunc)
-                                (toConstantBF dstAlphaFunc)
-            glBlendEquationSeparate (toConstantBE colorEquation)
-                                    (toConstantBE alphaEquation)
-            glBlendColor (CFloat $ viewRed blendColor)
-                         (CFloat $ viewGreen blendColor)
-                         (CFloat $ viewBlue blendColor)
-                         (CFloat $ viewAlpha blendColor)
-            action) $ do
+        finally (setBlendings spec >> action) $ do
             glBlendColor r g b a
             glBlendFuncSeparate old_src_color
                                 old_dst_color

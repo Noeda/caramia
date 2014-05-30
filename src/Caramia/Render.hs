@@ -13,6 +13,9 @@ module Caramia.Render
     , drawR
     , setPipeline
     , setTextureBindings
+    , setBlending
+    , setTargetFramebuffer
+    , setFragmentPassTests
     -- * Specifying what to draw
     , DrawCommand(..)
     , drawCommand
@@ -38,7 +41,8 @@ import qualified Caramia.Framebuffer as FBuf
 import qualified Caramia.Framebuffer.Internal as FBuf
 import qualified Caramia.Texture.Internal as Texture
 import qualified Data.IntMap.Strict as IM
-import Caramia.Render.Internal
+import Caramia.Render.Internal hiding ( setFragmentPassTests )
+import qualified Caramia.Render.Internal as I
 import Caramia.Blend
 import Caramia.Blend.Internal
 import Caramia.Texture
@@ -257,6 +261,9 @@ data DrawState = DrawState
     { boundPipeline :: !Shader.Pipeline
     , boundEbo :: !GLuint
     , boundTextures :: !(IM.IntMap Texture)
+    , boundBlending :: !BlendSpec
+    , boundFramebuffer :: !FBuf.Framebuffer
+    , boundFragmentPassTests :: !FragmentPassTests
     , activeTexture :: !GLuint }
 
 newtype Draw a = Draw (StateT DrawState IO a)
@@ -284,12 +291,15 @@ runDraws :: DrawParams      -- ^ Initial drawing parameters. These can be
 runDraws params (Draw cmd_stream) =
     withParams params $ do
         (result, st) <-
-            runStateT cmd_stream DrawState { boundPipeline = pipeline params
-                                           , boundEbo = 0
-                                           , boundTextures =
-                                                bindTextures params
-                                           , activeTexture = 0
-                                           }
+            runStateT cmd_stream DrawState
+                { boundPipeline = pipeline params
+                , boundFragmentPassTests = fragmentPassTests params
+                , boundEbo = 0
+                , boundBlending = blending params
+                , boundFramebuffer = targetFramebuffer params
+                , boundTextures = bindTextures params
+                , activeTexture = 0
+                }
         st `seq` return result
 
 withParams :: DrawParams -> IO a -> IO a
@@ -301,9 +311,17 @@ withParams (DrawParams {..}) action =
     withBoundTextures bindTextures $
     withBoundElementBuffer 0 $ do
         old_active <- gi gl_ACTIVE_TEXTURE
-        finally (glActiveTexture gl_TEXTURE0 *>
-                 action)
-                (glActiveTexture old_active)
+        -- Framebuffer may not restore the viewport so we have to do it here.
+        allocaArray 4 $ \viewport_ptr -> do
+            glGetIntegerv gl_VIEWPORT viewport_ptr
+            ox <- peekElemOff viewport_ptr 0
+            oy <- peekElemOff viewport_ptr 1
+            ow <- peekElemOff viewport_ptr 2
+            oh <- peekElemOff viewport_ptr 3
+            finally (glActiveTexture gl_TEXTURE0 *>
+                    action)
+                    (glActiveTexture old_active *>
+                     glViewport ox oy ow oh)
 
 -- | Sets the active texture (not public API! What would they use this for
 -- anyway?).
@@ -369,6 +387,34 @@ setPipeline pl = Draw $ do
             \(Shader.Pipeline_ program) ->
                 setBoundProgram program
         modify (\old -> old { boundPipeline = pl })
+{-# INLINE setPipeline #-}
+
+-- | Changes the current blending mode.
+setBlending :: BlendSpec -> Draw ()
+setBlending blends = Draw $ do
+    old_blending <- boundBlending <$> get
+    when (blends /= old_blending) $ do
+        liftIO $ setBlendings blends
+        modify (\old -> old { boundBlending = blends })
+{-# INLINE setBlending #-}
+
+-- | Sets the new fragment pass tests.
+setFragmentPassTests :: FragmentPassTests -> Draw ()
+setFragmentPassTests tests = Draw $ do
+    old_tests <- boundFragmentPassTests <$> get
+    when (old_tests /= tests) $ do
+        liftIO $ I.setFragmentPassTests tests
+        modify (\old -> old { boundFragmentPassTests = tests })
+{-# INLINE setFragmentPassTests #-}
+
+-- | Sets the current framebuffer.
+setTargetFramebuffer :: FBuf.Framebuffer -> Draw ()
+setTargetFramebuffer fbuf = Draw $ do
+    old_fbuf <- boundFramebuffer <$> get
+    when (old_fbuf /= fbuf) $ do
+        liftIO $ FBuf.setBinding fbuf
+        modify (\old -> old { boundFramebuffer = fbuf })
+{-# INLINE setTargetFramebuffer #-}
 
 withBoundTextures :: IM.IntMap Texture -> IO a -> IO a
 withBoundTextures (IM.assocs -> bindings) action = rec bindings

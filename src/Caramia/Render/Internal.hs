@@ -61,6 +61,22 @@ stencilOpToConstant Decrease = gl_DECR
 stencilOpToConstant DecreaseAndWrap = gl_DECR_WRAP
 stencilOpToConstant Invert = gl_INVERT
 
+setStencilFunc :: ComparisonFunc
+               -> StencilOp
+               -> StencilOp
+               -> StencilOp
+               -> Word32
+               -> Word32
+               -> IO ()
+setStencilFunc func op1 op2 op3 ref mask = do
+    glStencilFunc (comparisonFuncToConstant func)
+                  (fromIntegral ref)
+                  (fromIntegral mask)
+    glStencilOp (stencilOpToConstant op1)
+                (stencilOpToConstant op2)
+                (stencilOpToConstant op3)
+{-# INLINE setStencilFunc #-}
+
 withStencilFunc :: ComparisonFunc
                 -> StencilOp
                 -> StencilOp
@@ -76,20 +92,9 @@ withStencilFunc func op1 op2 op3 ref mask action = do
     old_op1 <- gi gl_STENCIL_FAIL
     old_op2 <- gi gl_STENCIL_PASS_DEPTH_FAIL
     old_op3 <- gi gl_STENCIL_PASS_DEPTH_PASS
-    finally withOp
+    finally (setStencilFunc func op1 op2 op3 ref mask *> action)
             (glStencilFunc old_func (fromIntegral old_ref) old_mask *>
              glStencilOp old_op1 old_op2 old_op3)
-  where
-    sop = glStencilOp (stencilOpToConstant op1)
-                      (stencilOpToConstant op2)
-                      (stencilOpToConstant op3) *>
-          action
-
-    withOp = do
-        glStencilFunc (comparisonFuncToConstant func)
-                      (fromIntegral ref)
-                      (fromIntegral mask)
-        sop
 
 withCulling :: Culling -> IO a -> IO a
 withCulling culling action = do
@@ -107,16 +112,35 @@ setCulling x = mask_ $
     glEnable gl_CULL_FACE *>
     glCullFace (cullingToConstant x)
 
+setDepthFunc :: ComparisonFunc -> Bool -> IO ()
+setDepthFunc func write_depth =
+    glDepthFunc (comparisonFuncToConstant func) *>
+    glDepthMask (fromIntegral $ if write_depth then gl_TRUE else gl_FALSE)
+
 withDepthFunc :: ComparisonFunc -> Bool -> IO a -> IO a
 withDepthFunc func write_depth action = do
     old_depth_func <- gi gl_DEPTH_FUNC
     old_depth_write <- gi gl_DEPTH_WRITEMASK
-    finally (glDepthFunc (comparisonFuncToConstant func) *>
-             glDepthMask
-                 (fromIntegral $ if write_depth then gl_TRUE else gl_FALSE) *>
-             action)
+    finally (setDepthFunc func write_depth *> action)
             (glDepthFunc old_depth_func *>
              glDepthMask (fromIntegral old_depth_write))
+
+setFragmentPassTests :: FragmentPassTests -> IO ()
+setFragmentPassTests (FragmentPassTests {..}) = do
+    case depthTest of
+        Nothing -> glDisable gl_DEPTH_TEST
+        Just dt -> glEnable gl_DEPTH_TEST *>
+                   setDepthFunc dt writeDepth
+    case stencilTest of
+        Nothing -> glDisable gl_STENCIL_TEST
+        Just st -> glEnable gl_STENCIL_TEST *>
+                   setStencilFunc st
+                                  failStencilOp
+                                  depthFailStencilOp
+                                  depthPassStencilOp
+                                  stencilReference
+                                  stencilMask
+    setCulling cullFace
 
 withFragmentPassTests :: FragmentPassTests -> IO a -> IO a
 withFragmentPassTests (FragmentPassTests {..}) action = do
