@@ -11,7 +11,8 @@ module Caramia
     , module Caramia.Texture
     , module Caramia.Memory
     , module Caramia.Framebuffer
-    , module Caramia.Color )
+    , module Caramia.Color
+    , module Caramia.Blend )
     where
 
 import Caramia.Resource
@@ -25,5 +26,5 @@ import Caramia.Texture
 import Caramia.Memory
 import Caramia.Framebuffer
 import Caramia.Color
-
+import Caramia.Blend
 
