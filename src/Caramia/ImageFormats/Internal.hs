@@ -37,6 +37,7 @@ isRenderTargettable RG32F = True
 isRenderTargettable RG32I = True
 isRenderTargettable RG32UI = True
 isRenderTargettable R11F_G11F_B10F = True
+isRenderTargettable RGB8 = True
 isRenderTargettable RGBA32F = True
 isRenderTargettable RGBA32I = True
 isRenderTargettable RGBA32UI = True
