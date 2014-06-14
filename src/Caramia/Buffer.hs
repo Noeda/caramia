@@ -281,7 +281,7 @@ withMapping offset num_bytes access_flags buffer action =
         did_unmapping_work <- try $ unmap buffer
         case did_it_work of
             Left exc -> throwIO (exc :: SomeException)
-            Right result -> do
+            Right result ->
                 case did_unmapping_work of
                     Left no -> throwIO (no :: BufferCorruption)
                     Right () -> return result
@@ -369,7 +369,7 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
 invalidateBuffer :: Buffer -> IO ()
 invalidateBuffer buf = do
     has_it <- has_GL_ARB_invalidate_subdata
-    when has_it $ do
+    when has_it $
         withResource (resource buf) $ \(Buffer_ name) ->
             glInvalidateBufferData name
 

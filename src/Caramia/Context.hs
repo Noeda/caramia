@@ -99,7 +99,7 @@ giveContext action = mask $ \restore -> do
 
     c_initialize_my_glstate_tls
     maybe (pure ())
-          (\_ -> c_activate_debug_mode)
+          (const c_activate_debug_mode)
           =<<
           lookupEnv "CARAMIA_OPENGL_DEBUG"
 
@@ -116,7 +116,7 @@ giveContext action = mask $ \restore -> do
     finally (restore action) scrapContext
 
 checkOpenGLVersion33 :: IO ()
-checkOpenGLVersion33 = do
+checkOpenGLVersion33 =
     alloca $ \major_ptr -> alloca $ \minor_ptr -> do
         -- in case glGetIntegerv is completely broken, set initial values for
         -- major and minor pointers
@@ -170,11 +170,11 @@ runPendingFinalizers = mask_ $ do
     case maybe_cid of
         Nothing -> return ()
         Just cid -> do
-            finalizers <- atomicModifyIORef' pendingFinalizers $ \old ->
-                ( IM.delete cid old
-                , IM.findWithDefault (return ())
-                                     cid
-                                     old )
+            finalizers <- atomicModifyIORef' pendingFinalizers $
+                IM.delete cid &&&
+                IM.findWithDefault (return ())
+                                   cid
+
             -- We scrap the Caramia context if any of these finalizers throw an
             -- exception. The reason is that we cannot expect the OpenGL state
             -- to be consistent anymore.
@@ -193,7 +193,7 @@ scheduleFinalizer :: ContextID -> IO () -> IO ()
 scheduleFinalizer cid finalizer =
     atomicModifyIORef' pendingFinalizers $ \old ->
         ( IM.insertWith
-            (\new old -> old >> new)
+            (flip (>>))
             cid
             finalizer
             old, () )
@@ -244,10 +244,10 @@ storeContextLocalData value =
     maybe (error "storeContextLocalData: not in a context.")
           (\cid ->
               atomicModifyIORef' contextLocalData $ \old ->
-                  ( IM.alter (maybe (Just $ M.singleton
+                  ( IM.alter (Just . maybe (M.singleton
                                             (typeOf value)
                                             (toDyn value))
-                                    (Just . M.insert (typeOf value)
+                                           (M.insert (typeOf value)
                                                      (toDyn value)))
                               cid
                               old

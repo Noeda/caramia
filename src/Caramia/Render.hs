@@ -230,13 +230,13 @@ drawR (DrawCommand {..})
         withResource (VAO.resource primitivesVAO) $ \(VAO.VAO_ vao_name) ->
         withBoundVAO vao_name $
             case sourceData of
-                Primitives {..} -> do
+                Primitives {..} ->
                     glDrawArraysInstanced
                          (toConstant primitiveType)
                          (safeFromIntegral firstIndex)
                          (safeFromIntegral numIndices)
                          (safeFromIntegral numInstances)
-                PrimitivesWithIndices {..} -> do
+                PrimitivesWithIndices {..} ->
                     withResource (resource indexBuffer) $
                             \(Buffer_ buf_name) -> do
                         when (buf_name /= old_ebo) $

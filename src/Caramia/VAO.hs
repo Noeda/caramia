@@ -218,7 +218,7 @@ sourceVertexData :: Buf.Buffer   -- ^ From which buffer to source the data.
                  -> VAO
                  -> IO ()
 sourceVertexData buffer sourcing vao = mask_ $
-    withResource (resource vao) $ \(VAO_ name) -> do
+    withResource (resource vao) $ \(VAO_ name) ->
         withResource (Buf.resource buffer) $ \(Buf.Buffer_ bufname) -> do
             errorChecking
 
@@ -235,8 +235,8 @@ sourceVertexData buffer sourcing vao = mask_ $
   where
     addIfNotUnique new old =
         maybe (new:old)
-              (\_ -> old)
-              (find ((==) new) old)
+              (const old)
+              (find (new ==) old)
 
     stype = sourceType sourcing
     ncomponents = components sourcing

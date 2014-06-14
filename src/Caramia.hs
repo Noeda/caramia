@@ -1,30 +1,19 @@
 -- | This module re-exports most Caramia modules.
 
 module Caramia
-    ( module Caramia.Resource
-    , module Caramia.Context
-    , module Caramia.Buffer
-    , module Caramia.VAO
-    , module Caramia.Shader
-    , module Caramia.Render
-    , module Caramia.ImageFormats
-    , module Caramia.Texture
-    , module Caramia.Memory
-    , module Caramia.Framebuffer
-    , module Caramia.Color
-    , module Caramia.Blend )
+    ( module Ex )
     where
 
-import Caramia.Resource
-import Caramia.Context
-import Caramia.Buffer
-import Caramia.VAO
-import Caramia.Shader
-import Caramia.Render
-import Caramia.ImageFormats
-import Caramia.Texture
-import Caramia.Memory
-import Caramia.Framebuffer
-import Caramia.Color
-import Caramia.Blend
+import Caramia.Resource as Ex
+import Caramia.Context as Ex
+import Caramia.Buffer as Ex
+import Caramia.VAO as Ex
+import Caramia.Shader as Ex
+import Caramia.Render as Ex
+import Caramia.ImageFormats as Ex
+import Caramia.Texture as Ex
+import Caramia.Memory as Ex
+import Caramia.Framebuffer as Ex
+import Caramia.Color as Ex
+import Caramia.Blend as Ex
 

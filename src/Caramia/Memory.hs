@@ -43,7 +43,7 @@ noInformation = MemoryInfo
     , totalVideoMemory = Nothing }
 
 atiGetMem :: IO MemoryInfo
-atiGetMem = do
+atiGetMem =
     alloca $ \result_ptr -> do
         glGetIntegerv gl_TEXTURE_FREE_MEMORY result_ptr
         result <- peek result_ptr
@@ -51,7 +51,7 @@ atiGetMem = do
                           , totalVideoMemory = Nothing }
 
 nvidiaGetMem :: IO MemoryInfo
-nvidiaGetMem = do
+nvidiaGetMem =
     alloca $ \result_ptr -> alloca $ \result2_ptr -> do
         glGetIntegerv gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM
                       result_ptr

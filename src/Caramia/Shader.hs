@@ -143,7 +143,7 @@ newShader source_code stage = mask_ $ do
 
     create = do
         shader_name <- glCreateShader (toConstant stage)
-        T.withCStringLen source_code $ \(cstr, len) -> do
+        T.withCStringLen source_code $ \(cstr, len) ->
             with cstr $ \cstr_ptr ->
                 with (fromIntegral len :: GLint) $ \len_ptr ->
                 glShaderSource
@@ -228,7 +228,7 @@ newTraditionalPipeline shaders = mask_ $ do
                 glAttachShader program sname
         glLinkProgram program
         checkLinkingErrors program
-        return $ (Pipeline_ program)
+        return $ Pipeline_ program
 
     deleter (Pipeline_ program) = glDeleteProgram program
 
@@ -419,8 +419,7 @@ instance Uniformable (Float, Float, Float, Float) where
                             (CFloat f3)
                             (CFloat f4)
 instance Uniformable CFloat where
-    setUniform_ program loc f1 =
-        mglProgramUniform1f program loc f1
+    setUniform_ = mglProgramUniform1f
 instance Uniformable (CFloat, CFloat) where
     setUniform_ program loc (f1, f2) =
         mglProgramUniform2f program loc f1 f2
@@ -524,8 +523,8 @@ cdouble2CFloat (CDouble dbl) = CFloat $ double2Float dbl
 -- `setUniform` to make it do nothing.
 getUniformLocation :: T.Text -> Pipeline -> IO UniformLocation
 getUniformLocation name pipeline = fromIntegral <$>
-    (withResource (resourcePL pipeline) $ \(Pipeline_ program) ->
-        B.useAsCString (T.encodeUtf8 name) $ \cstr ->
+    withResource (resourcePL pipeline) (\(Pipeline_ program) ->
+         B.useAsCString (T.encodeUtf8 name) $ \cstr ->
              glGetUniformLocation program cstr)
 
 -- context local pipeline

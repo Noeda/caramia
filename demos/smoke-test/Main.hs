@@ -24,9 +24,9 @@ main = do
     putStrLn "Press enter to start the smoke test."
     _ <- getLine
     putStrLn "Running the smoke test..."
-    bracket (SDL.init initFlagVideo)
-            (\_ -> quit)
-            (\_ -> program)
+    bracket_ (SDL.init initFlagVideo)
+             quit
+             program
 
 program :: IO ()
 program =

@@ -4,38 +4,31 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Caramia.Prelude
-    ( module Data.Semigroup
-    , module Prelude
-    , module Data.Foldable
-    , module Data.Traversable
-    , module Control.Monad
-    , module Control.Applicative
-    , module Data.Maybe
-    , module Data.IORef
-    , module Data.Int
-    , module Data.Word
-    , module Data.Typeable
+    ( module Ex
     , safeFromIntegral
     , showT
     , atomicModifyIORef_' )
     where
 
-import Prelude hiding ( sequence, mapM, or, concat, notElem, elem
+import Prelude as Ex hiding
+                      ( sequence, mapM, or, concat, notElem, elem
                       , foldl, foldr1, concatMap, any, sum, foldr
                       , and, all, mapM_, sequence_, product, maximum
-                      , foldl1, minimum )
+                      , foldl1, minimum, (.), id )
 
-import Data.Foldable
-import Data.Traversable
-import Data.Int
-import Data.Word
-import Data.Typeable
-import Control.Monad hiding ( msum, forM, forM_, sequence, mapM, mapM_
-                            , sequence_ )
-import Control.Applicative
-import Data.Semigroup
-import Data.Maybe
-import Data.IORef
+import Data.Foldable as Ex
+import Data.Traversable as Ex
+import Data.Int as Ex
+import Data.Word as Ex
+import Data.Typeable as Ex
+import Control.Category as Ex
+import Control.Arrow as Ex
+import Control.Monad as Ex hiding ( msum, forM, forM_, sequence, mapM, mapM_
+                                  , sequence_ )
+import Control.Applicative as Ex
+import Data.Semigroup as Ex
+import Data.Maybe as Ex
+import Data.IORef as Ex
 import qualified Data.Text as T
 
 -- | Same as `show` but the result will be a `T.Text`, not `String`.

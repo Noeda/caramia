@@ -11,7 +11,7 @@ import System.IO.Unsafe
 import Control.Exception
 
 data Texture = Texture
-    { resource :: !(Resource (Texture_))
+    { resource :: !(Resource Texture_)
     , ordIndex :: !Int
     , viewSpecification :: !TextureSpecification }
     deriving ( Typeable )

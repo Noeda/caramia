@@ -66,7 +66,7 @@ screenFramebuffer = ScreenFramebuffer
 -- texture array and the base layer mipmap level.
 frontTextureTarget :: Tex.Texture -> TextureTarget
 frontTextureTarget tex = TextureTarget {
-    attacher = \attachment -> do
+    attacher = \attachment ->
         withResource (Tex.resource tex) $ \(Tex.Texture_ texname) ->
             glFramebufferTexture
                 gl_DRAW_FRAMEBUFFER
@@ -80,7 +80,7 @@ mipmapTextureTarget :: Tex.Texture
                     -> Int            -- ^ Which mipmap layer?
                     -> TextureTarget
 mipmapTextureTarget tex mipmap_layer = TextureTarget {
-    attacher = \attachment -> do
+    attacher = \attachment ->
         withResource (Tex.resource tex) $ \(Tex.Texture_ texname) ->
             glFramebufferTexture
                 gl_DRAW_FRAMEBUFFER
@@ -95,7 +95,7 @@ layerTextureTarget :: Tex.Texture
                    -> Int            -- ^ Which topological layer?
                    -> TextureTarget
 layerTextureTarget tex mipmap_layer topo_layer = TextureTarget {
-    attacher = \attachment -> do
+    attacher = \attachment ->
         withResource (Tex.resource tex) $ \(Tex.Texture_ texname) ->
             glFramebufferTextureLayer
                 gl_DRAW_FRAMEBUFFER

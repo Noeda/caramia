@@ -53,7 +53,7 @@ setBinding ScreenFramebuffer = do
 setBinding fbuf = setter fbuf
 
 withBinding :: Framebuffer -> IO a -> IO a
-withBinding ScreenFramebuffer action = do
+withBinding ScreenFramebuffer action =
     allocaArray 4 $ \viewport_ptr -> do
         glGetIntegerv gl_VIEWPORT viewport_ptr
         ox <- peekElemOff viewport_ptr 0
@@ -75,7 +75,7 @@ withBinding fbuf action = binder fbuf action
 --
 -- This is an `IO` action because it can change for the screen framebuffer.
 getDimensions :: Framebuffer -> IO (Int, Int)
-getDimensions ScreenFramebuffer = do
+getDimensions ScreenFramebuffer =
     allocaArray 4 $ \vptr -> do
         glGetIntegerv gl_VIEWPORT vptr
         w <- peekElemOff vptr 2

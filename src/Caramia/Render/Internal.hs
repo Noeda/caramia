@@ -166,7 +166,7 @@ withFragmentPassTests (FragmentPassTests {..}) action = do
                                             depthPassStencilOp
                                             stencilReference
                                             stencilMask
-                                            next') $ do
+                                            next') $
             if was_it_enabled == fromIntegral gl_TRUE
               then glEnable gl_STENCIL_TEST
               else glDisable gl_STENCIL_TEST

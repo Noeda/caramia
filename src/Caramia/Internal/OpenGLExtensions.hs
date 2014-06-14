@@ -21,6 +21,8 @@ import Foreign.C.String
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
 data ExtensionTable = ExtensionTable
     { has_GL_EXT_direct_state_access_ :: !Bool
     , has_GL_ARB_separate_shader_objects_ :: !Bool

@@ -38,7 +38,7 @@ data Shader_ = CompiledShader !GLuint   -- OpenGL shader
 --
 -- OpenGL equivalent is the shader program object.
 data Pipeline = Pipeline
-    { resourcePL :: !(Resource (Pipeline_))
+    { resourcePL :: !(Resource Pipeline_)
     , pipelineIdentifier :: !Int
     , shaders :: [Shader] }
     deriving ( Typeable )

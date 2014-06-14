@@ -188,7 +188,7 @@ newTexture spec = mask_ $ do
         name <- bracketOnError
             (alloca $ \name_ptr ->
                 glGenTextures 1 name_ptr *> peek name_ptr)
-            (\name -> deleter (Texture_ name))
+            (deleter . Texture_ )
             (\name -> do
                 createByTopology name (topology spec)
                 return name)
@@ -197,20 +197,20 @@ newTexture spec = mask_ $ do
     -- TODO: use DSA when available, perhaps add mglTextureStorage* functions
     -- to Caramia.Internal.OpenGLCApi?
     createByTopology :: GLuint -> Topology -> IO ()
-    createByTopology name (Tex1D {..}) = do
+    createByTopology name (Tex1D {..}) =
         withBinding gl_TEXTURE_1D gl_TEXTURE_BINDING_1D name $
             glTexStorage1D gl_TEXTURE_1D
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width1D)
-    createByTopology name (Tex2D {..}) = do
+    createByTopology name (Tex2D {..}) =
         withBinding gl_TEXTURE_2D gl_TEXTURE_BINDING_2D name $
             glTexStorage2D gl_TEXTURE_2D
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width2D)
                            (safeFromIntegral height2D)
-    createByTopology name (Tex3D {..}) = do
+    createByTopology name (Tex3D {..}) =
         withBinding gl_TEXTURE_3D gl_TEXTURE_BINDING_3D name $
             glTexStorage3D gl_TEXTURE_3D
                            (safeFromIntegral num_mipmaps)
@@ -218,14 +218,14 @@ newTexture spec = mask_ $ do
                            (safeFromIntegral width3D)
                            (safeFromIntegral height3D)
                            (safeFromIntegral depth3D)
-    createByTopology name (Tex1DArray {..}) = do
+    createByTopology name (Tex1DArray {..}) =
         withBinding gl_TEXTURE_1D_ARRAY gl_TEXTURE_BINDING_1D_ARRAY name $
             glTexStorage2D gl_TEXTURE_1D_ARRAY
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width1DArray)
                            (safeFromIntegral layers1D)
-    createByTopology name (Tex2DArray {..}) = do
+    createByTopology name (Tex2DArray {..}) =
         withBinding gl_TEXTURE_2D_ARRAY gl_TEXTURE_BINDING_2D_ARRAY name $
             glTexStorage3D gl_TEXTURE_2D_ARRAY
                            (safeFromIntegral num_mipmaps)
@@ -233,7 +233,7 @@ newTexture spec = mask_ $ do
                            (safeFromIntegral width2DArray)
                            (safeFromIntegral height2DArray)
                            (safeFromIntegral layers2D)
-    createByTopology name (Tex2DMultisample {..}) = do
+    createByTopology name (Tex2DMultisample {..}) =
         withBinding gl_TEXTURE_2D_MULTISAMPLE
                     gl_TEXTURE_BINDING_2D_MULTISAMPLE
                     name $
@@ -245,7 +245,7 @@ newTexture spec = mask_ $ do
                            (safeFromIntegral height2DMS)
                            (if fixedSampleLocations2DMS
                              then 1 else 0)
-    createByTopology name (Tex2DMultisampleArray {..}) = do
+    createByTopology name (Tex2DMultisampleArray {..}) =
         withBinding gl_TEXTURE_2D_MULTISAMPLE_ARRAY
                     gl_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
                     name $
@@ -258,7 +258,7 @@ newTexture spec = mask_ $ do
                            (safeFromIntegral layers2DMS)
                            (if fixedSampleLocations2DMSArray
                              then 1 else 0)
-    createByTopology name (TexCube {..}) = do
+    createByTopology name (TexCube {..}) =
         withBinding gl_TEXTURE_CUBE_MAP
                     gl_TEXTURE_BINDING_CUBE_MAP
                     name $
@@ -461,7 +461,7 @@ uploadToTexture uploading tex = mask_ $
           glPixelStorei gl_UNPACK_ALIGNMENT
                         (safeFromIntegral $ pixelAlignment uploading)
           flip finally (glPixelStorei gl_UNPACK_ALIGNMENT old_alignment) $
-           withResource (resource tex) $ \(Texture_ texname) -> do
+           withResource (resource tex) $ \(Texture_ texname) ->
             case topology $ viewSpecification tex of
                 Tex1D {..} ->
                     upload1D gl_TEXTURE_1D gl_TEXTURE_BINDING_1D
@@ -490,7 +490,7 @@ uploadToTexture uploading tex = mask_ $
                                texname uploading
 
 upload1D :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
-upload1D target binding tex (Uploading {..}) = do
+upload1D target binding tex (Uploading {..}) =
     withBinding target binding tex $
         glTexSubImage1D target
                         (safeFromIntegral toMipmapLevel)
@@ -502,7 +502,7 @@ upload1D target binding tex (Uploading {..}) = do
                          fromIntegral bufferOffset)
 
 upload2D :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
-upload2D target binding tex (Uploading {..}) = do
+upload2D target binding tex (Uploading {..}) =
     withBinding target binding tex $
         glTexSubImage2D target
                         (safeFromIntegral toMipmapLevel)
@@ -516,7 +516,7 @@ upload2D target binding tex (Uploading {..}) = do
                          fromIntegral bufferOffset)
 
 upload3D :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
-upload3D target binding tex (Uploading {..}) = do
+upload3D target binding tex (Uploading {..}) =
     withBinding target binding tex $
         glTexSubImage3D target
                         (safeFromIntegral toMipmapLevel)
@@ -532,7 +532,7 @@ upload3D target binding tex (Uploading {..}) = do
                          fromIntegral bufferOffset)
 
 uploadCube :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
-uploadCube target binding tex (Uploading {..}) = do
+uploadCube target binding tex (Uploading {..}) =
     withBinding target binding tex $
         glTexSubImage2D (toConstantCS cubeSide)
                         (safeFromIntegral toMipmapLevel)
@@ -645,7 +645,7 @@ setWrapping wrapping tex = withBindingByTopology tex $ \target -> do
                            (fromIntegral $ toConstantW wrapping)
 
 getWrapping :: Texture -> IO Wrapping
-getWrapping tex = withBindingByTopology tex $ \target -> do
+getWrapping tex = withBindingByTopology tex $ \target ->
     alloca $ \result_ptr -> do
         glGetTexParameteriv target gl_TEXTURE_WRAP_S result_ptr
         result <- fromIntegral <$> peek result_ptr

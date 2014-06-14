@@ -1,13 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 module Caramia.Internal.OpenGLCApi
-    ( module Graphics.Rendering.OpenGL.Raw.Types
-    , module Graphics.Rendering.OpenGL.Raw.Core32
-    , module Graphics.Rendering.OpenGL.Raw.ARB.InstancedArrays
-    , module Graphics.Rendering.OpenGL.Raw.ARB.TextureMultisample
-    , module Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3TC
-    , module Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB
-    , module Graphics.Rendering.OpenGL.Raw.EXT.TextureFilterAnisotropic
+    ( module Ex
 
     , gi
 
@@ -65,15 +59,14 @@ module Caramia.Internal.OpenGLCApi
 
 import Caramia.Prelude
 
-import Graphics.Rendering.OpenGL.Raw.Types
-import Graphics.Rendering.OpenGL.Raw.Core32
+import Graphics.Rendering.OpenGL.Raw.Types as Ex
+import Graphics.Rendering.OpenGL.Raw.Core32 as Ex
 import Graphics.Rendering.OpenGL.Raw.ARB.SeparateShaderObjects
-import Graphics.Rendering.OpenGL.Raw.ARB.InstancedArrays
-import Graphics.Rendering.OpenGL.Raw.ARB.TextureMultisample
+import Graphics.Rendering.OpenGL.Raw.ARB.InstancedArrays as Ex
 import Graphics.Rendering.OpenGL.Raw.EXT.DirectStateAccess
-import Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3TC
-import Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB
-import Graphics.Rendering.OpenGL.Raw.EXT.TextureFilterAnisotropic
+import Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3TC as Ex
+import Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB as Ex
+import Graphics.Rendering.OpenGL.Raw.EXT.TextureFilterAnisotropic as Ex
 import Graphics.Rendering.OpenGL.Raw.GetProcAddress
 import Foreign
 import Foreign.C.Types
@@ -81,6 +74,8 @@ import Control.Exception
 import System.IO.Unsafe
 
 import Caramia.Internal.OpenGLExtensions
+
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 mglDeleteBuffer :: GLuint -> IO ()
 mglDeleteBuffer x = with x $ \x_ptr -> glDeleteBuffers 1 x_ptr
@@ -114,7 +109,7 @@ withBoundProgram program action = do
             (glUseProgram $ fromIntegral old)
 
 setBoundProgram :: GLuint -> IO ()
-setBoundProgram program = glUseProgram program
+setBoundProgram = glUseProgram
 
 withBoundBuffer :: GLuint -> IO a -> IO a
 withBoundBuffer buf action = do

@@ -61,7 +61,7 @@ newResource :: IO a               -- ^ Action that returns the raw, unmanaged
                                   -- finalized. This will be run even if the
                                   -- OpenGL context is gone.
             -> IO (Resource a)
-newResource resource_creator finalizer normal_finalizer = mask_ $ do
+newResource resource_creator finalizer normal_finalizer = mask_ $
     -- We need the context ID for correct finalization so we cannot take away
     -- this check with NO_RESOURCE_RUNTIME_CHECKS.
     maybe (error "newResource: no OpenGL context active.")
@@ -128,7 +128,7 @@ withResource :: Resource a
                               -- return the unmanaged resource from this
                               -- because behaviour is then undefined.
              -> IO b
-withResource resource action = do
+withResource resource action =
     maybe (error "withResource: resource has been finalized.")
           (\(res, _, _) -> do
               cid <- currentContextID
