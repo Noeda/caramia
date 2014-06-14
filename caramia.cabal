@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 
 description:
     (See README.md in the repository for a more comprehensive description).
-
+    .
     These are low-level, but Haskelly bindings to OpenGL 3.3.
 
 source-repository head
