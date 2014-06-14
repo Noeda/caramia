@@ -84,3 +84,16 @@ test-suite smoke-test
                       ,FlexibleInstances ,FlexibleContexts, LambdaCase
                       ,MultiWayIf
 
+-- This one tests Caramia.Memory if it returns anything useful.
+test-suite memory-info
+  type:                exitcode-stdio-1.0
+  main-is:             Main.hs
+  ghc-options:         -Wall -fno-warn-name-shadowing -threaded
+  hs-source-dirs:      demos/memory-info
+  build-depends:       base, caramia
+                      ,sdl2 ==1.*
+  default-language:    Haskell2010
+  default-extensions:  AutoDeriveTypeable, OverloadedStrings
+                      ,FlexibleInstances ,FlexibleContexts, LambdaCase
+                      ,MultiWayIf
+
