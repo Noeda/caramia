@@ -12,6 +12,10 @@ You can think this library as glorified OpenGL bindings. There were plans to
 have several backends but for the moment there are no resources or good reasons
 to do that.
 
+While we do have API documentation, there are no good examples. The first
+module you want to look at is `Caramia.Context` because you need to run
+`giveContext` before you can use any other functionality.
+
 Here are the most important features of this library:
 
   * Low-level, but convenient to use

@@ -3,9 +3,9 @@
 -- Caramia does not actually have any functionality about creating OpenGL
 -- contexts. You need to tell it about them with this module.
 --
--- For user code, you probably only want to use `giveContext`. The functions
--- about `ContextID`s and finalizers are mostly used internally but there may
--- be some rare cases where they are useful for end users as well.
+-- `giveContext` is the most important function in this module. You also want
+-- to `runPendingFinalizers` regularly to make sure OpenGL resources are
+-- garbage collected.
 --
 
 {-# LANGUAGE ScopedTypeVariables, ForeignFunctionInterface #-}
@@ -188,7 +188,8 @@ runPendingFinalizers = mask_ $ do
 -- Does nothing if given context is not alive anymore.
 --
 -- This is typically called from Haskell garbage collector finalizers because
--- they cannot do finalization there (it's the wrong operating system thread).
+-- they cannot do finalization there (Haskell finalizers are running in the
+-- wrong operating system thread).
 scheduleFinalizer :: ContextID -> IO () -> IO ()
 scheduleFinalizer cid finalizer =
     atomicModifyIORef' pendingFinalizers $ \old ->
@@ -268,7 +269,7 @@ retrieveContextLocalData defvalue =
           (\cid -> do
               -- No need to care about IORef race conditions because all
               -- functions operating on a certain context ID will be
-              -- synchronous with each other
+              -- run in the same thread, sequentially.
               snapshot <- readIORef contextLocalData
               case IM.lookup cid snapshot of
                   Nothing -> do
