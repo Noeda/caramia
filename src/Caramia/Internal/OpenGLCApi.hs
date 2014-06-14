@@ -5,7 +5,7 @@ module Caramia.Internal.OpenGLCApi
     , module Graphics.Rendering.OpenGL.Raw.Core32
     , module Graphics.Rendering.OpenGL.Raw.ARB.InstancedArrays
     , module Graphics.Rendering.OpenGL.Raw.ARB.TextureMultisample
-    , module Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3tc
+    , module Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3TC
     , module Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB
     , module Graphics.Rendering.OpenGL.Raw.EXT.TextureFilterAnisotropic
 
@@ -71,7 +71,7 @@ import Graphics.Rendering.OpenGL.Raw.ARB.SeparateShaderObjects
 import Graphics.Rendering.OpenGL.Raw.ARB.InstancedArrays
 import Graphics.Rendering.OpenGL.Raw.ARB.TextureMultisample
 import Graphics.Rendering.OpenGL.Raw.EXT.DirectStateAccess
-import Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3tc
+import Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3TC
 import Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB
 import Graphics.Rendering.OpenGL.Raw.EXT.TextureFilterAnisotropic
 import Graphics.Rendering.OpenGL.Raw.GetProcAddress

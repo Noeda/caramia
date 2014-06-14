@@ -9,41 +9,13 @@ copyright:           Copyright (c) 2014 Mikko Juola
 maintainer:          mikjuo@gmail.com
 category:            Graphics
 build-type:          Simple
-stability:           not even implemented
+stability:           experimental
 cabal-version:       >=1.10
 
 description:
-    Note: at the moment these are all lies because this library was just
-          started. It's a PLAN.
-    .
-    This is a layer on top of OpenGL to provide user-friendly interface to
-    hardware-accelerated graphics. This is not an everything-binding API; it
-    strives to export a small but relevant, modern, most useful API.
-    .
-    It features:
-    .
-        * No implicit state. (in OpenGL you often have to \'bind\' something
-          before you can use it).
-    .
-        * Creation and manipulation of graphics resources, with safe
-          finalizing.
-    .
-        * Buffer objects, textures, shaders and shader programs, vertex array
-          objects, framebuffers, rendering are all supported.
-    .
-        * Graphics operations are run in the IO monad (as opposed to some
-          custom GraphicsIO).
-    .
-    This package focuses on providing the primitives of rendering only. This
-    means that things such as higher-level operations (meshes, scene
-    management, entities, etc.), creating OpenGL contexts or event handling is
-    outside the scope of this package.
-    .
-    Requirements from system:
-    .
-         * OpenGL 3.3
-    .
-         * GL_ARB_texture_storage
+    (See README.md in the repository for a more comprehensive description).
+
+    These are low-level, but Haskelly bindings to OpenGL 3.3.
 
 source-repository head
     type:            git
@@ -81,13 +53,13 @@ library
   ghc-options:         -Wall -fno-warn-name-shadowing
 
   build-depends:       base >=4.7 && <5.0.0.0
-                      ,bytestring   ==0.10.*
-                      ,containers   ==0.5.*
-                      ,vector       ==0.10.*
-                      ,OpenGLRaw    ==1.4.*
-                      ,text         ==1.1.*
-                      ,transformers ==0.3.*
-                      ,semigroups   ==0.*
+                      ,bytestring   >=0.10 && <1.0
+                      ,containers   >=0.5 && <1.0
+                      ,vector       >=0.10 && <1.0
+                      ,OpenGLRaw    ==1.5.*
+                      ,text         >=0.9 && <2.0
+                      ,transformers >=0.3 && <1.0
+                      ,semigroups   >=0.15 && <1.0
   hs-source-dirs:      src
   default-language:    Haskell2010
   default-extensions:  AutoDeriveTypeable, OverloadedStrings, FlexibleInstances
@@ -103,7 +75,7 @@ test-suite smoke-test
   hs-source-dirs:      demos/smoke-test
   build-depends:       base, caramia
                       ,sdl2 ==1.*
-                      ,text ==1.1.*
+                      ,text >=0.9 && <2.0
   default-language:    Haskell2010
   default-extensions:  AutoDeriveTypeable, OverloadedStrings
                       ,FlexibleInstances ,FlexibleContexts, LambdaCase
