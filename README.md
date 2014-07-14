@@ -41,7 +41,7 @@ From technical perspective, you might find these features useful:
 
 (At least) the following OpenGL concepts are present in this library:
 
-  * Buffer objects (with low-level mapping)
+  * Buffer objects (with pointer-level mapping)
 
   * Geometry, vertex and fragment shaders
 
@@ -58,11 +58,9 @@ From technical perspective, you might find these features useful:
 
   * Instanced rendering
 
-Some notable missing features:
+  * Synchronization objects
 
-  * Sync objects. These can be important to achieve high performance with
-    buffer objects. At the moment you cannot share resources across threads or
-    bad things might happen.
+Some notable missing features:
 
   * Tesselation shaders. This is an OpenGL 4.x feature but we could add it.
 
