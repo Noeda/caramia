@@ -323,8 +323,8 @@ copy :: Buffer      -- ^ Destination buffer.
 copy dst_buffer dst_offset src_buffer src_offset num_bytes
     | dst_offset < 0 ||
       src_offset < 0 ||
-      dst_offset + num_bytes >= viewSize dst_buffer ||
-      src_offset + num_bytes >= viewSize src_buffer ||
+      dst_offset + num_bytes > viewSize dst_buffer ||
+      src_offset + num_bytes > viewSize src_buffer ||
       num_bytes < 0 =
           error "copy: invalid offsets/byte sizes to make a buffer copy."
     | overlaps = error "copy: copying area overlaps."
