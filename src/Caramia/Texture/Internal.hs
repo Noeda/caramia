@@ -6,6 +6,7 @@ import Caramia.Prelude
 
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
+import qualified Caramia.Buffer.Internal as Buf
 import Caramia.ImageFormats
 import System.IO.Unsafe
 import Control.Exception
@@ -48,7 +49,7 @@ data TextureSpecification = TextureSpecification
                           --  Ignored and not evaluated for multisampling
                           --  textures.
     }
-    deriving ( Eq, Ord, Show, Read, Typeable )
+    deriving ( Eq, Typeable )
 
 -- | Specifies a topology of a texture.
 data Topology =
@@ -77,7 +78,10 @@ data Topology =
           , samples2DMSArray :: !Int
           , fixedSampleLocations2DMSArray :: !Bool }
   | TexCube { widthCube  :: Int }
-  deriving ( Eq, Ord, Show, Read, Typeable )
+  | TexBuffer { texBuffer :: !Buf.Buffer }
+    -- ^ Buffer textures, see
+    -- <https://www.opengl.org/wiki/Buffer_Texture>
+  deriving ( Eq, Typeable )
 
 withBinding :: GLenum -> GLenum -> GLuint -> IO a -> IO a
 withBinding tex tex_binding tex_name action = do
@@ -103,6 +107,9 @@ getTopologyBindPoints = \case
     TexCube {..} ->
         (gl_TEXTURE_CUBE_MAP
         ,gl_TEXTURE_BINDING_CUBE_MAP)
+    TexBuffer {} ->
+        (gl_TEXTURE_BUFFER
+        ,gl_TEXTURE_BINDING_BUFFER)
 
 withBindingByTopology :: Texture -> (GLenum -> IO a) -> IO a
 withBindingByTopology tex action =

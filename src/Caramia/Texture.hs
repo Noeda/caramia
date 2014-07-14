@@ -74,6 +74,10 @@ viewWidth (viewSpecification -> spec) = viewWidth' (topology spec)
     viewWidth' (Tex2DMultisample {..}) = width2DMS
     viewWidth' (Tex2DMultisampleArray {..}) = width2DMSArray
     viewWidth' (TexCube {..}) = widthCube
+    viewWidth' (TexBuffer {}) =
+        error "viewWidth: buffer texture has no meaningful width."
+        -- TODO: you can actually infer that from the buffer size
+        -- so implement it
 
 -- | Returns the height of a texture.
 --
@@ -89,6 +93,7 @@ viewHeight (viewSpecification -> spec) = viewHeight' (topology spec)
     viewHeight' (Tex2DMultisample {..}) = height2DMS
     viewHeight' (Tex2DMultisampleArray {..}) = height2DMSArray
     viewHeight' (TexCube {..}) = widthCube
+    viewHeight' (TexBuffer {}) = 1
 
 -- | Returns the depth of a 3D texture or number of layers in array textures.
 --
@@ -104,6 +109,7 @@ viewDepth (viewSpecification -> spec) = viewDepth' (topology spec)
     viewDepth' (Tex2DMultisample {..}) = 1
     viewDepth' (Tex2DMultisampleArray {..}) = layers2DMS
     viewDepth' (TexCube {..}) = 1
+    viewDepth' (TexBuffer {}) = 1
 
 viewMipmapLevels :: Texture -> Int
 viewMipmapLevels = mipmapLevels . viewSpecification
@@ -174,9 +180,10 @@ newTexture spec = mask_ $ do
         | not (isValidMipmap widthCube num_mipmaps) =
               badMipmaps
         | otherwise = return ()
+    topologySanityCheck (TexBuffer {}) = return ()
 
-    badTopology topology =
-        error $ "newTexture: bad topology: " <> show topology
+    badTopology _ =
+        error $ "newTexture: bad topology."
 
     badMipmaps =
         error $ "newTexture: bad number of mipmap levels: " <> show num_mipmaps
@@ -267,6 +274,14 @@ newTexture spec = mask_ $ do
                            (fromIntegral $ toConstantIF (imageFormat spec))
                            (safeFromIntegral widthCube)
                            (safeFromIntegral widthCube)
+    createByTopology name (TexBuffer {..}) =
+        withBinding gl_TEXTURE_BUFFER
+                    gl_TEXTURE_BINDING_BUFFER
+                    name $
+            withResource (Buf.resource texBuffer) $ \(Buf.Buffer_ bufname) ->
+                glTexBuffer gl_TEXTURE_BUFFER
+                            (fromIntegral $ toConstantIF (imageFormat spec))
+                            bufname
 
 -- | Generate all mipmaps for a texture. If mipmap levels were specified, that
 -- is.
@@ -488,6 +503,10 @@ uploadToTexture uploading tex = mask_ $
                     uploadCube gl_TEXTURE_CUBE_MAP
                                gl_TEXTURE_BINDING_CUBE_MAP
                                texname uploading
+                TexBuffer {..} ->
+                    error $ "uploadToTexture: cannot upload to " <>
+                            "buffer textures. (please upload directly to the " <>
+                            "associated buffer instead.)"
 
 upload1D :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
 upload1D target binding tex (Uploading {..}) =

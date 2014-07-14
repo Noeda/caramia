@@ -50,7 +50,7 @@ From technical perspective, you might find these features useful:
   * Framebuffers
 
   * Textures (with many topologies, 1D, 2D, 3D, texture arrays, cube textures;
-    we also have multisampling textures)
+    we also have buffer textures and multisampling textures)
 
   * Vertex array objects
 
