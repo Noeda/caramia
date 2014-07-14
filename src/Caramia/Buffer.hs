@@ -15,15 +15,18 @@ module Caramia.Buffer
     , AccessFrequency(..)
     , AccessNature(..)
     , AccessFlags(..)
+    , MapFlag(..)
     , BufferCreation(..)
     , defaultBufferCreation
       -- * Invalidation
     , invalidateBuffer
       -- * Manipulation
     , map
+    , map2
     , unmap
     , copy
     , withMapping
+    , withMapping2
     , uploadVector
       -- * Views
     , viewSize
@@ -41,6 +44,7 @@ import Caramia.Internal.OpenGLCApi
 import Caramia.Internal.OpenGLExtensions
 
 import qualified Data.Vector.Storable as V
+import qualified Data.Set as S
 
 import Data.Bits
 import Foreign
@@ -95,6 +99,14 @@ toConstantF ReadAccess      = gl_MAP_READ_BIT
 toConstantF WriteAccess     = gl_MAP_WRITE_BIT
 toConstantF ReadWriteAccess = gl_MAP_READ_BIT .|. gl_MAP_WRITE_BIT
 toConstantF NoAccess        = 0
+
+toConstantMF :: S.Set MapFlag -> GLbitfield
+toConstantMF ss
+    | S.null ss = 0
+    | otherwise =
+        if UnSynchronized `S.member` ss
+          then gl_MAP_UNSYNCHRONIZED_BIT
+          else 0
 
 -- | This data describes how a buffer should behave and what operations can be
 -- done with it.
@@ -167,20 +179,16 @@ newBuffer creation
         | ptr == nullPtr = error "newBuffer: initial data is a null pointer."
         | otherwise = ptr
 
--- | Maps (part) of a buffer to system memory space.
+-- | Same as `map` but allows more control over mapping.
 --
--- The mapping is valid until the buffer is garbage collected (in which case
--- the mapping is automatically unmapped) or when `unmap` is called on the
--- buffer.
---
--- You can not have two mappings going on at the same time.
-map :: Int         -- ^ Offset, in bytes, from start of the buffer from where
-                   --   to map.
-    -> Int         -- ^ How many bytes to map.
-    -> AccessFlags -- ^ What access is allowed in the mapping.
-    -> Buffer
-    -> IO (Ptr ())
-map offset num_bytes access_flags buffer
+-- @ map = map2 [] @
+map2 :: S.Set MapFlag
+     -> Int
+     -> Int
+     -> AccessFlags
+     -> Buffer
+     -> IO (Ptr ())
+map2 map_flags offset num_bytes access_flags buffer
     -- a lot of this implementation is just error checking...
 
     -- check that offset/num_bytes makes sense
@@ -208,7 +216,7 @@ map offset num_bytes access_flags buffer
             buf
             (safeFromIntegral offset)
             (safeFromIntegral num_bytes)
-            (toConstantF access_flags)
+            (toConstantF access_flags .|. toConstantMF map_flags)
 
         -- what if it just mysteriously fails? I think we caught most, if not
         -- all user errors so any other error should be some rare condition
@@ -222,6 +230,21 @@ map offset num_bytes access_flags buffer
             ( old { mapped = True }, () )
 
         return ptr
+
+-- | Maps (part) of a buffer to system memory space.
+--
+-- The mapping is valid until the buffer is garbage collected (in which case
+-- the mapping is automatically unmapped) or when `unmap` is called on the
+-- buffer.
+--
+-- You can not have two mappings going on at the same time.
+map :: Int         -- ^ Offset, in bytes, from start of the buffer from where
+                   --   to map.
+    -> Int         -- ^ How many bytes to map.
+    -> AccessFlags -- ^ What access is allowed in the mapping.
+    -> Buffer
+    -> IO (Ptr ())
+map = map2 S.empty
 
 -- | Exception that is thrown from `unmap` when buffer corruption is detected.
 --
@@ -253,6 +276,28 @@ unmap buffer = do
             atomicModifyIORef' (status buffer) $ \old ->
                 ( old { mapped = False }, () )
 
+-- | Same as `withMapping` but with map flags.
+--
+-- See `map2`.
+withMapping2 :: S.Set MapFlag
+             -> Int
+             -> Int
+             -> AccessFlags
+             -> Buffer
+             -> (Ptr () -> IO a)
+             -> IO a
+withMapping2 map_flags offset num_bytes access_flags buffer action =
+    mask $ \restore -> do
+        ptr <- map2 map_flags offset num_bytes access_flags buffer
+        did_it_work <- try $ restore $ action ptr
+        did_unmapping_work <- try $ unmap buffer
+        case did_it_work of
+            Left exc -> throwIO (exc :: SomeException)
+            Right result ->
+                case did_unmapping_work of
+                    Left no -> throwIO (no :: BufferCorruption)
+                    Right () -> return result
+
 -- | A convenience function over map/unmap that automatically unmaps the buffer
 -- when done (even in the case of exceptions).
 --
@@ -274,17 +319,7 @@ withMapping :: Int
             -> Buffer
             -> (Ptr () -> IO a)   -- ^ The pointer is valid during this action.
             -> IO a
-withMapping offset num_bytes access_flags buffer action =
-    mask $ \restore -> do
-        ptr <- map offset num_bytes access_flags buffer
-        did_it_work <- try $ restore $ action ptr
-        did_unmapping_work <- try $ unmap buffer
-        case did_it_work of
-            Left exc -> throwIO (exc :: SomeException)
-            Right result ->
-                case did_unmapping_work of
-                    Left no -> throwIO (no :: BufferCorruption)
-                    Right () -> return result
+withMapping = withMapping2 S.empty
 
 -- | A convenience function to upload a storable vector to a buffer.
 --

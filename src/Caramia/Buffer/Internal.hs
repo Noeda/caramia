@@ -3,6 +3,7 @@ module Caramia.Buffer.Internal
     , Buffer_(..)
     , BufferStatus(..)
     , AccessFlags(..)
+    , MapFlag(..)
     , bufferOrdIndex )
     where
 
@@ -44,4 +45,12 @@ data AccessFlags =
   | NoAccess        -- ^ No access; you cannot map the buffer at all after
                     --   creation.
   deriving ( Eq, Ord, Show, Read )
+
+-- | Additional mapping flags.
+data MapFlag =
+    UnSynchronized        -- ^ Map the buffer without synchronization.
+                          --   You will have to use synchronization primitives
+                          --   to make sure you and OpenGL won't be using
+                          --   the buffer at the same time.
+  deriving ( Eq, Ord, Show, Read, Typeable )
 
