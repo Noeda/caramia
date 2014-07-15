@@ -226,7 +226,8 @@ sourceVertexData buffer sourcing vao = mask_ $
               then doIntegerMapping name bufname
               else doOrdinaryMapping name bufname
 
-            glVertexAttribDivisor
+            mglVertexArrayVertexAttribDivisor
+                name
                 (safeFromIntegral $ attributeIndex sourcing)
                 (safeFromIntegral $ instancingDivisor sourcing)
 

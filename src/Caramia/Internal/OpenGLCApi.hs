@@ -35,6 +35,7 @@ module Caramia.Internal.OpenGLCApi
     , mglNamedBufferData
     , mglVertexArrayVertexAttribOffsetAndEnable
     , mglVertexArrayVertexAttribIOffsetAndEnable
+    , mglVertexArrayVertexAttribDivisor
     -- GL_ARB_separate_shader_objects...but I want them even if that extension
     -- is not available.
     , mglProgramUniform1ui
@@ -146,6 +147,12 @@ withBoundVAO vao action = do
                            peek x_ptr
     finally (glBindVertexArray vao *> action)
             (glBindVertexArray $ fromIntegral old)
+
+mglVertexArrayVertexAttribDivisor ::
+    GLuint -> GLuint -> GLuint -> IO ()
+mglVertexArrayVertexAttribDivisor vaobj index divisor = mask_ $
+    withBoundVAO vaobj $
+        glVertexAttribDivisor index divisor
 
 mglVertexArrayVertexAttribOffsetAndEnable ::
         GLuint -> GLuint -> GLuint -> GLint -> GLenum
