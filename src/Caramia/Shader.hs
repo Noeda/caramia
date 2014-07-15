@@ -58,7 +58,6 @@ import GHC.Float ( double2Float )
 import Control.Exception
 import Foreign
 import Foreign.C.Types
-import Data.List ( nub )
 import qualified Data.ByteString as B
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -197,18 +196,8 @@ newPipelineVF vert_src frag_src = do
     newPipeline [vsh, fsh]
 
 -- | Creates a pipeline composed of different shaders.
---
--- Each stage can have at most 1 shader.
 newPipeline :: [Shader] -> IO Pipeline
-newPipeline shaders
-    -- Should we really restrict the stages? OpenGL does allow you to link
-    -- several shaders to one stage as long as only one of them has a main()
-    -- function.
-    | nub stagefied /= stagefied =
-        error "newPipeline: duplicate shader stages."
-    | otherwise = newTraditionalPipeline shaders
-  where
-    stagefied = fmap viewStage shaders
+newPipeline = newTraditionalPipeline
 
 newTraditionalPipeline :: [Shader] -> IO Pipeline
 newTraditionalPipeline shaders = mask_ $ do
