@@ -32,9 +32,12 @@ module Caramia.Texture
     , getMagFilter
     , setAnisotropy
     , getAnisotropy
+    , setCompareMode
+    , getCompareMode
     , MinFilter(..)
     , MagFilter(..)
     , Wrapping(..)
+    , CompareMode(..)
     -- * Views
     , viewSpecification
     , viewWidth
@@ -601,6 +604,18 @@ data Wrapping =
  | Repeat
  deriving ( Eq, Ord, Show, Read, Typeable )
 
+-- | Texture comparison modes.
+--
+-- See @ glTexParameteri @ documentation in OpenGL.
+data CompareMode
+ = NoCompare
+ | CompareRefToTexture
+ deriving ( Eq, Ord, Show, Read, Typeable )
+
+toConstantC :: CompareMode -> GLenum
+toConstantC NoCompare = gl_NONE
+toConstantC CompareRefToTexture = gl_COMPARE_REF_TO_TEXTURE
+
 toConstantW :: Wrapping -> GLenum
 toConstantW Clamp = gl_CLAMP_TO_EDGE
 toConstantW Repeat = gl_REPEAT
@@ -662,6 +677,21 @@ setWrapping wrapping tex = withBindingByTopology tex $ \target -> do
                            (fromIntegral $ toConstantW wrapping)
     glTexParameteri target gl_TEXTURE_WRAP_R
                            (fromIntegral $ toConstantW wrapping)
+
+setCompareMode :: CompareMode -> Texture -> IO ()
+setCompareMode cmp_mode tex = withBindingByTopology tex $ \target ->
+    glTexParameteri target gl_TEXTURE_COMPARE_MODE
+                    (fromIntegral $ toConstantC cmp_mode)
+
+getCompareMode :: Texture -> IO CompareMode
+getCompareMode tex = withBindingByTopology tex $ \target ->
+    alloca $ \result_ptr -> do
+        glGetTexParameteriv target gl_TEXTURE_COMPARE_MODE result_ptr
+        result <- fromIntegral <$> peek result_ptr
+        return $ if
+            | result == gl_NONE -> NoCompare
+            | result == gl_COMPARE_REF_TO_TEXTURE -> CompareRefToTexture
+            | otherwise -> error "getCompareMode: unexpected comparing mode."
 
 getWrapping :: Texture -> IO Wrapping
 getWrapping tex = withBindingByTopology tex $ \target ->
