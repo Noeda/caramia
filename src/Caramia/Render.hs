@@ -16,6 +16,7 @@ module Caramia.Render
     , setBlending
     , setTargetFramebuffer
     , setFragmentPassTests
+    , setPolygonOffset
     -- * Specifying what to draw
     , DrawCommand(..)
     , drawCommand
@@ -137,6 +138,13 @@ data DrawParams = DrawParams
     -- ^ Which textures do you want to bind? The keys in this integer map are
     -- `TextureUnit`s and tell which texture units you want to bind given
     -- textures.
+    , polygonOffset :: !(Float, Float)
+    -- ^ Modify the depth values that are being written.
+    --
+    -- @ (factor, units) @.
+    --
+    -- By default this is (0, 0) (that is, do nothing). See @ glPolygonOffset @
+    -- for the meaning of these values.
     }
     deriving ( Eq, Typeable )
 
@@ -155,7 +163,8 @@ defaultDrawParams = DrawParams {
   , fragmentPassTests = defaultFragmentPassTests
   , blending = preMultipliedAlpha
   , bindTextures = IM.empty
-  , targetFramebuffer = FBuf.screenFramebuffer }
+  , targetFramebuffer = FBuf.screenFramebuffer
+  , polygonOffset = (0, 0) }
 
 -- | Contains a specification of what to draw.
 --
@@ -309,7 +318,8 @@ withParams (DrawParams {..}) action =
     withFragmentPassTests fragmentPassTests $
     withBlendings blending $
     withBoundTextures bindTextures $
-    withBoundElementBuffer 0 $ do
+    withBoundElementBuffer 0 $
+    withPolygonOffset polygonOffset $ do
         old_active <- gi gl_ACTIVE_TEXTURE
         -- Framebuffer may not restore the viewport so we have to do it here.
         allocaArray 4 $ \viewport_ptr -> do
@@ -322,6 +332,14 @@ withParams (DrawParams {..}) action =
                     action)
                     (glActiveTexture old_active *>
                      glViewport ox oy ow oh)
+
+withPolygonOffset :: (Float, Float) -> IO a -> IO a
+withPolygonOffset (factor, units) action = do
+    old_factor <- gf gl_POLYGON_OFFSET_FACTOR
+    old_units <- gf gl_POLYGON_OFFSET_UNITS
+    finally (do glPolygonOffset (CFloat factor) (CFloat units)
+                action) $
+        glPolygonOffset old_factor old_units
 
 -- | Sets the active texture (not public API! What would they use this for
 -- anyway?).
@@ -406,6 +424,11 @@ setFragmentPassTests tests = Draw $ do
         liftIO $ I.setFragmentPassTests tests
         modify (\old -> old { boundFragmentPassTests = tests })
 {-# INLINE setFragmentPassTests #-}
+
+-- | Sets polygon offset.
+setPolygonOffset :: Float -> Float -> Draw ()
+setPolygonOffset factor units = Draw $ do
+    liftIO $ glPolygonOffset (CFloat factor) (CFloat units)
 
 -- | Sets the current framebuffer.
 setTargetFramebuffer :: FBuf.Framebuffer -> Draw ()

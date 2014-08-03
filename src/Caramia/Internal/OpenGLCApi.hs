@@ -4,6 +4,7 @@ module Caramia.Internal.OpenGLCApi
     ( module Ex
 
     , gi
+    , gf
 
     , gl_TEXTURE_FREE_MEMORY
     , gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM
@@ -350,4 +351,7 @@ gl_TEXTURE_FREE_MEMORY = 0x87FC
 gi :: GLenum -> IO GLuint
 gi x = alloca $ \get_ptr -> glGetIntegerv x (castPtr get_ptr) *>
                             peek get_ptr
+
+gf :: GLenum -> IO GLfloat
+gf x = alloca $ \get_ptr -> glGetFloatv x (castPtr get_ptr) *> peek get_ptr
 
