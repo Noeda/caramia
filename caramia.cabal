@@ -41,7 +41,7 @@ library
                        Caramia.Blend
                        Caramia.Prelude
                        Caramia.Sync
-  other-modules:       Caramia.Internal.OpenGLCApi
+                       Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions
                        Caramia.Internal.Lens
                        Caramia.Render.Internal
