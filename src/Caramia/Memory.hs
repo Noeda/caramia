@@ -1,7 +1,7 @@
 -- | Retrieve video memory information.
 --
 
-{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE MultiWayIf, NoImplicitPrelude, DeriveDataTypeable #-}
 
 module Caramia.Memory
     ( getMemoryInfo

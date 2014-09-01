@@ -7,6 +7,8 @@
 -- <https://www.opengl.org/wiki/Framebuffer_Object>
 --
 
+{-# LANGUAGE NoImplicitPrelude, ViewPatterns, DeriveDataTypeable #-}
+
 module Caramia.Framebuffer
     (
     -- * Creating framebuffers

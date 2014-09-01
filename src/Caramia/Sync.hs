@@ -7,6 +7,8 @@
 -- unsynchronized buffer mapping.
 --
 
+{-# LANGUAGE NoImplicitPrelude, DeriveDataTypeable, MultiWayIf #-}
+
 module Caramia.Sync
     (
     -- * Operations

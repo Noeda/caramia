@@ -1,6 +1,8 @@
 -- | Color handling.
 --
 
+{-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
+
 module Caramia.Color
     (
     -- * Types

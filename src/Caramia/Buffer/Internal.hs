@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude, ViewPatterns, DeriveDataTypeable #-}
+
 module Caramia.Buffer.Internal
     ( Buffer(..)
     , Buffer_(..)

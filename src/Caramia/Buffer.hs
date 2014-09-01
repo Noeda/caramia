@@ -8,6 +8,8 @@
 -- TODO: Add glBufferStorage based implementation.
 -- OpenGLRaw (1.4.0.0) doesn't have this yet.
 
+{-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
+
 module Caramia.Buffer
     ( -- * Creation
       newBuffer

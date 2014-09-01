@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude, ViewPatterns, DeriveDataTypeable #-}
+
 module Caramia.VAO.Internal
     ( VAO(..)
     , VAO_(..) )
@@ -13,6 +15,7 @@ import qualified Caramia.Buffer.Internal as Buf
 data VAO = VAO
     { resource :: !(Resource VAO_)
     , boundBuffers :: !(IORef [Buf.Buffer]) }
+    deriving ( Typeable )
 
 instance Eq VAO where
     (resource -> res1) == (resource -> res2) = res1 == res2

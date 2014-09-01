@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, NoImplicitPrelude, DeriveDataTypeable #-}
 
 module Caramia.Framebuffer.Internal where
 

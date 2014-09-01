@@ -1,7 +1,8 @@
 -- | Textures.
 --
 
-{-# LANGUAGE RecordWildCards, ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards, ScopedTypeVariables, NoImplicitPrelude #-}
+{-# LANGUAGE MultiWayIf, ViewPatterns, DeriveDataTypeable #-}
 
 module Caramia.Texture
     (

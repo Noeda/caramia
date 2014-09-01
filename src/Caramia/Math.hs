@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE NoImplicitPrelude, BangPatterns, DeriveDataTypeable #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 -- | Matrix, vector and quaternion math module. This module is concerned about

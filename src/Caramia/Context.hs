@@ -8,7 +8,7 @@
 -- garbage collected.
 --
 
-{-# LANGUAGE ScopedTypeVariables, ForeignFunctionInterface #-}
+{-# LANGUAGE NoImplicitPrelude, ScopedTypeVariables, DeriveDataTypeable #-}
 
 module Caramia.Context
     (

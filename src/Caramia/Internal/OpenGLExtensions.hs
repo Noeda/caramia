@@ -1,6 +1,8 @@
 -- | This module tries to make it super simple to check if some OpenGL
 -- extension is around...and do it with relatively small runtime cost.
 
+{-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
+
 module Caramia.Internal.OpenGLExtensions
     ( has_GL_EXT_direct_state_access
     , has_GL_ARB_separate_shader_objects

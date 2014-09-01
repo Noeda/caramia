@@ -1,4 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, NoImplicitPrelude, LambdaCase #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Caramia.Texture.Internal where
 

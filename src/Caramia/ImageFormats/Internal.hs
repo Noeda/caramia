@@ -3,6 +3,8 @@
 -- <https://www.opengl.org/wiki/Image_Format>
 --
 
+{-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
+
 module Caramia.ImageFormats.Internal where
 
 import Caramia.Prelude

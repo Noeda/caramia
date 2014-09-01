@@ -2,6 +2,7 @@
 --
 
 {-# LANGUAGE RecordWildCards, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ViewPatterns, NoImplicitPrelude, DeriveDataTypeable #-}
 
 module Caramia.Render
     ( 

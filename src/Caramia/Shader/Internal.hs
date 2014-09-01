@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns, NoImplicitPrelude, DeriveDataTypeable #-}
+
 module Caramia.Shader.Internal
     ( Shader(..)
     , Pipeline(..)

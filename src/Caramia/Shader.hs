@@ -18,7 +18,8 @@
 -- think it's not prime time to use those yet. Maybe in a few years.
 --
 
-{-# LANGUAGE ExistentialQuantification, UndecidableInstances #-}
+{-# LANGUAGE NoImplicitPrelude, FlexibleInstances, DeriveDataTypeable #-}
+{-# LANGUAGE ExistentialQuantification, ViewPatterns, OverloadedStrings #-}
 
 module Caramia.Shader
     ( newShader
@@ -74,6 +75,7 @@ toConstant Geometry = gl_GEOMETRY_SHADER
 
 -- | Thrown when either a compilation or linking error occurs.
 data ShaderBuildingError = forall e. Exception e => ShaderBuildingError e
+                           deriving ( Typeable )
 
 instance Show ShaderBuildingError where
     show (ShaderBuildingError e) = show e
@@ -90,7 +92,7 @@ data ShaderCompilationError = ShaderCompilationError !T.Text
 --
 -- Can also be caught as `ShaderBuildingError`.
 data ShaderLinkingError = ShaderLinkingError !T.Text
-                              deriving ( Eq, Typeable, Show )
+                          deriving ( Eq, Typeable, Show )
 
 instance Exception ShaderBuildingError
 

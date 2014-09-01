@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, NoImplicitPrelude, DeriveDataTypeable #-}
 
 module Caramia.Render.Internal where
 
