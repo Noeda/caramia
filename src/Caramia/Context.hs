@@ -34,7 +34,8 @@ import Control.Concurrent
 import Control.Exception
 import System.IO.Unsafe
 import System.Environment
-import Foreign
+import Foreign.Storable
+import Foreign.Marshal.Alloc
 import Graphics.Rendering.OpenGL.Raw.Core32
 
 import qualified Data.Map.Strict as M

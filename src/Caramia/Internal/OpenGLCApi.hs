@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE ForeignFunctionInterface, NoImplicitPrelude #-}
 
 module Caramia.Internal.OpenGLCApi
     ( module Ex
@@ -70,8 +70,11 @@ import Graphics.Rendering.OpenGL.Raw.EXT.TextureCompressionS3TC as Ex
 import Graphics.Rendering.OpenGL.Raw.EXT.TextureSRGB as Ex
 import Graphics.Rendering.OpenGL.Raw.EXT.TextureFilterAnisotropic as Ex
 import Graphics.Rendering.OpenGL.Raw.GetProcAddress
-import Foreign
+import Foreign.Ptr
 import Foreign.C.Types
+import Foreign.Storable
+import Foreign.Marshal.Alloc
+import Foreign.Marshal.Utils
 import Control.Exception
 import System.IO.Unsafe
 

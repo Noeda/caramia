@@ -47,7 +47,9 @@ import Control.Exception
 import Data.List ( nub )
 import Data.Bits
 import System.IO.Unsafe
-import Foreign
+import Foreign.Storable
+import Foreign.Marshal.Alloc
+import Foreign.Marshal.Array
 import Foreign.C.Types
 import GHC.Float
 import qualified Data.IntSet as IS

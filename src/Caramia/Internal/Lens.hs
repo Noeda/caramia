@@ -3,7 +3,7 @@
 -- This is used to avoid 'lens' dependency.
 --
 
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes, NoImplicitPrelude #-}
 
 module Caramia.Internal.Lens
     ( Lens

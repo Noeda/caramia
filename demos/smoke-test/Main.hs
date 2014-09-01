@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings #-}
+
 module Main ( main ) where
 
 import Caramia.Prelude
