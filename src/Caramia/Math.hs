@@ -186,7 +186,7 @@ data Matrix44 = Matrix44 { m11 :: {-# UNPACK #-} !Float
                          , m24 :: {-# UNPACK #-} !Float
                          , m34 :: {-# UNPACK #-} !Float
                          , m44 :: {-# UNPACK #-} !Float }
-               deriving ( Eq, Show, Read, Ord )
+               deriving ( Eq, Show, Read, Ord, Typeable )
 
 -- | A 3x3 matrix. Each nXX function accesses an individual element of the
 -- matrix.
@@ -199,14 +199,14 @@ data Matrix33 = Matrix33 { n11 :: {-# UNPACK #-} !Float
                          , n13 :: {-# UNPACK #-} !Float
                          , n23 :: {-# UNPACK #-} !Float
                          , n33 :: {-# UNPACK #-} !Float }
-               deriving ( Eq, Show, Read, Ord )
+               deriving ( Eq, Show, Read, Ord, Typeable )
 
 -- | A 3-dimensional vector. `x`, `y` and `z` access each individual
 -- component.
 data Vector3 = Vector3 { x :: {-# UNPACK #-} !Float
                        , y :: {-# UNPACK #-} !Float
                        , z :: {-# UNPACK #-} !Float }
-               deriving ( Eq, Show, Read, Ord )
+               deriving ( Eq, Show, Read, Ord, Typeable )
 
 _x :: Lens' Vector3 Float
 _x = lens x (\old_vec new_x -> old_vec { x = new_x })
@@ -223,7 +223,7 @@ data Quaternion = Quaternion { qx :: {-# UNPACK #-} !Float
                              , qy :: {-# UNPACK #-} !Float
                              , qz :: {-# UNPACK #-} !Float
                              , qw :: {-# UNPACK #-} !Float }
-                  deriving ( Eq, Show, Read, Ord )
+                  deriving ( Eq, Show, Read, Ord, Typeable )
 
 -- | Returns the size of a `Vector3`. This is just a shortcut to calling
 -- `sizeOf` on a vector.
