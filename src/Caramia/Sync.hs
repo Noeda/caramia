@@ -32,7 +32,7 @@ fence :: IO Fence
 fence = mask_ $ do
     resource <-
         newResource createFence
-                    (\fencesync -> glDeleteSync fencesync)
+                    glDeleteSync
                     (return ())
     return $ Fence resource
   where

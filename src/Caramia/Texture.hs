@@ -186,8 +186,7 @@ newTexture spec = mask_ $ do
         | otherwise = return ()
     topologySanityCheck (TexBuffer {}) = return ()
 
-    badTopology _ =
-        error $ "newTexture: bad topology."
+    badTopology _ = error "newTexture: bad topology."
 
     badMipmaps =
         error $ "newTexture: bad number of mipmap levels: " <> show num_mipmaps

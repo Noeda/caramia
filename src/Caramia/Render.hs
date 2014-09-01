@@ -428,7 +428,7 @@ setFragmentPassTests tests = Draw $ do
 
 -- | Sets polygon offset.
 setPolygonOffset :: Float -> Float -> Draw ()
-setPolygonOffset factor units = Draw $ do
+setPolygonOffset factor units = Draw $
     liftIO $ glPolygonOffset (CFloat factor) (CFloat units)
 
 -- | Sets the current framebuffer.

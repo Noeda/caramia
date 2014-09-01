@@ -1409,11 +1409,11 @@ zero3 = {-# SCC "zero3" #-} Vector3 { x = 0, y = 0, z = 0 }
 -- `Matrix44` floating point values.  The list will always have 16 elements.
 toList4 :: Matrix44 -> [Float]
 toList4 mat = {-# SCC "toList4" #-}
-    zipWith ($) [m11, m21, m31, m41
-                ,m12, m22, m32, m42
-                ,m13, m23, m33, m43
-                ,m14, m24, m34, m44]
-                (repeat mat)
+    (\f -> f mat) <$>
+        [m11, m21, m31, m41
+        ,m12, m22, m32, m42
+        ,m13, m23, m33, m43
+        ,m14, m24, m34, m44]
 
 -- | Construct a quaternion out of 4 values.
 quaternion :: Float           -- ^ The x-component.
