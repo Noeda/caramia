@@ -2,7 +2,7 @@ This is a library for real-time graphics for Haskell, using OpenGL 3.3.
 
 Requirements:
 
-  * GHC 7.8
+  * GHC 7.6+
   * OpenGL 3.3 (and GL\_ARB\_texture\_storage) (on the system where programs are
     run)
 
