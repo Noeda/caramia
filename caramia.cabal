@@ -41,6 +41,8 @@ library
                        Caramia.Blend
                        Caramia.Prelude
                        Caramia.Sync
+                       Caramia.Internal.ContextLocalData
+                       Caramia.Internal.OpenGLDebug
                        Caramia.Internal.OpenGLCApi
                        Caramia.Internal.OpenGLExtensions
                        Caramia.Internal.Lens
@@ -52,7 +54,6 @@ library
                        Caramia.Buffer.Internal
                        Caramia.Blend.Internal
                        Caramia.VAO.Internal
-  c-sources:           src/c/gl_api.c
 
   ghc-options:         -Wall -fno-warn-name-shadowing
 
@@ -69,11 +70,7 @@ library
 
   if os(darwin)
     frameworks: OpenGL
-    c-sources:         src/c/gl_debug_mode_osx.c
-    cc-options:        -DMAC_OPENGL
     cpp-options:       -DMAC_OPENGL
-  else
-    c-sources:         src/c/gl_debug_mode.c
 
 -- This is just a dumping ground test that does stupid things. It's used to
 -- check if things work at all.

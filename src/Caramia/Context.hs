@@ -29,8 +29,9 @@ module Caramia.Context
     where
 
 import Caramia.Prelude
+import Caramia.Internal.ContextLocalData
+import Caramia.Internal.OpenGLDebug
 
-import Data.Dynamic
 import Control.Concurrent
 import Control.Exception
 import System.IO.Unsafe
@@ -41,24 +42,6 @@ import Graphics.Rendering.OpenGL.Raw.Core32
 
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap.Strict as IM
-
-foreign import ccall unsafe "initialize_my_glstate_tls"
-    c_initialize_my_glstate_tls :: IO ()
-foreign import ccall unsafe "activate_debug_mode"
-    c_activate_debug_mode :: IO ()
-
--- | The type of a Caramia context ID.
-type ContextID = Int
-
--- | Returns the current Caramia context ID.
---
--- The context ID is unique between different calls to `giveContext`.
---
--- Returns `Nothing` if there is no context active.
-currentContextID :: IO (Maybe ContextID)
-currentContextID =
-    M.lookup <$> myThreadId <*> readIORef runningContexts
-{-# INLINE currentContextID #-}
 
 -- | An exception that is thrown when the OpenGL version is too old for this
 -- library.
@@ -99,23 +82,23 @@ giveContext action = mask $ \restore -> do
 
     checkOpenGLVersion33
 
-    c_initialize_my_glstate_tls
-    maybe (pure ())
-          (const c_activate_debug_mode)
-          =<<
-          lookupEnv "CARAMIA_OPENGL_DEBUG"
-
-    -- Enable sRGB framebuffers
-    -- There seems to be no reason not to enable it; you can turn off sRGB
-    -- handling in other ways.
-    glEnable gl_FRAMEBUFFER_SRGB
-    glEnable gl_BLEND
-
     cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
     tid <- myThreadId
     atomicModifyIORef' runningContexts $ \old_map ->
         ( M.insert tid cid old_map, () )
-    finally (restore action) scrapContext
+    finally (restore insides) scrapContext
+  where
+    insides = do
+        should_activate_debug_mode <- isJust <$> lookupEnv "CARAMIA_OPENGL_DEBUG"
+        when should_activate_debug_mode activateDebugMode
+
+        -- Enable sRGB framebuffers
+        -- There seems to be no reason not to enable it; you can turn off sRGB
+        -- handling in other ways.
+        glEnable gl_FRAMEBUFFER_SRGB
+        glEnable gl_BLEND
+
+        action
 
 checkOpenGLVersion33 :: IO ()
 checkOpenGLVersion33 =
@@ -189,6 +172,7 @@ runPendingFinalizers = mask_ $ do
             case result of
                 Left exc -> scrapContext >> throwIO (exc :: SomeException)
                 Right () -> return ()
+    flushDebugMessages
 
 -- | Schedules a finalizer to be run in a Caramia context.
 --
@@ -206,97 +190,9 @@ scheduleFinalizer cid finalizer =
             finalizer
             old, () )
 
--- used to give out new unique context IDs
-nextContextID :: IORef ContextID
-nextContextID = unsafePerformIO $ newIORef 0
-{-# NOINLINE nextContextID #-}
-
--- currently running contexts, map from thread IDs to context IDs
-runningContexts :: IORef (M.Map ThreadId ContextID)
-runningContexts = unsafePerformIO $ newIORef M.empty
-{-# NOINLINE runningContexts #-}
-
 -- these are the pending OpenGL finalizers that wait for a time they can be
 -- safely run.
 pendingFinalizers :: IORef (IM.IntMap (IO ()))
 pendingFinalizers = unsafePerformIO $ newIORef IM.empty
 {-# NOINLINE pendingFinalizers #-}
-
--- context local data. This is like poor man's thread local storage but for
--- contexts.
---
--- The `TypeRep` and `Dynamic` lets this module be agnostic to what other
--- modules hang on to thread local data.
---
--- Other modules can specify a type that there should be only one per context.
--- And this type's TypeRep is stored/queried from the map below.
-contextLocalData :: IORef (IM.IntMap (M.Map TypeRep Dynamic))
-contextLocalData = unsafePerformIO $ newIORef IM.empty
-{-# NOINLINE contextLocalData #-}
-
--- | Stores a context local value.
---
--- The type of the given value is used as a key. This means that if a value of
--- the same type was stored before, that value is thrown away and replaced with
--- this new value you just gave.
---
--- The value is evaluated to WHNF.
---
--- You don't need this function to work with context local data.
--- `retrieveContextLocalData` is sufficient as it also lets you set a default
--- value in case a value was not already set.
---
--- Context local data is wiped to oblivion once `giveContext` ends.
-storeContextLocalData :: Typeable a => a -> IO ()
-storeContextLocalData value =
-    maybe (error "storeContextLocalData: not in a context.")
-          (\cid ->
-              atomicModifyIORef' contextLocalData $ \old ->
-                  ( IM.alter (Just . maybe (M.singleton
-                                            (typeOf value)
-                                            (toDyn value))
-                                           (M.insert (typeOf value)
-                                                     (toDyn value)))
-                              cid
-                              old
-                  , () ) )
-          =<< currentContextID
-{-# INLINE storeContextLocalData #-}
-
--- | Retrieves a context local value.
---
--- See `storeContextLocalData`.
-retrieveContextLocalData :: forall a. Typeable a
-                         => IO a  -- ^ Default value generating action; not
-                                  -- evaluated if there was already a value
-                                  -- stored.
-                         -> IO a
-retrieveContextLocalData defvalue =
-    maybe (error "retrieveContextLocalData: not in a context.")
-          (\cid -> do
-              -- No need to care about IORef race conditions because all
-              -- functions operating on a certain context ID will be
-              -- run in the same thread, sequentially.
-              snapshot <- readIORef contextLocalData
-              case IM.lookup cid snapshot of
-                  Nothing -> do
-                      val <- dyndefvalue
-                      atomicModifyIORef' contextLocalData $ \old ->
-                          ( IM.insert cid (M.singleton typ val) old
-                          , fromDyn val undefined )
-                  Just old_map ->
-                      case M.lookup typ old_map of
-                          Nothing -> do
-                              val <- dyndefvalue
-                              atomicModifyIORef' contextLocalData $ \old ->
-                                  ( IM.adjust (M.insert typ val)
-                                              cid
-                                              old
-                                  , fromDyn val undefined )
-                          Just value -> return (fromDyn value undefined))
-          =<< currentContextID
-  where
-    typ = typeOf (undefined :: a)
-    dyndefvalue = toDyn <$> defvalue
-{-# INLINEABLE retrieveContextLocalData #-}
 

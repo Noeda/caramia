@@ -1,3 +1,11 @@
+-- | Module for using the raw OpenGL API.
+--
+-- This is a mixture from the OpenGLRaw package and some of our own stuff.
+--
+-- TODO: Some of this stuff should probably be in OpenGLRaw so we could add
+-- stuff there instead.
+--
+
 {-# LANGUAGE ForeignFunctionInterface, NoImplicitPrelude #-}
 
 module Caramia.Internal.OpenGLCApi
@@ -9,6 +17,23 @@ module Caramia.Internal.OpenGLCApi
     , gl_TEXTURE_FREE_MEMORY
     , gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM
     , gl_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM
+
+    , gl_DEBUG_OUTPUT
+    , gl_DEBUG_SOURCE_APPLICATION
+    , gl_DEBUG_SOURCE_OTHER
+    , gl_DEBUG_SOURCE_API
+    , gl_DEBUG_SOURCE_WINDOW_SYSTEM
+    , gl_DEBUG_SOURCE_SHADER_COMPILER
+    , gl_DEBUG_SOURCE_THIRD_PARTY
+    , gl_DEBUG_TYPE_ERROR
+    , gl_DEBUG_TYPE_DEPRECATED_BEHAVIOR
+    , gl_DEBUG_TYPE_UNDEFINED_BEHAVIOR
+    , gl_DEBUG_TYPE_PORTABILITY
+    , gl_DEBUG_TYPE_PERFORMANCE
+    , gl_DEBUG_TYPE_OTHER
+    , gl_DEBUG_SEVERITY_HIGH
+    , gl_DEBUG_SEVERITY_MEDIUM
+    , gl_DEBUG_SEVERITY_LOW
 
     , withBoundVAO
     , withBoundBuffer
@@ -56,6 +81,10 @@ module Caramia.Internal.OpenGLCApi
     , mglMapNamedBufferRange
     , mglUnmapNamedBuffer
     , mglNamedCopyBufferSubData
+
+    , glDebugMessageControl
+    , glDebugMessageInsert
+    , glGetDebugMessageLog
     )
     where
 
@@ -308,6 +337,29 @@ type TexStorage2DF = GLenum -> GLsizei -> GLenum -> GLsizei -> GLsizei -> IO ()
 type TexStorage3DF = GLenum -> GLsizei -> GLenum
                   -> GLsizei -> GLsizei -> GLsizei -> IO ()
 type InvalidateBufferDataF = GLuint -> IO ()
+type DebugMessageControlF = GLenum
+                         -> GLenum
+                         -> GLenum
+                         -> GLsizei
+                         -> Ptr GLuint
+                         -> GLboolean
+                         -> IO ()
+type DebugMessageInsertF = GLenum
+                        -> GLenum
+                        -> GLuint
+                        -> GLenum
+                        -> GLsizei
+                        -> Ptr CChar
+                        -> IO ()
+type GetDebugMessageLogF = GLuint
+                        -> GLsizei
+                        -> Ptr GLenum
+                        -> Ptr GLenum
+                        -> Ptr GLuint
+                        -> Ptr GLenum
+                        -> Ptr GLsizei
+                        -> Ptr CChar
+                        -> IO GLuint
 
 foreign import ccall unsafe "dynamic"
     glTexStorage1D_funptr :: FunPtr TexStorage1DF -> TexStorage1DF
@@ -318,6 +370,30 @@ foreign import ccall unsafe "dynamic"
 foreign import ccall unsafe "dynamic"
     glInvalidateBufferData_funptr :: FunPtr InvalidateBufferDataF
                                   -> InvalidateBufferDataF
+foreign import ccall unsafe "dynamic"
+    glDebugMessageControl_funptr :: FunPtr DebugMessageControlF
+                                 -> DebugMessageControlF
+foreign import ccall safe "dynamic"
+    glDebugMessageInsert_funptr :: FunPtr DebugMessageInsertF
+                                -> DebugMessageInsertF
+foreign import ccall safe "dynamic"
+    glGetDebugMessageLog_funptr :: FunPtr GetDebugMessageLogF
+                                -> GetDebugMessageLogF
+
+glGetDebugMessageLog :: GetDebugMessageLogF
+glGetDebugMessageLog = unsafePerformIO $
+    glGetDebugMessageLog_funptr <$> getProcAddress "glGetDebugMessageLog"
+{-# NOINLINE glGetDebugMessageLog #-}
+
+glDebugMessageControl :: DebugMessageControlF
+glDebugMessageControl = unsafePerformIO $
+    glDebugMessageControl_funptr <$> getProcAddress "glDebugMessageControl"
+{-# NOINLINE glDebugMessageControl #-}
+
+glDebugMessageInsert :: DebugMessageInsertF
+glDebugMessageInsert = unsafePerformIO $
+    glDebugMessageInsert_funptr <$> getProcAddress "glDebugMessageInsert"
+{-# NOINLINE glDebugMessageInsert #-}
 
 glTexStorage1D :: TexStorage1DF
 glTexStorage1D = unsafePerformIO $
@@ -349,6 +425,55 @@ gl_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM = 0x9049
 -- GL_ATI_meminfo
 gl_TEXTURE_FREE_MEMORY :: GLenum
 gl_TEXTURE_FREE_MEMORY = 0x87FC
+
+-- GL_KHR_debug
+gl_DEBUG_OUTPUT :: GLenum
+gl_DEBUG_OUTPUT = 0x92E0
+
+gl_DEBUG_SOURCE_APPLICATION :: GLenum
+gl_DEBUG_SOURCE_APPLICATION = 0x824A
+
+gl_DEBUG_SOURCE_OTHER :: GLenum
+gl_DEBUG_SOURCE_OTHER = 0x824B
+
+gl_DEBUG_SOURCE_API :: GLenum
+gl_DEBUG_SOURCE_API = 0x8246
+
+gl_DEBUG_SOURCE_WINDOW_SYSTEM :: GLenum
+gl_DEBUG_SOURCE_WINDOW_SYSTEM = 0x8247
+
+gl_DEBUG_SOURCE_SHADER_COMPILER :: GLenum
+gl_DEBUG_SOURCE_SHADER_COMPILER = 0x8248
+
+gl_DEBUG_SOURCE_THIRD_PARTY :: GLenum
+gl_DEBUG_SOURCE_THIRD_PARTY = 0x8249
+
+gl_DEBUG_TYPE_ERROR :: GLenum
+gl_DEBUG_TYPE_ERROR = 0x824C
+
+gl_DEBUG_TYPE_DEPRECATED_BEHAVIOR :: GLenum
+gl_DEBUG_TYPE_DEPRECATED_BEHAVIOR = 0x824D
+
+gl_DEBUG_TYPE_UNDEFINED_BEHAVIOR :: GLenum
+gl_DEBUG_TYPE_UNDEFINED_BEHAVIOR = 0x824E
+
+gl_DEBUG_TYPE_PORTABILITY :: GLenum
+gl_DEBUG_TYPE_PORTABILITY = 0x824F
+
+gl_DEBUG_TYPE_PERFORMANCE :: GLenum
+gl_DEBUG_TYPE_PERFORMANCE = 0x8250
+
+gl_DEBUG_TYPE_OTHER :: GLenum
+gl_DEBUG_TYPE_OTHER = 0x8251
+
+gl_DEBUG_SEVERITY_HIGH :: GLenum
+gl_DEBUG_SEVERITY_HIGH = 0x9146
+
+gl_DEBUG_SEVERITY_MEDIUM :: GLenum
+gl_DEBUG_SEVERITY_MEDIUM = 0x9147
+
+gl_DEBUG_SEVERITY_LOW :: GLenum
+gl_DEBUG_SEVERITY_LOW = 0x9148
 
 -- | Shortcut to `glGetIntegerv` when you query only one integer.
 gi :: GLenum -> IO GLuint

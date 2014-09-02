@@ -15,7 +15,7 @@ module Caramia.Internal.OpenGLExtensions
     where
 
 import Caramia.Prelude
-import Caramia.Context
+import Caramia.Internal.ContextLocalData
 
 import Graphics.Rendering.OpenGL.Raw.Core32
 import Foreign
