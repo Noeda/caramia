@@ -18,6 +18,12 @@
 extern "C" {
 #endif
 
+typedef struct s_glstate
+{
+    int debug_mode_on;
+} glstate;
+
+glstate* my_glstate( void );
 void initialize_my_glstate_tls( void );
 void activate_debug_mode( void );
 

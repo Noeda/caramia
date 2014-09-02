@@ -1,9 +1,10 @@
 #define GL_GLEXT_PROTOTYPES
 #include "gl_api.h"
 #include <GL/gl.h>
-#include <GL/gl3.h>
+#include <GL/glext.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <string.h>
 
 const char* debug_output_enabled_str =
     "Debug output enabled.";

@@ -12,11 +12,6 @@
 #include <string.h>
 #include <assert.h>
 
-typedef struct s_glstate
-{
-    GLboolean debug_mode_on;
-} glstate;
-
 static pthread_mutex_t glstate_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_key_t glstate_tls;
 static int glstate_tls_initialized = 0;
@@ -74,7 +69,7 @@ static void initialize_my_glstate_local( void )
     pthread_setspecific( glstate_tls, state );
 }
 
-static glstate* my_glstate( void )
+glstate* my_glstate( void )
 {
     return pthread_getspecific( glstate_tls );
 }
