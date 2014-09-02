@@ -9,6 +9,7 @@
 --
 
 {-# LANGUAGE NoImplicitPrelude, ScopedTypeVariables, DeriveDataTypeable #-}
+{-# LANGUAGE CPP #-}
 
 module Caramia.Context
     (
@@ -118,6 +119,10 @@ giveContext action = mask $ \restore -> do
 
 checkOpenGLVersion33 :: IO ()
 checkOpenGLVersion33 =
+    -- You cannot trust OS X to report versions correctly :-(
+#ifdef MAC_OPENGL
+    return ()
+#else
     alloca $ \major_ptr -> alloca $ \minor_ptr -> do
         -- in case glGetIntegerv is completely broken, set initial values for
         -- major and minor pointers
@@ -135,6 +140,7 @@ checkOpenGLVersion33 =
                              , reportedVersion = ( fromIntegral major
                                                  , fromIntegral minor )
                              }
+#endif
 
 -- | Scraps the current context.
 --

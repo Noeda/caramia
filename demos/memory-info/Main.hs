@@ -9,7 +9,7 @@ main :: IO ()
 main = 
     withCString "smoke-test" $ \cstr -> do
         _ <- glSetAttribute glAttrContextMajorVersion 3
-        _ <- glSetAttribute glAttrContextMinorVersion 2
+        _ <- glSetAttribute glAttrContextMinorVersion 3
         _ <- glSetAttribute glAttrContextProfileMask glProfileCore
         _ <- glSetAttribute glAttrContextFlags glContextFlagDebug
         window <- createWindow cstr windowPosUndefined windowPosUndefined

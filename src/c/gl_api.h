@@ -14,10 +14,6 @@
 #ifndef mgl_gl_api_h
 #define mgl_gl_api_h
 
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

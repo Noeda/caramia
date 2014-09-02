@@ -34,7 +34,7 @@ program :: IO ()
 program =
     withCString "smoke-test" $ \cstr -> do
         _ <- glSetAttribute glAttrContextMajorVersion 3
-        _ <- glSetAttribute glAttrContextMinorVersion 2
+        _ <- glSetAttribute glAttrContextMinorVersion 3
         _ <- glSetAttribute glAttrContextProfileMask glProfileCore
         _ <- glSetAttribute glAttrContextFlags glContextFlagDebug
         window <- createWindow cstr windowPosUndefined windowPosUndefined
@@ -146,9 +146,10 @@ program =
 
 fragmentShaderSrc :: T.Text
 fragmentShaderSrc = "" <>
-    "#version 140\n" <>
+    "#version 330\n" <>
     "uniform mat3 tutturuu;\n" <>
+    "layout (location = 0) out vec4 colorOut;\n" <>
     "void main() {\n" <>
-    "    gl_FragColor = vec4(tutturuu[0][0]);\n" <>
+    "    colorOut = vec4(tutturuu[0][0]);\n" <>
     "}\n"
 
