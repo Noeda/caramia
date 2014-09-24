@@ -9,7 +9,7 @@
 --
 
 {-# LANGUAGE NoImplicitPrelude, ScopedTypeVariables, DeriveDataTypeable #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, LambdaCase #-}
 
 module Caramia.Context
     (
@@ -31,14 +31,16 @@ module Caramia.Context
 import Caramia.Prelude
 import Caramia.Internal.ContextLocalData
 import Caramia.Internal.OpenGLDebug
+import Caramia.Internal.FlextGL
 
 import Control.Concurrent
 import Control.Exception
 import System.IO.Unsafe
 import System.Environment
+import Graphics.Rendering.OpenGL.Raw.GetProcAddress
+import Foreign.Ptr
 import Foreign.Storable
 import Foreign.Marshal.Alloc
-import Graphics.Rendering.OpenGL.Raw.Core32
 
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap.Strict as IM
@@ -80,13 +82,18 @@ giveContext action = mask $ \restore -> do
         error $ "giveContext: current thread is not bound. How can it have " <>
                 "an OpenGL context?"
 
+    flextInit (\str -> castFunPtrToPtr <$> getProcAddress str)
+              (\_ -> return True) >>= \case
+        f@(Failure _) -> throwIO f
+        _ -> return ()
+
     checkOpenGLVersion33
 
     cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
     tid <- myThreadId
     atomicModifyIORef' runningContexts $ \old_map ->
         ( M.insert tid cid old_map, () )
-    finally (restore insides) scrapContext
+    finally (restore insides) (flushDebugMessages >> scrapContext)
   where
     insides = do
         should_activate_debug_mode <- isJust <$> lookupEnv "CARAMIA_OPENGL_DEBUG"

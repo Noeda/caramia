@@ -9,7 +9,6 @@ module Caramia.Internal.OpenGLDebug
 
 import Caramia.Prelude
 import Caramia.Internal.OpenGLCApi
-import Caramia.Internal.OpenGLExtensions
 import Caramia.Internal.ContextLocalData
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class
@@ -29,22 +28,20 @@ activateDebugMode = do
     when necessary_extensions reallyActivateDebugMode
   where
     reallyActivateDebugMode = mask_ $ do
-        putStrLn "Activating it."
-
         glDebugMessageControl gl_DONT_CARE
                               gl_DONT_CARE
                               gl_DONT_CARE
                               0
                               nullPtr
                               (fromIntegral gl_TRUE)
+        glEnable gl_DEBUG_OUTPUT
         withCStringLen "Debug output activated." $ \(cstr, len) ->
             glDebugMessageInsert gl_DEBUG_SOURCE_APPLICATION
-                                gl_DEBUG_TYPE_OTHER
-                                0
-                                gl_DEBUG_SEVERITY_LOW
-                                (fromIntegral len)
-                                cstr
-        glEnable gl_DEBUG_OUTPUT
+                                 gl_DEBUG_TYPE_OTHER
+                                 0
+                                 gl_DEBUG_SEVERITY_LOW
+                                 (fromIntegral len)
+                                 cstr
         storeContextLocalData (DebugModeActivated True)
 
 flushDebugMessages :: IO ()

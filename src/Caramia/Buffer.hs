@@ -43,7 +43,6 @@ import Caramia.Buffer.Internal
 
 import Caramia.Resource
 import Caramia.Internal.OpenGLCApi
-import Caramia.Internal.OpenGLExtensions
 
 import qualified Data.Vector.Storable as V
 import qualified Data.Set as S

@@ -705,12 +705,12 @@ getWrapping tex = withBindingByTopology tex $ \target ->
 
 setAnisotropy :: Float -> Texture -> IO ()
 setAnisotropy ani tex = withBindingByTopology tex $ \target ->
-    glTexParameterf target gl_TEXTURE_MAX_ANISOTROPY (CFloat ani)
+    glTexParameterf target gl_TEXTURE_MAX_ANISOTROPY_EXT (CFloat ani)
 
 getAnisotropy :: Texture -> IO Float
 getAnisotropy tex = withBindingByTopology tex $ \target ->
     alloca $ \ani_ptr -> do
-        glGetTexParameterfv target gl_TEXTURE_MAX_ANISOTROPY ani_ptr
+        glGetTexParameterfv target gl_TEXTURE_MAX_ANISOTROPY_EXT ani_ptr
         unwrap <$> peek ani_ptr
   where
     unwrap (CFloat f) = f

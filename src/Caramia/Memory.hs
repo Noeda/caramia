@@ -11,7 +11,6 @@ module Caramia.Memory
 import Caramia.Prelude
 import Caramia.Context
 import Caramia.Internal.OpenGLCApi
-import Caramia.Internal.OpenGLExtensions
 import Foreign.Marshal.Alloc
 import Foreign.Storable
 
@@ -45,7 +44,7 @@ noInformation = MemoryInfo
 atiGetMem :: IO MemoryInfo
 atiGetMem =
     alloca $ \result_ptr -> do
-        glGetIntegerv gl_TEXTURE_FREE_MEMORY result_ptr
+        glGetIntegerv gl_TEXTURE_FREE_MEMORY_ATI result_ptr
         result <- peek result_ptr
         return MemoryInfo { availableVideoMemory = Just $ fromIntegral result
                           , totalVideoMemory = Nothing }
@@ -53,9 +52,9 @@ atiGetMem =
 nvidiaGetMem :: IO MemoryInfo
 nvidiaGetMem =
     alloca $ \result_ptr -> alloca $ \result2_ptr -> do
-        glGetIntegerv gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM
+        glGetIntegerv gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX
                       result_ptr
-        glGetIntegerv gl_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM
+        glGetIntegerv gl_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX
                       result2_ptr
         result <- peek result_ptr
         result2 <- peek result2_ptr
