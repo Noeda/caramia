@@ -1,14 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, ScopedTypeVariables #-}
 
-module Caramia.Internal.ContextLocalData
-    ( storeContextLocalData
-    , retrieveContextLocalData
-    , currentContextID
-    , nextContextID
-    , runningContexts
-    , contextLocalData
-    , ContextID )
-    where
+module Caramia.Internal.ContextLocalData where
 
 import Caramia.Prelude
 import qualified Data.IntMap.Strict as IM

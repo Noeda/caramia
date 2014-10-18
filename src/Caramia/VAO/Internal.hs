@@ -1,9 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, ViewPatterns, DeriveDataTypeable #-}
 
-module Caramia.VAO.Internal
-    ( VAO(..)
-    , VAO_(..) )
-    where
+module Caramia.VAO.Internal where
 
 import Caramia.Prelude
 

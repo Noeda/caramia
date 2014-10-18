@@ -1,13 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, ViewPatterns, DeriveDataTypeable #-}
 
-module Caramia.Buffer.Internal
-    ( Buffer(..)
-    , Buffer_(..)
-    , BufferStatus(..)
-    , AccessFlags(..)
-    , MapFlag(..)
-    , bufferOrdIndex )
-    where
+module Caramia.Buffer.Internal where
 
 import Caramia.Prelude
 

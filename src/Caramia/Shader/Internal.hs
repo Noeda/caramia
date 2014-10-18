@@ -1,13 +1,6 @@
 {-# LANGUAGE ViewPatterns, NoImplicitPrelude, DeriveDataTypeable #-}
 
-module Caramia.Shader.Internal
-    ( Shader(..)
-    , Pipeline(..)
-    , Pipeline_(..)
-    , Shader_(..)
-    , ShaderStage(..)
-    , shaderIdentifierSupply )
-    where
+module Caramia.Shader.Internal where
 
 import Caramia.Prelude
 
