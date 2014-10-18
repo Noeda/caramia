@@ -23,6 +23,8 @@
 
 module Caramia.Shader
     ( newShader
+    , newShaderB
+    , newShaderBL
     , newPipeline
     , newPipelineVF
     , Shader()
@@ -60,6 +62,8 @@ import Control.Exception
 import Foreign
 import Foreign.C.Types
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Unsafe as B
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Foreign as T
@@ -123,13 +127,11 @@ setUniform uniformable location pipeline =
         setUniform_ program (safeFromIntegral location) uniformable
 {-# INLINE [1] setUniform #-}
 
--- | Creates a shader from GLSL shader source.
---
--- This can throw `ShaderCompilationError` if compilation fails.
-newShader :: T.Text      -- ^ The shader source code.
-          -> ShaderStage
-          -> IO Shader
-newShader source_code stage = mask_ $ do
+newShaderGeneric :: Ptr CChar
+                 -> Int
+                 -> ShaderStage
+                 -> IO Shader
+newShaderGeneric source_code_ptr source_code_len stage = mask_ $ do
     res <- newResource create
                        deleter
                        (return ())
@@ -144,9 +146,8 @@ newShader source_code stage = mask_ $ do
 
     create = do
         shader_name <- glCreateShader (toConstant stage)
-        T.withCStringLen source_code $ \(cstr, len) ->
-            with cstr $ \cstr_ptr ->
-                with (fromIntegral len :: GLint) $ \len_ptr ->
+        with source_code_ptr $ \cstr_ptr ->
+            with (fromIntegral source_code_len :: GLint) $ \len_ptr ->
                 glShaderSource
                     shader_name
                     1
@@ -155,6 +156,34 @@ newShader source_code stage = mask_ $ do
         glCompileShader shader_name
         checkCompilationErrors shader_name
         return $ CompiledShader shader_name
+
+-- | Creates a shader from GLSL shader source, using a strict bytestring.
+newShaderB :: B.ByteString
+           -> ShaderStage
+           -> IO Shader
+newShaderB source_code stage =
+    B.unsafeUseAsCStringLen source_code $ \(cstr, len) ->
+        newShaderGeneric cstr len stage
+
+-- | Creates a shader from GLSL shader source, using a lazy bytestring.
+--
+-- The bytestring will be forced and converted to a strict bytestring
+-- internally, so this is not so efficient, if you care about storage
+-- efficiency in shader compilation.
+newShaderBL :: BL.ByteString
+            -> ShaderStage
+            -> IO Shader
+newShaderBL source_code = newShaderB (BL.toStrict source_code)
+
+-- | Creates a shader from GLSL shader source, encoding a Text into an UTF-8
+-- string.
+--
+-- This can throw `ShaderCompilationError` if compilation fails.
+newShader :: T.Text      -- ^ The shader source code.
+          -> ShaderStage
+          -> IO Shader
+newShader source_code stage = T.withCStringLen source_code $ \(cstr, len) ->
+    newShaderGeneric cstr len stage
 
 -- | Checks that there are no compilation errors in an OpenGL shader object.
 --
