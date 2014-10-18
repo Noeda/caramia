@@ -1,4 +1,5 @@
-This is a library for real-time graphics for Haskell, using OpenGL 3.3.
+This is an OpenGL bindings library for real-time graphics for Haskell, using
+OpenGL 3.3.
 
 Requirements:
 
@@ -9,8 +10,6 @@ Requirements:
 You need to use `-threaded` flag in executables that use this library.
 
 Here are the most important features of this library:
-
-  * Low-level, but convenient to use
 
   * Safe and automatic finalization of OpenGL resources
 
