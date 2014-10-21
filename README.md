@@ -28,8 +28,8 @@ Here are some curious features that you might find useful.
 
   * This library does not create an OpenGL context. You can use whatever
     library you want to create an OpenGL context as long as it can get an
-    OpenGL 3.3 context. You may be interested in the `caramia-sdl2` library if
-    you just want to quickly get something running.
+    OpenGL 3.3 context. You may be interested at looking at the tests in this
+    package to see how to use this with the `sdl2` package.
 
   * Operations are in the `IO` monad. No messing around with custom monads.
 
