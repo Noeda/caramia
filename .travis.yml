@@ -1,4 +1,8 @@
-language: Haskell
+language: haskell
+
+before_install:
+  - cabal install --only-dependencies
+
 script:
   - cabal configure && cabal build
 ghc:
