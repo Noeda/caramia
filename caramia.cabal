@@ -1,5 +1,5 @@
 name:                caramia
-version:             0.2.0.1
+version:             0.3.0.0
 synopsis:            Less painful OpenGL 3.3 rendering
 homepage:            https://github.com/Noeda/caramia/
 license:             MIT
