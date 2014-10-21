@@ -20,6 +20,7 @@ description:
     Requirements:
     .
         * GHC 7.6+
+    .
         * OpenGL 3.3 (and GL\_ARB\_texture\_storage) (on the system where programs are run)
     .
     You need to use `-threaded` flag in executables that use this library.
