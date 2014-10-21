@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Noeda/caramia.svg?branch=master)](https://travis-ci.org/Noeda/caramia)
+
 This is an OpenGL bindings library for real-time graphics for Haskell, using
 OpenGL 3.3.
 
