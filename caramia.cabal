@@ -11,6 +11,7 @@ category:            Graphics
 build-type:          Simple
 stability:           experimental
 cabal-version:       >=1.10
+extra-source-files:  README.md
 
 description:
     This is an experimental OpenGL bindings library for real-time graphics for
