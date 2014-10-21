@@ -1,6 +1,6 @@
 module Main ( main ) where
 
-import Caramia
+import Graphics.Caramia
 import Graphics.UI.SDL
 import Data.Bits
 import Foreign.C.String

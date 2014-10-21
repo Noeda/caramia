@@ -2,9 +2,9 @@
 
 module Main ( main ) where
 
-import Caramia.Prelude
-import Caramia
-import Caramia.Math
+import Graphics.Caramia.Prelude
+import Graphics.Caramia
+import Graphics.Caramia.Math
 
 import Graphics.UI.SDL
 import qualified Graphics.UI.SDL as SDL

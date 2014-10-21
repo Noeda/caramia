@@ -25,35 +25,35 @@ source-repository head
     location:        https://github.com/Noeda/caramia.git
 
 library
-  exposed-modules:     Caramia
-                       Caramia.Resource
-                       Caramia.Context
-                       Caramia.Buffer
-                       Caramia.VAO
-                       Caramia.Shader
-                       Caramia.Math
-                       Caramia.ImageFormats
-                       Caramia.Render
-                       Caramia.Texture
-                       Caramia.Memory
-                       Caramia.Framebuffer
-                       Caramia.Color
-                       Caramia.Blend
-                       Caramia.Prelude
-                       Caramia.Sync
-                       Caramia.Internal.ContextLocalData
-                       Caramia.Internal.OpenGLDebug
-                       Caramia.Internal.OpenGLCApi
-                       Caramia.Internal.Lens
-                       Caramia.Internal.FlextGL
-                       Caramia.Render.Internal
-                       Caramia.Framebuffer.Internal
-                       Caramia.Texture.Internal
-                       Caramia.ImageFormats.Internal
-                       Caramia.Shader.Internal
-                       Caramia.Buffer.Internal
-                       Caramia.Blend.Internal
-                       Caramia.VAO.Internal
+  exposed-modules:     Graphics.Caramia
+                       Graphics.Caramia.Resource
+                       Graphics.Caramia.Context
+                       Graphics.Caramia.Buffer
+                       Graphics.Caramia.VAO
+                       Graphics.Caramia.Shader
+                       Graphics.Caramia.Math
+                       Graphics.Caramia.ImageFormats
+                       Graphics.Caramia.Render
+                       Graphics.Caramia.Texture
+                       Graphics.Caramia.Memory
+                       Graphics.Caramia.Framebuffer
+                       Graphics.Caramia.Color
+                       Graphics.Caramia.Blend
+                       Graphics.Caramia.Prelude
+                       Graphics.Caramia.Sync
+                       Graphics.Caramia.Internal.ContextLocalData
+                       Graphics.Caramia.Internal.OpenGLDebug
+                       Graphics.Caramia.Internal.OpenGLCApi
+                       Graphics.Caramia.Internal.Lens
+                       Graphics.Caramia.Internal.FlextGL
+                       Graphics.Caramia.Render.Internal
+                       Graphics.Caramia.Framebuffer.Internal
+                       Graphics.Caramia.Texture.Internal
+                       Graphics.Caramia.ImageFormats.Internal
+                       Graphics.Caramia.Shader.Internal
+                       Graphics.Caramia.Buffer.Internal
+                       Graphics.Caramia.Blend.Internal
+                       Graphics.Caramia.VAO.Internal
 
   ghc-options:         -Wall -fno-warn-name-shadowing
 
