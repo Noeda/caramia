@@ -82,8 +82,7 @@ giveContext action = mask $ \restore -> do
         error $ "giveContext: current thread is not bound. How can it have " <>
                 "an OpenGL context?"
 
-    flextInit (\str -> castFunPtrToPtr <$> getProcAddress str)
-              (\_ -> return True) >>= \case
+    flextInit (\str -> castFunPtrToPtr <$> getProcAddress str) >>= \case
         f@(Failure _) -> throwIO f
         _ -> return ()
 
