@@ -52,6 +52,7 @@ module Graphics.Caramia.Texture
 import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Texture.Internal
+import Graphics.Caramia.Internal.TexStorage
 import Graphics.Caramia.Internal.OpenGLCApi
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats.Internal
@@ -200,27 +201,81 @@ newTexture spec = mask_ $ do
                 glGenTextures 1 name_ptr *> peek name_ptr)
             (deleter . Texture_ )
             (\name -> do
-                createByTopology name (topology spec)
+                has_tex_storage <- has_GL_ARB_texture_storage
+                if has_tex_storage
+                  then createByTopologyTexStorage name (topology spec)
+                  else createByTopologyFakeTextureStorage name (topology spec)
                 return name)
         return (Texture_ name)
 
+    createByTopologyFakeTextureStorage :: GLuint -> Topology -> IO ()
+    createByTopologyFakeTextureStorage name (Tex1D {..}) =
+        fakeTextureStorage1D name
+                             gl_TEXTURE_1D
+                             (safeFromIntegral num_mipmaps)
+                             (toConstantIF (imageFormat spec))
+                             (safeFromIntegral width1D)
+    createByTopologyFakeTextureStorage name (Tex2D {..}) =
+        fakeTextureStorage2D name
+                             gl_TEXTURE_2D
+                             (safeFromIntegral num_mipmaps)
+                             (toConstantIF (imageFormat spec))
+                             (safeFromIntegral width2D)
+                             (safeFromIntegral height2D)
+    createByTopologyFakeTextureStorage name (Tex3D {..}) =
+        fakeTextureStorage3D name
+                             gl_TEXTURE_3D
+                             (safeFromIntegral num_mipmaps)
+                             (toConstantIF (imageFormat spec))
+                             (safeFromIntegral width3D)
+                             (safeFromIntegral height3D)
+                             (safeFromIntegral depth3D)
+    createByTopologyFakeTextureStorage name (Tex1DArray {..}) =
+        fakeTextureStorage2D name
+                             gl_TEXTURE_1D_ARRAY
+                             (safeFromIntegral num_mipmaps)
+                             (toConstantIF (imageFormat spec))
+                             (safeFromIntegral width1DArray)
+                             (safeFromIntegral layers1D)
+    createByTopologyFakeTextureStorage name (Tex2DArray {..}) =
+        fakeTextureStorage3D name
+                             gl_TEXTURE_2D_ARRAY
+                             (safeFromIntegral num_mipmaps)
+                             (toConstantIF (imageFormat spec))
+                             (safeFromIntegral width2DArray)
+                             (safeFromIntegral height2DArray)
+                             (safeFromIntegral layers2D)
+    createByTopologyFakeTextureStorage name tex@(Tex2DMultisample {..}) =
+        createByTopologyTexStorage name tex
+    createByTopologyFakeTextureStorage name tex@(Tex2DMultisampleArray {..}) =
+        createByTopologyTexStorage name tex
+    createByTopologyFakeTextureStorage name (TexCube {..}) =
+        fakeTextureStorage2D name
+                             gl_TEXTURE_CUBE_MAP
+                             (safeFromIntegral num_mipmaps)
+                             (toConstantIF (imageFormat spec))
+                             (safeFromIntegral widthCube)
+                             (safeFromIntegral widthCube)
+    createByTopologyFakeTextureStorage name tex@(TexBuffer {..}) =
+        createByTopologyTexStorage name tex
+
     -- TODO: use DSA when available, perhaps add mglTextureStorage* functions
     -- to Caramia.Internal.OpenGLCApi?
-    createByTopology :: GLuint -> Topology -> IO ()
-    createByTopology name (Tex1D {..}) =
+    createByTopologyTexStorage :: GLuint -> Topology -> IO ()
+    createByTopologyTexStorage name (Tex1D {..}) =
         withBinding gl_TEXTURE_1D gl_TEXTURE_BINDING_1D name $
             glTexStorage1D gl_TEXTURE_1D
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width1D)
-    createByTopology name (Tex2D {..}) =
+    createByTopologyTexStorage name (Tex2D {..}) =
         withBinding gl_TEXTURE_2D gl_TEXTURE_BINDING_2D name $
             glTexStorage2D gl_TEXTURE_2D
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width2D)
                            (safeFromIntegral height2D)
-    createByTopology name (Tex3D {..}) =
+    createByTopologyTexStorage name (Tex3D {..}) =
         withBinding gl_TEXTURE_3D gl_TEXTURE_BINDING_3D name $
             glTexStorage3D gl_TEXTURE_3D
                            (safeFromIntegral num_mipmaps)
@@ -228,14 +283,14 @@ newTexture spec = mask_ $ do
                            (safeFromIntegral width3D)
                            (safeFromIntegral height3D)
                            (safeFromIntegral depth3D)
-    createByTopology name (Tex1DArray {..}) =
+    createByTopologyTexStorage name (Tex1DArray {..}) =
         withBinding gl_TEXTURE_1D_ARRAY gl_TEXTURE_BINDING_1D_ARRAY name $
             glTexStorage2D gl_TEXTURE_1D_ARRAY
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width1DArray)
                            (safeFromIntegral layers1D)
-    createByTopology name (Tex2DArray {..}) =
+    createByTopologyTexStorage name (Tex2DArray {..}) =
         withBinding gl_TEXTURE_2D_ARRAY gl_TEXTURE_BINDING_2D_ARRAY name $
             glTexStorage3D gl_TEXTURE_2D_ARRAY
                            (safeFromIntegral num_mipmaps)
@@ -243,7 +298,7 @@ newTexture spec = mask_ $ do
                            (safeFromIntegral width2DArray)
                            (safeFromIntegral height2DArray)
                            (safeFromIntegral layers2D)
-    createByTopology name (Tex2DMultisample {..}) =
+    createByTopologyTexStorage name (Tex2DMultisample {..}) =
         withBinding gl_TEXTURE_2D_MULTISAMPLE
                     gl_TEXTURE_BINDING_2D_MULTISAMPLE
                     name $
@@ -255,7 +310,7 @@ newTexture spec = mask_ $ do
                            (safeFromIntegral height2DMS)
                            (if fixedSampleLocations2DMS
                              then 1 else 0)
-    createByTopology name (Tex2DMultisampleArray {..}) =
+    createByTopologyTexStorage name (Tex2DMultisampleArray {..}) =
         withBinding gl_TEXTURE_2D_MULTISAMPLE_ARRAY
                     gl_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
                     name $
@@ -268,7 +323,7 @@ newTexture spec = mask_ $ do
                            (safeFromIntegral layers2DMS)
                            (if fixedSampleLocations2DMSArray
                              then 1 else 0)
-    createByTopology name (TexCube {..}) =
+    createByTopologyTexStorage name (TexCube {..}) =
         withBinding gl_TEXTURE_CUBE_MAP
                     gl_TEXTURE_BINDING_CUBE_MAP
                     name $
@@ -277,7 +332,7 @@ newTexture spec = mask_ $ do
                            (fromIntegral $ toConstantIF (imageFormat spec))
                            (safeFromIntegral widthCube)
                            (safeFromIntegral widthCube)
-    createByTopology name (TexBuffer {..}) =
+    createByTopologyTexStorage name (TexBuffer {..}) =
         withBinding gl_TEXTURE_BUFFER
                     gl_TEXTURE_BINDING_BUFFER
                     name $

@@ -1,5 +1,5 @@
 {-# LANGUAGE RecordWildCards, NoImplicitPrelude, LambdaCase #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, MultiWayIf #-}
 
 module Graphics.Caramia.Texture.Internal where
 
@@ -82,7 +82,7 @@ data Topology =
   | TexBuffer { texBuffer :: !Buf.Buffer }
     -- ^ Buffer textures, see
     -- <https://www.opengl.org/wiki/Buffer_Texture>
-  deriving ( Eq, Typeable )
+  deriving ( Eq, Show, Typeable )
 
 withBinding :: GLenum -> GLenum -> GLuint -> IO a -> IO a
 withBinding tex tex_binding tex_name action = do
@@ -91,6 +91,23 @@ withBinding tex tex_binding tex_name action = do
         (glBindTexture tex tex_name *>
          action)
         (glBindTexture tex old)
+
+-- | Given a bind location (such as gl_TEXTURE_3D), returns the query enum that
+-- retrieves the current binding from glGetIntegerv (such as
+-- gl_TEXTURE_BINDING_3D).
+bindingQueryPoint :: GLenum -> GLenum
+bindingQueryPoint x =
+    if | x == gl_TEXTURE_1D -> gl_TEXTURE_BINDING_1D
+       | x == gl_TEXTURE_2D -> gl_TEXTURE_BINDING_2D
+       | x == gl_TEXTURE_3D -> gl_TEXTURE_BINDING_3D
+       | x == gl_TEXTURE_1D_ARRAY -> gl_TEXTURE_BINDING_1D_ARRAY
+       | x == gl_TEXTURE_2D_ARRAY -> gl_TEXTURE_BINDING_2D_ARRAY
+       | x == gl_TEXTURE_2D_MULTISAMPLE -> gl_TEXTURE_BINDING_2D_MULTISAMPLE
+       | x == gl_TEXTURE_2D_MULTISAMPLE_ARRAY -> gl_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
+       | x == gl_TEXTURE_CUBE_MAP -> gl_TEXTURE_BINDING_CUBE_MAP
+       | x == gl_TEXTURE_BUFFER -> gl_TEXTURE_BINDING_BUFFER
+       | otherwise ->
+           error $ "bindingQueryPoint: unknown texture target: " <> show x
 
 getTopologyBindPoints :: Topology -> (GLenum, GLenum)
 getTopologyBindPoints = \case

@@ -6,8 +6,7 @@ OpenGL 3.3.
 Requirements:
 
   * GHC 7.6+
-  * OpenGL 3.3 (and GL\_ARB\_texture\_storage) (on the system where programs are
-    run)
+  * OpenGL 3.3
 
 You need to use `-threaded` flag in executables that use this library.
 
@@ -19,8 +18,7 @@ Here are the most important features of this library:
     monad for mass-rendering that has implicit state but the state is localized
     to running of that monad. (see Caramia.Render).
 
-  * The only required extension beyond vanilla OpenGL 3.3 is
-    GL\_ARB\_texture\_storage. Some other extensions are used if they are
+  * Only vanilla OpenGL 3.3 required. Some extensions will be used if they are
     available.
 
 Here are some curious features that you might find useful.

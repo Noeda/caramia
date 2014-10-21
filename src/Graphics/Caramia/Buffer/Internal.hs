@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, ViewPatterns, DeriveDataTypeable #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Graphics.Caramia.Buffer.Internal where
 
@@ -16,6 +17,7 @@ data Buffer = Buffer
     , viewSize   :: !Int -- ^ Returns the size of the buffer, in bytes.
     , ordIndex   :: !Int
     }
+    deriving ( Typeable )
 
 bufferOrdIndex :: IORef Int
 bufferOrdIndex = unsafePerformIO $ newIORef 0
@@ -26,6 +28,11 @@ instance Ord Buffer where
 
 data BufferStatus = BufferStatus
     { mapped :: !Bool }
+
+instance Show Buffer where
+    show (Buffer{..}) =
+        "<Buffer bytesize(" <> show viewSize <> ") idx(" <>
+         show ordIndex <> ")>"
 
 instance Eq Buffer where
     (resource -> res1) == (resource -> res2) = res1 == res2
