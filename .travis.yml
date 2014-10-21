@@ -1,0 +1,7 @@
+language: Haskell
+script:
+  - cabal configure && cabal build
+ghc:
+  - 7.6
+  - 7.8
+
