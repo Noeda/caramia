@@ -34,6 +34,7 @@ data Resource a = Resource
                           , IO ())))  -- normal finalizer
     , nativeCid    :: !ContextID
     }
+    deriving ( Typeable )
 
 instance Eq (Resource a) where
     res1 == res2 = rawResource res1 == rawResource res2
