@@ -1,5 +1,5 @@
 name:                caramia
-version:             0.1.0.0
+version:             0.2.0.0
 synopsis:            Caramia real-time hardware-accelerated rendering library
 homepage:            https://github.com/Noeda/caramia/
 license:             MIT
