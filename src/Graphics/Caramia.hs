@@ -1,20 +1,33 @@
 -- | This module re-exports most Caramia modules.
 
 module Graphics.Caramia
-    ( module Ex )
+    ( module Graphics.Caramia.Resource
+    , module Graphics.Caramia.Context
+    , module Graphics.Caramia.Buffer
+    , module Graphics.Caramia.VAO
+    , module Graphics.Caramia.Shader
+    , module Graphics.Caramia.Render
+    , module Graphics.Caramia.ImageFormats
+    , module Graphics.Caramia.Texture
+    , module Graphics.Caramia.Memory
+    , module Graphics.Caramia.Framebuffer
+    , module Graphics.Caramia.Color
+    , module Graphics.Caramia.Blend
+    , module Graphics.Caramia.Sync
+    )
     where
 
-import Graphics.Caramia.Resource as Ex
-import Graphics.Caramia.Context as Ex
-import Graphics.Caramia.Buffer as Ex
-import Graphics.Caramia.VAO as Ex
-import Graphics.Caramia.Shader as Ex
-import Graphics.Caramia.Render as Ex
-import Graphics.Caramia.ImageFormats as Ex
-import Graphics.Caramia.Texture as Ex
-import Graphics.Caramia.Memory as Ex
-import Graphics.Caramia.Framebuffer as Ex
-import Graphics.Caramia.Color as Ex
-import Graphics.Caramia.Blend as Ex
-import Graphics.Caramia.Sync as Ex
+import Graphics.Caramia.Resource
+import Graphics.Caramia.Context
+import Graphics.Caramia.Buffer
+import Graphics.Caramia.VAO
+import Graphics.Caramia.Shader
+import Graphics.Caramia.Render
+import Graphics.Caramia.ImageFormats
+import Graphics.Caramia.Texture
+import Graphics.Caramia.Memory
+import Graphics.Caramia.Framebuffer
+import Graphics.Caramia.Color
+import Graphics.Caramia.Blend
+import Graphics.Caramia.Sync
 
