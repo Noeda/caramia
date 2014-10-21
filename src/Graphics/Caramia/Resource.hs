@@ -14,7 +14,7 @@
 -- is unlikely to see these directly.
 --
 
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns, DeriveDataTypeable #-}
 
 module Graphics.Caramia.Resource
     ( Resource()
