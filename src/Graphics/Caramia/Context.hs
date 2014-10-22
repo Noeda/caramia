@@ -15,6 +15,8 @@ module Graphics.Caramia.Context
     (
     -- * Running with an OpenGL context
       giveContext
+    -- * Viewport size
+    , setViewportSize
     -- * Context IDs
     , currentContextID
     , ContextID
@@ -73,6 +75,10 @@ instance Exception TooOldOpenGL
 -- Note that you might need a debug OpenGL context for there to be any
 -- messages.
 --
+-- If the window size changes while the context is active, you should call
+-- `setViewportSize` with the new dimensions. There is no mechanism from
+-- OpenGL's side to automatically detect if size has changed.
+--
 -- Throws `TooOldOpenGL` if the code detects a context that does not provide
 -- OpenGL 3.3.
 giveContext :: IO a -> IO a
@@ -105,6 +111,16 @@ giveContext action = mask $ \restore -> do
         glEnable gl_BLEND
 
         action
+
+-- | Sets the new viewport size. You should call this if the display size has
+-- changed; otherwise your rendering may look twisted and stretched.
+setViewportSize :: Int    -- ^ Width
+                -> Int    -- ^ Height
+                -> IO ()
+setViewportSize w h = do
+    cid <- currentContextID
+    when (isNothing cid) $ error "setViewportSize: not in a context."
+    glViewport 0 0 (safeFromIntegral w) (safeFromIntegral h)
 
 checkOpenGLVersion33 :: IO ()
 checkOpenGLVersion33 =
