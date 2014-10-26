@@ -116,6 +116,7 @@ library
                        Graphics.Caramia.Internal.OpenGLCApi
                        Graphics.Caramia.Internal.Lens
                        Graphics.Caramia.Internal.FlextGL
+                       Graphics.Caramia.Internal.FlextGLReentrant
                        Graphics.Caramia.Render.Internal
                        Graphics.Caramia.Framebuffer.Internal
                        Graphics.Caramia.Texture.Internal
