@@ -9,16 +9,18 @@
 --
 
 {-# LANGUAGE NoImplicitPrelude, ScopedTypeVariables, DeriveDataTypeable #-}
-{-# LANGUAGE CPP, LambdaCase #-}
+{-# LANGUAGE CPP, LambdaCase, GeneralizedNewtypeDeriving, RankNTypes #-}
 
 module Graphics.Caramia.Context
     (
     -- * Running with an OpenGL context
       giveContext
+    , Context()
     -- * Viewport size
     , setViewportSize
     -- * Context IDs
     , currentContextID
+    , currentContextID'
     , ContextID
     -- * Finalization
     , runPendingFinalizers
@@ -33,10 +35,15 @@ module Graphics.Caramia.Context
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Internal.ContextLocalData
 import Graphics.Caramia.Internal.OpenGLDebug
-import Graphics.Caramia.Internal.FlextGL
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Internal.FlextGLReentrant
+import Graphics.Caramia.Internal.FlextGLReader
+import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
+import Graphics.Caramia.Context.Internal
 
 import Control.Concurrent
-import Control.Exception
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 import System.IO.Unsafe
 import System.Environment
 import Graphics.Rendering.OpenGL.Raw.GetProcAddress
@@ -81,49 +88,50 @@ instance Exception TooOldOpenGL
 --
 -- Throws `TooOldOpenGL` if the code detects a context that does not provide
 -- OpenGL 3.3.
-giveContext :: IO a -> IO a
+giveContext :: forall a. (forall s. Typeable s => Context s a) -> IO a
 giveContext action = mask $ \restore -> do
     is_bound_thread <- isCurrentThreadBound
     unless is_bound_thread $
         error $ "giveContext: current thread is not bound. How can it have " <>
                 "an OpenGL context?"
 
-    flextInit (\str -> castFunPtrToPtr <$> getProcAddress str) >>= \case
-        f@(Failure _) -> throwIO f
-        _ -> return ()
+    flextGL <- flextInit (\str -> castFunPtrToPtr <$> getProcAddress str) >>= \case
+        f@(Failure _) -> throwM f
+        Success funs -> return funs
 
-    checkOpenGLVersion33
+    checkOpenGLVersion33 flextGL
 
     cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
     tid <- myThreadId
     atomicModifyIORef' runningContexts $ \old_map ->
         ( M.insert tid cid old_map, () )
-    finally (restore insides) (flushDebugMessages >> scrapContext)
+    finally (restore $ insides flextGL) scrapContext
   where
-    insides = do
-        should_activate_debug_mode <- isJust <$> lookupEnv "CARAMIA_OPENGL_DEBUG"
+    Context startup = do
+        should_activate_debug_mode <-
+            liftIO $ isJust <$> lookupEnv "CARAMIA_OPENGL_DEBUG"
         when should_activate_debug_mode activateDebugMode
+        finally (action :: Context () a) flushDebugMessages
 
+    insides flextGL = runFlextGLM flextGL $ do
         -- Enable sRGB framebuffers
         -- There seems to be no reason not to enable it; you can turn off sRGB
         -- handling in other ways.
         glEnable gl_FRAMEBUFFER_SRGB
         glEnable gl_BLEND
 
-        action
+        startup
 
 -- | Sets the new viewport size. You should call this if the display size has
 -- changed; otherwise your rendering may look twisted and stretched.
 setViewportSize :: Int    -- ^ Width
                 -> Int    -- ^ Height
-                -> IO ()
-setViewportSize w h = do
-    cid <- currentContextID
-    when (isNothing cid) $ error "setViewportSize: not in a context."
+                -> Context s ()
+setViewportSize w h =
     glViewport 0 0 (safeFromIntegral w) (safeFromIntegral h)
 
-checkOpenGLVersion33 :: IO ()
-checkOpenGLVersion33 =
+checkOpenGLVersion33 :: FlextGL -> IO ()
+checkOpenGLVersion33 gl =
     -- You cannot trust OS X to report versions correctly :-(
 #ifdef MAC_OPENGL
     return ()
@@ -134,13 +142,13 @@ checkOpenGLVersion33 =
         poke major_ptr 0
         poke minor_ptr 0
 
-        glGetIntegerv gl_MAJOR_VERSION major_ptr
-        glGetIntegerv gl_MAJOR_VERSION minor_ptr
+        F.glGetIntegerv gl_MAJOR_VERSION major_ptr gl
+        F.glGetIntegerv gl_MAJOR_VERSION minor_ptr gl
         major <- peek major_ptr
         minor <- peek minor_ptr
         unless (major > 3 ||
                 (major == 3 && minor >= 3)) $
-            throwIO
+            throwM
                 TooOldOpenGL { wantedVersion = (3, 3)
                              , reportedVersion = ( fromIntegral major
                                                  , fromIntegral minor )
@@ -152,7 +160,7 @@ checkOpenGLVersion33 =
 -- Not public API.
 scrapContext :: IO ()
 scrapContext = mask_ $ do
-    maybe_cid <- currentContextID
+    maybe_cid <- currentContextID'
     tid <- myThreadId
     case maybe_cid of
         Nothing -> return ()
@@ -176,24 +184,22 @@ scrapContext = mask_ $ do
 -- for example, the `MVar` functions.
 --
 -- A good place to call this is right after or before swapping buffers.
-runPendingFinalizers :: IO ()
+runPendingFinalizers :: Context s ()
 runPendingFinalizers = mask_ $ do
-    maybe_cid <- currentContextID
-    case maybe_cid of
-        Nothing -> return ()
-        Just cid -> do
-            finalizers <- atomicModifyIORef' pendingFinalizers $
-                IM.delete cid &&&
-                IM.findWithDefault (return ())
-                                   cid
+    cid <- currentContextID
+    liftIO $ do
+        finalizers <- atomicModifyIORef' pendingFinalizers $
+            IM.delete cid &&&
+            IM.findWithDefault (return ())
+                                cid
 
-            -- We scrap the Caramia context if any of these finalizers throw an
-            -- exception. The reason is that we cannot expect the OpenGL state
-            -- to be consistent anymore.
-            result <- try finalizers
-            case result of
-                Left exc -> scrapContext >> throwIO (exc :: SomeException)
-                Right () -> return ()
+        -- We scrap the Caramia context if any of these finalizers throw an
+        -- exception. The reason is that we cannot expect the OpenGL state
+        -- to be consistent anymore.
+        result <- try finalizers
+        case result of
+            Left exc -> scrapContext >> throwM (exc :: SomeException)
+            Right () -> return ()
     flushDebugMessages
 
 -- | Schedules a finalizer to be run in a Caramia context.
@@ -203,9 +209,11 @@ runPendingFinalizers = mask_ $ do
 -- This is typically called from Haskell garbage collector finalizers because
 -- they cannot do finalization there (Haskell finalizers are running in the
 -- wrong operating system thread).
-scheduleFinalizer :: ContextID -> IO () -> IO ()
+--
+-- Can be called from any thread.
+scheduleFinalizer :: MonadIO m => ContextID -> IO () -> m ()
 scheduleFinalizer cid finalizer =
-    atomicModifyIORef' pendingFinalizers $ \old ->
+    liftIO $ atomicModifyIORef' pendingFinalizers $ \old ->
         ( IM.insertWith
             (flip (>>))
             cid

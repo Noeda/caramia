@@ -3,10 +3,12 @@
 module Graphics.Caramia.Internal.ContextLocalData where
 
 import Graphics.Caramia.Prelude
+import Graphics.Caramia.Context.Internal
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Map.Strict as M
 import System.IO.Unsafe
 import Data.Dynamic
+import Control.Monad.IO.Class
 import Control.Concurrent
 
 -- | The type of a Caramia context ID.
@@ -37,12 +39,17 @@ contextLocalData = unsafePerformIO $ newIORef IM.empty
 -- | Returns the current Caramia context ID.
 --
 -- The context ID is unique between different calls to `giveContext`.
+currentContextID :: Context s ContextID
+currentContextID = fromJust <$>
+    liftIO (M.lookup <$> myThreadId <*> readIORef runningContexts)
+
+-- | Same as `currentContextID` but works in any `MonadIO` monad. This one can
+-- also fail.
 --
 -- Returns `Nothing` if there is no context active.
-currentContextID :: IO (Maybe ContextID)
-currentContextID =
+currentContextID' :: MonadIO m => m (Maybe ContextID)
+currentContextID' = liftIO $
     M.lookup <$> myThreadId <*> readIORef runningContexts
-{-# INLINE currentContextID #-}
 
 -- | Stores a context local value.
 --
@@ -57,57 +64,51 @@ currentContextID =
 -- value in case a value was not already set.
 --
 -- Context local data is wiped to oblivion once `giveContext` ends.
-storeContextLocalData :: Typeable a => a -> IO ()
-storeContextLocalData value =
-    maybe (error "storeContextLocalData: not in a context.")
-          (\cid ->
-              atomicModifyIORef' contextLocalData $ \old ->
-                  ( IM.alter (Just . maybe (M.singleton
-                                            (typeOf value)
-                                            (toDyn value))
-                                           (M.insert (typeOf value)
-                                                     (toDyn value)))
-                              cid
-                              old
-                  , () ) )
-          =<< currentContextID
-{-# INLINE storeContextLocalData #-}
+storeContextLocalData :: Typeable a => a -> Context s ()
+storeContextLocalData value = do
+    cid <- currentContextID
+    liftIO $ atomicModifyIORef' contextLocalData $ \old ->
+        ( IM.alter (Just . maybe (M.singleton
+                                 (typeOf value)
+                                 (toDyn value))
+                                 (M.insert (typeOf value)
+                                             (toDyn value)))
+                    cid
+                    old
+        , () )
 
 -- | Retrieves a context local value.
 --
 -- See `storeContextLocalData`.
-retrieveContextLocalData :: forall a. Typeable a
-                         => IO a  -- ^ Default value generating action; not
-                                  -- evaluated if there was already a value
-                                  -- stored.
-                         -> IO a
-retrieveContextLocalData defvalue =
-    maybe (error "retrieveContextLocalData: not in a context.")
-          (\cid -> do
-              -- No need to care about IORef race conditions because all
-              -- functions operating on a certain context ID will be
-              -- run in the same thread, sequentially.
-              snapshot <- readIORef contextLocalData
-              case IM.lookup cid snapshot of
-                  Nothing -> do
-                      val <- dyndefvalue
-                      atomicModifyIORef' contextLocalData $ \old ->
-                          ( IM.insert cid (M.singleton typ val) old
-                          , fromDyn val undefined )
-                  Just old_map ->
-                      case M.lookup typ old_map of
-                          Nothing -> do
-                              val <- dyndefvalue
-                              atomicModifyIORef' contextLocalData $ \old ->
-                                  ( IM.adjust (M.insert typ val)
-                                              cid
-                                              old
-                                  , fromDyn val undefined )
-                          Just value -> return (fromDyn value undefined))
-          =<< currentContextID
+retrieveContextLocalData :: forall s a. Typeable a
+                         => Context s a
+                            -- ^ Default value generating action; not
+                            -- evaluated if there was already a value
+                            -- stored.
+                         -> Context s a
+retrieveContextLocalData defvalue = do
+    cid <- currentContextID
+    -- No need to care about IORef race conditions because all
+    -- functions operating on a certain context ID will be
+    -- run in the same thread, sequentially.
+    snapshot <- liftIO $ readIORef contextLocalData
+    case IM.lookup cid snapshot of
+        Nothing -> do
+            val <- dyndefvalue
+            liftIO $ atomicModifyIORef' contextLocalData $ \old ->
+                ( IM.insert cid (M.singleton typ val) old
+                , fromDyn val undefined )
+        Just old_map ->
+            case M.lookup typ old_map of
+                Nothing -> do
+                    val <- dyndefvalue
+                    liftIO $ atomicModifyIORef' contextLocalData $ \old ->
+                        ( IM.adjust (M.insert typ val)
+                                    cid
+                                    old
+                        , fromDyn val undefined )
+                Just value -> return (fromDyn value undefined)
   where
     typ = typeOf (undefined :: a)
     dyndefvalue = toDyn <$> defvalue
-{-# INLINEABLE retrieveContextLocalData #-}
-
 

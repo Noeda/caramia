@@ -5,7 +5,9 @@ module Graphics.Caramia.Render.Internal where
 import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Internal.OpenGLCApi
-import Control.Exception
+import Graphics.Caramia.Internal.FlextGLReader
+import Graphics.Caramia.Context.Internal
+import Control.Monad.Catch
 
 -- | A comparison function. Incoming value is compared with this function to
 -- the existing value.
@@ -67,7 +69,7 @@ setStencilFunc :: ComparisonFunc
                -> StencilOp
                -> Word32
                -> Word32
-               -> IO ()
+               -> Context s ()
 setStencilFunc func op1 op2 op3 ref mask = do
     glStencilFunc (comparisonFuncToConstant func)
                   (fromIntegral ref)
@@ -83,8 +85,8 @@ withStencilFunc :: ComparisonFunc
                 -> StencilOp
                 -> Word32
                 -> Word32
-                -> IO a
-                -> IO a
+                -> Context s a
+                -> Context s a
 withStencilFunc func op1 op2 op3 ref mask action = do
     old_func <- gi gl_STENCIL_FUNC
     old_ref <- gi gl_STENCIL_REF
@@ -96,7 +98,7 @@ withStencilFunc func op1 op2 op3 ref mask action = do
             (glStencilFunc old_func (fromIntegral old_ref) old_mask *>
              glStencilOp old_op1 old_op2 old_op3)
 
-withCulling :: Culling -> IO a -> IO a
+withCulling :: Culling -> Context s a -> Context s a
 withCulling culling action = do
     old_culling <- gi gl_CULL_FACE_MODE
     was_enabled <- glIsEnabled gl_CULL_FACE
@@ -106,18 +108,18 @@ withCulling culling action = do
                   else glDisable gl_CULL_FACE
                 glCullFace old_culling)
 
-setCulling :: Culling -> IO ()
+setCulling :: Culling -> Context s ()
 setCulling NoCulling = glDisable gl_CULL_FACE
 setCulling x = mask_ $
     glEnable gl_CULL_FACE *>
     glCullFace (cullingToConstant x)
 
-setDepthFunc :: ComparisonFunc -> Bool -> IO ()
+setDepthFunc :: ComparisonFunc -> Bool -> Context s ()
 setDepthFunc func write_depth =
     glDepthFunc (comparisonFuncToConstant func) *>
     glDepthMask (fromIntegral $ if write_depth then gl_TRUE else gl_FALSE)
 
-withDepthFunc :: ComparisonFunc -> Bool -> IO a -> IO a
+withDepthFunc :: ComparisonFunc -> Bool -> Context s a -> Context s a
 withDepthFunc func write_depth action = do
     old_depth_func <- gi gl_DEPTH_FUNC
     old_depth_write <- gi gl_DEPTH_WRITEMASK
@@ -125,7 +127,7 @@ withDepthFunc func write_depth action = do
             (glDepthFunc old_depth_func *>
              glDepthMask (fromIntegral old_depth_write))
 
-setFragmentPassTests :: FragmentPassTests -> IO ()
+setFragmentPassTests :: FragmentPassTests -> Context s ()
 setFragmentPassTests (FragmentPassTests {..}) = do
     case depthTest of
         Nothing -> glDisable gl_DEPTH_TEST
@@ -142,7 +144,7 @@ setFragmentPassTests (FragmentPassTests {..}) = do
                                   stencilMask
     setCulling cullFace
 
-withFragmentPassTests :: FragmentPassTests -> IO a -> IO a
+withFragmentPassTests :: FragmentPassTests -> Context s a -> Context s a
 withFragmentPassTests (FragmentPassTests {..}) action = do
     was_it_enabled <- glIsEnabled gl_DEPTH_TEST
     finally

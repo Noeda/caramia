@@ -8,11 +8,13 @@
 
 {-# LANGUAGE ForeignFunctionInterface, NoImplicitPrelude, DeriveDataTypeable #-}
 {-# LANGUAGE DeriveFunctor, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts, ConstraintKinds #-}
 
 module Graphics.Caramia.Internal.OpenGLCApi
     ( module Ex
 
     , FlextGLM()
+    , OpenGLLike
     , runFlextGLM
     , askGL
     , fgl
@@ -67,10 +69,14 @@ module Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Internal.FlextGLReentrant as Ex
+import Graphics.Caramia.Internal.FlextGLReader
+import Graphics.Caramia.Internal.FlextGLTypes as Ex
+import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Control.Monad.IO.Class
 import Control.Monad.Catch
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.Class ( lift )
+import Control.Monad.Fix
+import Control.Monad.Reader
+import Control.Monad.Trans.Reader hiding ( ask )
 import Foreign.Ptr
 import Foreign.C.Types
 import Foreign.Storable
@@ -81,225 +87,230 @@ import Foreign.Marshal.Utils
 
 newtype FlextGLM a = FlextGLM (ReaderT FlextGL IO a)
                      deriving ( Typeable, Functor, Monad, Applicative
-                              , MonadMask, MonadCatch, MonadThrow, MonadIO )
+                              , MonadMask, MonadCatch, MonadThrow, MonadIO
+                              , MonadFix, MonadReader FlextGL )
+
+type OpenGLLike m = (MonadReader FlextGL m, MonadIO m, Applicative m)
 
 runFlextGLM :: FlextGL -> FlextGLM a -> IO a
 runFlextGLM gl (FlextGLM r) = runReaderT r gl
 {-# INLINE runFlextGLM #-}
 
-fgl :: (FlextGL -> IO a) -> FlextGLM a
-fgl fun = FlextGLM $ ask >>= lift . fun
+fgl :: OpenGLLike m => (FlextGL -> IO a) -> m a
+fgl fun = ask >>= liftIO . fun
 {-# INLINE fgl #-}
 
 askGL :: FlextGLM FlextGL
 askGL = FlextGLM ask
 {-# INLINE askGL #-}
 
--- | Executes the first action if given boolean is true, otherwise the second
--- one.
+-- | Executes the first action if the given function evaluates to true,
+-- otherwise the second one.
 --
 -- The type is written so that it is easy to plug in the extension query
 -- function (e.g. `has_GL_EXT_direct_state_access`) there.
-branchExt :: (FlextGL -> Bool) -> FlextGLM a -> FlextGLM a -> FlextGLM a
+branchExt :: OpenGLLike m
+          => (FlextGL -> Bool) -> m a -> m a -> m a
 branchExt test action other_action = do
-    gl <- askGL
+    gl <- ask
     if test gl then action else other_action
 {-# INLINE branchExt #-}
 
-mglDeleteBuffer :: GLuint -> FlextGLM ()
+mglDeleteBuffer :: OpenGLLike m => GLuint -> m ()
 mglDeleteBuffer x = do
-    gl <- askGL
-    liftIO $ with x $ \x_ptr -> glDeleteBuffers 1 x_ptr gl
+    gl <- ask
+    liftIO $ with x $ \x_ptr -> F.glDeleteBuffers 1 x_ptr gl
 
-mglDeleteVertexArray :: GLuint -> FlextGLM ()
+mglDeleteVertexArray :: OpenGLLike m => GLuint -> m ()
 mglDeleteVertexArray x = do
-    gl <- askGL
-    liftIO $ with x $ \x_ptr -> glDeleteVertexArrays 1 x_ptr gl
+    gl <- ask
+    liftIO $ with x $ \x_ptr -> F.glDeleteVertexArrays 1 x_ptr gl
 
-mglGenBuffer :: FlextGLM GLuint
+mglGenBuffer :: OpenGLLike m => m GLuint
 mglGenBuffer = do
-    gl <- askGL
-    liftIO $ alloca $ \x_ptr -> glGenBuffers 1 x_ptr gl *> peek x_ptr
+    gl <- ask
+    liftIO $ alloca $ \x_ptr -> F.glGenBuffers 1 x_ptr gl *> peek x_ptr
 
-mglGenVertexArray :: FlextGLM GLuint
+mglGenVertexArray :: OpenGLLike m => m GLuint
 mglGenVertexArray = do
-    gl <- askGL
-    liftIO $ alloca $ \x_ptr -> glGenVertexArrays 1 x_ptr gl *> peek x_ptr
+    gl <- ask
+    liftIO $ alloca $ \x_ptr -> F.glGenVertexArrays 1 x_ptr gl *> peek x_ptr
 
-mglGenFramebuffer :: FlextGLM GLuint
+mglGenFramebuffer :: OpenGLLike m => m GLuint
 mglGenFramebuffer = do
-    gl <- askGL
-    liftIO $ alloca $ \x_ptr -> glGenFramebuffers 1 x_ptr gl *> peek x_ptr
+    gl <- ask
+    liftIO $ alloca $ \x_ptr -> F.glGenFramebuffers 1 x_ptr gl *> peek x_ptr
 
-mglDeleteFramebuffer :: GLuint -> FlextGLM ()
+mglDeleteFramebuffer :: OpenGLLike m => GLuint -> m ()
 mglDeleteFramebuffer x = do
-    gl <- askGL
-    liftIO $ with x $ \x_ptr -> glDeleteFramebuffers 1 x_ptr gl
+    gl <- ask
+    liftIO $ with x $ \x_ptr -> F.glDeleteFramebuffers 1 x_ptr gl
 
-withBoundDrawFramebuffer :: GLuint -> FlextGLM a -> FlextGLM a
+withBoundDrawFramebuffer :: (MonadMask m, OpenGLLike m) => GLuint -> m a -> m a
 withBoundDrawFramebuffer x action = do
     old <- gi gl_DRAW_FRAMEBUFFER_BINDING
-    finally (fgl (glBindFramebuffer gl_DRAW_FRAMEBUFFER x) *> action)
-            (fgl $ glBindFramebuffer gl_DRAW_FRAMEBUFFER old)
+    finally (glBindFramebuffer gl_DRAW_FRAMEBUFFER x *> action)
+            (glBindFramebuffer gl_DRAW_FRAMEBUFFER old)
 
-withBoundProgram :: GLuint -> FlextGLM a -> FlextGLM a
+withBoundProgram :: (OpenGLLike m, MonadMask m) => GLuint -> m a -> m a
 withBoundProgram program action = do
     old <- gi gl_CURRENT_PROGRAM
-    finally (fgl (glUseProgram program) *> action)
-            (fgl $ glUseProgram $ fromIntegral old)
+    finally (glUseProgram program *> action)
+            (glUseProgram $ fromIntegral old)
 
-setBoundProgram :: GLuint -> FlextGLM ()
-setBoundProgram = fgl . glUseProgram
+setBoundProgram :: OpenGLLike m => GLuint -> m ()
+setBoundProgram = glUseProgram
 
-withBoundBuffer :: GLuint -> FlextGLM a -> FlextGLM a
+withBoundBuffer :: (MonadMask m, OpenGLLike m) => GLuint -> m a -> m a
 withBoundBuffer buf action = do
     old <- gi gl_ARRAY_BUFFER_BINDING
-    finally (fgl (glBindBuffer gl_ARRAY_BUFFER buf) *> action)
-            (fgl $ glBindBuffer gl_ARRAY_BUFFER $ fromIntegral old)
+    finally (glBindBuffer gl_ARRAY_BUFFER buf *> action)
+            (glBindBuffer gl_ARRAY_BUFFER $ fromIntegral old)
 
-setBoundElementBuffer :: GLuint -> FlextGLM ()
-setBoundElementBuffer = fgl . glBindBuffer gl_ELEMENT_ARRAY_BUFFER
+setBoundElementBuffer :: OpenGLLike m => GLuint -> m ()
+setBoundElementBuffer = glBindBuffer gl_ELEMENT_ARRAY_BUFFER
 
-withBoundElementBuffer :: GLuint -> FlextGLM a -> FlextGLM a
+withBoundElementBuffer :: (OpenGLLike m, MonadMask m) => GLuint -> m a -> m a
 withBoundElementBuffer buf action = do
     old <- gi gl_ELEMENT_ARRAY_BUFFER_BINDING
-    finally (fgl (glBindBuffer gl_ELEMENT_ARRAY_BUFFER buf) *> action)
-            (fgl $ glBindBuffer gl_ELEMENT_ARRAY_BUFFER $ fromIntegral old)
+    finally (glBindBuffer gl_ELEMENT_ARRAY_BUFFER buf *> action)
+            (glBindBuffer gl_ELEMENT_ARRAY_BUFFER $ fromIntegral old)
 
-withBoundPixelUnpackBuffer :: GLuint -> FlextGLM a -> FlextGLM a
+withBoundPixelUnpackBuffer :: (OpenGLLike m, MonadMask m) => GLuint -> m a -> m a
 withBoundPixelUnpackBuffer buf action = do
     old <- gi gl_PIXEL_UNPACK_BUFFER_BINDING
-    finally (fgl (glBindBuffer gl_PIXEL_UNPACK_BUFFER buf) *> action)
-            (fgl $ glBindBuffer gl_PIXEL_UNPACK_BUFFER $ fromIntegral old)
+    finally (glBindBuffer gl_PIXEL_UNPACK_BUFFER buf *> action)
+            (glBindBuffer gl_PIXEL_UNPACK_BUFFER $ fromIntegral old)
 
-withBoundVAO :: GLuint -> FlextGLM a -> FlextGLM a
+withBoundVAO :: (OpenGLLike m, MonadMask m) => GLuint -> m a -> m a
 withBoundVAO vao action = do
     old <- gi gl_VERTEX_ARRAY_BINDING
-    finally (fgl (glBindVertexArray vao) *> action)
-            (fgl $ glBindVertexArray $ fromIntegral old)
+    finally (glBindVertexArray vao *> action)
+            (glBindVertexArray $ fromIntegral old)
 
-mglVertexArrayVertexAttribDivisor ::
-    GLuint -> GLuint -> GLuint -> FlextGLM ()
+mglVertexArrayVertexAttribDivisor :: (OpenGLLike m, MonadMask m) =>
+    GLuint -> GLuint -> GLuint -> m ()
 mglVertexArrayVertexAttribDivisor vaobj index divisor =
-    withBoundVAO vaobj $ fgl $ glVertexAttribDivisor index divisor
+    withBoundVAO vaobj $ glVertexAttribDivisor index divisor
 
-mglVertexArrayVertexAttribOffsetAndEnable ::
+mglVertexArrayVertexAttribOffsetAndEnable :: (OpenGLLike m, MonadMask m) =>
         GLuint -> GLuint -> GLuint -> GLint -> GLenum
-     -> GLboolean -> GLsizei -> CPtrdiff -> FlextGLM ()
+     -> GLboolean -> GLsizei -> CPtrdiff -> m ()
 mglVertexArrayVertexAttribOffsetAndEnable
     vaobj buffer index size dtype normalized stride (CPtrdiff offset) =
 
     withBoundVAO vaobj $
         withBoundBuffer buffer $ do
-            fgl $ glEnableVertexAttribArray index
-            fgl $ glVertexAttribPointer index size dtype normalized stride
-                                        (intPtrToPtr $ fromIntegral offset)
+            glEnableVertexAttribArray index
+            glVertexAttribPointer index size dtype normalized stride
+                                  (intPtrToPtr $ fromIntegral offset)
 
-mglVertexArrayVertexAttribIOffsetAndEnable ::
+mglVertexArrayVertexAttribIOffsetAndEnable :: (OpenGLLike m, MonadMask m) =>
         GLuint -> GLuint -> GLuint -> GLint -> GLenum
-     -> GLsizei -> GLintptr -> FlextGLM ()
+     -> GLsizei -> GLintptr -> m ()
 mglVertexArrayVertexAttribIOffsetAndEnable
     vaobj buffer index size dtype stride offset = mask_ $
 
     withBoundVAO vaobj $
         withBoundBuffer buffer $ do
-            fgl $ glEnableVertexAttribArray index
-            fgl $ glVertexAttribIPointer index size dtype stride
-                                         (intPtrToPtr $ fromIntegral offset)
+            glEnableVertexAttribArray index
+            glVertexAttribIPointer index size dtype stride
+                                   (intPtrToPtr $ fromIntegral offset)
 
-mglNamedBufferData :: GLuint
+mglNamedBufferData :: (OpenGLLike m, MonadMask m)
+                   => GLuint
                    -> GLsizeiptr
                    -> Ptr ()
                    -> GLenum
-                   -> FlextGLM ()
+                   -> m ()
 mglNamedBufferData buf size ptr usage =
     branchExt has_GL_EXT_direct_state_access
-              (fgl $ glNamedBufferDataEXT buf size ptr usage)
-              (withBoundBuffer buf $ fgl $ glBufferData gl_ARRAY_BUFFER size ptr usage)
+              (glNamedBufferDataEXT buf size ptr usage)
+              (withBoundBuffer buf $ glBufferData gl_ARRAY_BUFFER size ptr usage)
 
 mglProgramUniform1ui :: GLuint -> GLint -> GLuint -> FlextGLM ()
 mglProgramUniform1ui =
     makeProgramUniformFunction
-        (\p l a -> glProgramUniform1ui p l a)
-        (\l a -> glUniform1ui l a)
+        (\p l a -> F.glProgramUniform1ui p l a)
+        (\l a -> F.glUniform1ui l a)
 
 mglProgramUniform2ui :: GLuint -> GLint -> (GLuint, GLuint) -> FlextGLM ()
 mglProgramUniform2ui =
     makeProgramUniformFunction
-        (\p l (a, b) -> glProgramUniform2ui p l a b)
-        (\l (a, b) -> glUniform2ui l a b)
+        (\p l (a, b) -> F.glProgramUniform2ui p l a b)
+        (\l (a, b) -> F.glUniform2ui l a b)
 
 mglProgramUniform3ui :: GLuint -> GLint -> (GLuint, GLuint, GLuint) -> FlextGLM ()
 mglProgramUniform3ui =
     makeProgramUniformFunction
-        (\p l (a, b, c) -> glProgramUniform3ui p l a b c)
-        (\l (a, b, c) -> glUniform3ui l a b c)
+        (\p l (a, b, c) -> F.glProgramUniform3ui p l a b c)
+        (\l (a, b, c) -> F.glUniform3ui l a b c)
 
 mglProgramUniform4ui :: GLuint -> GLint -> (GLuint, GLuint, GLuint, GLuint) -> FlextGLM ()
 mglProgramUniform4ui =
     makeProgramUniformFunction
-        (\p l (a, b, c, d) -> glProgramUniform4ui p l a b c d)
-        (\l (a, b, c, d) -> glUniform4ui l a b c d)
+        (\p l (a, b, c, d) -> F.glProgramUniform4ui p l a b c d)
+        (\l (a, b, c, d) -> F.glUniform4ui l a b c d)
 
 mglProgramUniform1i :: GLuint -> GLint -> GLint -> FlextGLM ()
 mglProgramUniform1i =
     makeProgramUniformFunction
-        (\p l a -> glProgramUniform1i p l a)
-        (\l a -> glUniform1i l a)
+        (\p l a -> F.glProgramUniform1i p l a)
+        (\l a -> F.glUniform1i l a)
 
 mglProgramUniform2i :: GLuint -> GLint -> (GLint, GLint) -> FlextGLM ()
 mglProgramUniform2i =
     makeProgramUniformFunction
-        (\p l (a, b) -> glProgramUniform2i p l a b)
-        (\l (a, b) -> glUniform2i l a b)
+        (\p l (a, b) -> F.glProgramUniform2i p l a b)
+        (\l (a, b) -> F.glUniform2i l a b)
 
 mglProgramUniform3i :: GLuint -> GLint -> (GLint, GLint, GLint) -> FlextGLM ()
 mglProgramUniform3i =
     makeProgramUniformFunction
-        (\p l (a, b, c) -> glProgramUniform3i p l a b c)
-        (\l (a, b, c) -> glUniform3i l a b c)
+        (\p l (a, b, c) -> F.glProgramUniform3i p l a b c)
+        (\l (a, b, c) -> F.glUniform3i l a b c)
 
 mglProgramUniform4i :: GLuint -> GLint -> (GLint, GLint, GLint, GLint) -> FlextGLM ()
 mglProgramUniform4i =
     makeProgramUniformFunction
-        (\p l (a, b, c, d) -> glProgramUniform4i p l a b c d)
-        (\l (a, b, c, d) -> glUniform4i l a b c d)
+        (\p l (a, b, c, d) -> F.glProgramUniform4i p l a b c d)
+        (\l (a, b, c, d) -> F.glUniform4i l a b c d)
 
 mglProgramUniform1f :: GLuint -> GLint -> GLfloat -> FlextGLM ()
 mglProgramUniform1f =
     makeProgramUniformFunction
-        (\p l a -> glProgramUniform1f p l a)
-        (\l a -> glUniform1f l a)
+        (\p l a -> F.glProgramUniform1f p l a)
+        (\l a -> F.glUniform1f l a)
 
 mglProgramUniform2f :: GLuint -> GLint -> (GLfloat, GLfloat) -> FlextGLM ()
 mglProgramUniform2f =
     makeProgramUniformFunction
-        (\p l (a, b) -> glProgramUniform2f p l a b)
-        (\l (a, b) -> glUniform2f l a b)
+        (\p l (a, b) -> F.glProgramUniform2f p l a b)
+        (\l (a, b) -> F.glUniform2f l a b)
 
 mglProgramUniform3f :: GLuint -> GLint -> (GLfloat, GLfloat, GLfloat) -> FlextGLM ()
 mglProgramUniform3f =
     makeProgramUniformFunction
-        (\p l (a, b, c) -> glProgramUniform3f p l a b c)
-        (\l (a, b, c) -> glUniform3f l a b c)
+        (\p l (a, b, c) -> F.glProgramUniform3f p l a b c)
+        (\l (a, b, c) -> F.glUniform3f l a b c)
 
 mglProgramUniform4f :: GLuint -> GLint -> (GLfloat, GLfloat, GLfloat, GLfloat) -> FlextGLM ()
 mglProgramUniform4f =
     makeProgramUniformFunction
-        (\p l (a, b, c, d) -> glProgramUniform4f p l a b c d)
-        (\l (a, b, c, d) -> glUniform4f l a b c d)
+        (\p l (a, b, c, d) -> F.glProgramUniform4f p l a b c d)
+        (\l (a, b, c, d) -> F.glUniform4f l a b c d)
 
 mglProgramUniformMatrix4fv :: GLuint -> GLint -> (GLsizei, GLboolean, Ptr GLfloat) -> FlextGLM ()
 mglProgramUniformMatrix4fv =
     makeProgramUniformFunction
-        (\p l (a, b, c) -> glProgramUniformMatrix4fv p l a b c)
-        (\l (a, b, c) -> glUniformMatrix4fv l a b c)
+        (\p l (a, b, c) -> F.glProgramUniformMatrix4fv p l a b c)
+        (\l (a, b, c) -> F.glUniformMatrix4fv l a b c)
 
 mglProgramUniformMatrix3fv :: GLuint -> GLint -> (GLsizei, GLboolean, Ptr GLfloat) -> FlextGLM ()
 mglProgramUniformMatrix3fv =
     makeProgramUniformFunction
-        (\p l (a, b, c) -> glProgramUniformMatrix3fv p l a b c)
-        (\l (a, b, c) -> glUniformMatrix3fv l a b c)
+        (\p l (a, b, c) -> F.glProgramUniformMatrix3fv p l a b c)
+        (\l (a, b, c) -> F.glUniformMatrix3fv l a b c)
 
 makeProgramUniformFunction :: (GLuint -> GLint -> a -> FlextGL -> IO ())
                            -> (GLint -> a -> FlextGL -> IO ())
@@ -310,37 +321,39 @@ makeProgramUniformFunction fun1 fun2 program loc args =
               (withBoundProgram program $ fgl $ fun2 loc args)
 {-# INLINE makeProgramUniformFunction #-}
 
-mglMapNamedBufferRange :: GLuint -> GLintptr
-                       -> GLsizeiptr -> GLbitfield -> FlextGLM (Ptr ())
+mglMapNamedBufferRange :: (OpenGLLike m, MonadMask m)
+                       => GLuint -> GLintptr
+                       -> GLsizeiptr -> GLbitfield -> m (Ptr ())
 mglMapNamedBufferRange buffer offset length access =
     withBoundBuffer buffer $
-        fgl $ glMapBufferRange gl_ARRAY_BUFFER offset length access
+        glMapBufferRange gl_ARRAY_BUFFER offset length access
 
-mglUnmapNamedBuffer :: GLuint -> FlextGLM GLboolean
+mglUnmapNamedBuffer :: (OpenGLLike m, MonadMask m)
+                    => GLuint -> m GLboolean
 mglUnmapNamedBuffer buffer =
-    withBoundBuffer buffer $ fgl $ glUnmapBuffer gl_ARRAY_BUFFER
+    withBoundBuffer buffer $ glUnmapBuffer gl_ARRAY_BUFFER
 
-mglNamedCopyBufferSubData :: GLuint -> GLuint
-                          -> GLintptr -> GLintptr -> GLsizeiptr -> FlextGLM ()
+mglNamedCopyBufferSubData :: (OpenGLLike m, MonadMask m) => GLuint -> GLuint
+                          -> GLintptr -> GLintptr -> GLsizeiptr -> m ()
 mglNamedCopyBufferSubData src dst src_offset dst_offset num_bytes =
     withBoundElementBuffer src $
         withBoundBuffer dst $
-            fgl $ glCopyBufferSubData gl_ELEMENT_ARRAY_BUFFER
-                                      gl_ARRAY_BUFFER
-                                      src_offset
-                                      dst_offset
-                                      num_bytes
+            glCopyBufferSubData gl_ELEMENT_ARRAY_BUFFER
+                                gl_ARRAY_BUFFER
+                                src_offset
+                                dst_offset
+                                num_bytes
 
 -- | Shortcut to `glGetIntegerv` when you query only one integer.
-gi :: GLenum -> FlextGLM GLuint
+gi :: (MonadIO m, MonadReader FlextGL m) => GLenum -> m GLuint
 gi x = do
-    gl <- askGL
-    liftIO $ alloca $ \get_ptr -> glGetIntegerv x (castPtr get_ptr) gl *>
+    gl <- ask
+    liftIO $ alloca $ \get_ptr -> F.glGetIntegerv x (castPtr get_ptr) gl *>
                                   peek get_ptr
 
-gf :: GLenum -> FlextGLM GLfloat
+gf :: (MonadIO m, MonadReader FlextGL m) => GLenum -> m GLfloat
 gf x = do
-    gl <- askGL
-    liftIO $ alloca $ \get_ptr -> glGetFloatv x (castPtr get_ptr) gl *>
+    gl <- ask
+    liftIO $ alloca $ \get_ptr -> F.glGetFloatv x (castPtr get_ptr) gl *>
                                   peek get_ptr
 

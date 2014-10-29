@@ -1,10 +1,14 @@
 {-# LANGUAGE RecordWildCards, NoImplicitPrelude, DeriveDataTypeable #-}
+{-# LANGUAGE ConstraintKinds, FlexibleContexts #-}
 
 module Graphics.Caramia.Blend.Internal where
 
 import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Internal.FlextGLReader
+import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
+import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Color
 import Control.Monad.Catch
 import Foreign
@@ -77,23 +81,24 @@ data BlendSpec = BlendSpec
     , blendColor    :: !Color }
     deriving ( Eq, Ord, Show, Read, Typeable )
 
-setBlendings :: BlendSpec -> FlextGLM ()
-setBlendings (BlendSpec{..}) = fgl $ \gl -> do
+setBlendings :: OpenGLLike m => BlendSpec -> m ()
+setBlendings (BlendSpec{..}) = do
     glBlendFuncSeparate (toConstantBF srcColorFunc)
                         (toConstantBF dstColorFunc)
                         (toConstantBF srcAlphaFunc)
-                        (toConstantBF dstAlphaFunc) gl
+                        (toConstantBF dstAlphaFunc)
     glBlendEquationSeparate (toConstantBE colorEquation)
-                            (toConstantBE alphaEquation) gl
+                            (toConstantBE alphaEquation)
     glBlendColor (CFloat $ viewRed blendColor)
                  (CFloat $ viewGreen blendColor)
                  (CFloat $ viewBlue blendColor)
-                 (CFloat $ viewAlpha blendColor) gl
+                 (CFloat $ viewAlpha blendColor)
 
 withBlendings :: BlendSpec
-              -> FlextGLM a
-              -> FlextGLM a
+              -> Context s a
+              -> Context s a
 withBlendings spec@(BlendSpec {..}) action = do
+    st <- contextState
     old_be_color <- gi gl_BLEND_EQUATION_RGB
     old_be_alpha <- gi gl_BLEND_EQUATION_ALPHA
     old_src_color <- gi gl_BLEND_SRC_RGB
@@ -101,18 +106,18 @@ withBlendings spec@(BlendSpec {..}) action = do
     old_dst_color <- gi gl_BLEND_DST_RGB
     old_dst_alpha <- gi gl_BLEND_DST_ALPHA
     fgl $ \gl -> allocaArray 4 $ \color_ptr -> do
-        glGetFloatv gl_BLEND_COLOR color_ptr gl
+        F.glGetFloatv gl_BLEND_COLOR color_ptr gl
         r <- peekElemOff color_ptr 0
         g <- peekElemOff color_ptr 1
         b <- peekElemOff color_ptr 2
         a <- peekElemOff color_ptr 3
-        finally (runFlextGLM gl $ setBlendings spec >> action) $ do
-            glBlendColor r g b a gl
-            glBlendFuncSeparate old_src_color
-                                old_dst_color
-                                old_src_alpha
-                                old_dst_alpha gl
-            glBlendEquationSeparate old_be_color
-                                    old_be_alpha gl
+        finally (unsafeResumeContext st $ setBlendings spec >> action) $ do
+            F.glBlendColor r g b a gl
+            F.glBlendFuncSeparate old_src_color
+                                  old_dst_color
+                                  old_src_alpha
+                                  old_dst_alpha gl
+            F.glBlendEquationSeparate old_be_color
+                                      old_be_alpha gl
 
 

@@ -24,19 +24,19 @@ module Graphics.Caramia.Resource
 
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Context
-import Control.Exception
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 
 -- | The data type of a Caramia resource.
-data Resource a = Resource
-    { rawResource  :: !(IORef (Maybe
+newtype Resource s a = Resource
+    { rawResource  :: (IORef (Maybe
                           ( a         -- the unmanaged resource
                           , IO ()     -- opengl finalizer
                           , IO ())))  -- normal finalizer
-    , nativeCid    :: !ContextID
     }
     deriving ( Typeable )
 
-instance Eq (Resource a) where
+instance Eq (Resource s a) where
     res1 == res2 = rawResource res1 == rawResource res2
 
 -- | Creates a new resource.
@@ -46,7 +46,7 @@ instance Eq (Resource a) where
 --
 -- If you throw an exception in the OpenGL finalizer, then this will disrupt
 -- Caramia context and make it invalid. So try not to throw those exceptions?
-newResource :: IO a               -- ^ Action that returns the raw, unmanaged
+newResource :: Context s a        -- ^ Action that returns the raw, unmanaged
                                   -- resource. Good place to create it.
             -> (a -> IO ())       -- ^ OpenGL finalizer. Will only be called in
                                   -- the same thread as this `newResource` is
@@ -61,36 +61,23 @@ newResource :: IO a               -- ^ Action that returns the raw, unmanaged
                                   -- cancelled and the resource is marked as
                                   -- finalized. This will be run even if the
                                   -- OpenGL context is gone.
-            -> IO (Resource a)
-newResource resource_creator finalizer normal_finalizer = mask_ $
-    -- We need the context ID for correct finalization so we cannot take away
-    -- this check with NO_RESOURCE_RUNTIME_CHECKS.
-    maybe (error "newResource: no OpenGL context active.")
-          (\cid -> do
-            resource <- resource_creator
-            let opengl_finalizer = finalizer resource
-            ref <- newIORef (Just ( resource
-                                  , opengl_finalizer
-                                  , normal_finalizer ))
-            let res = Resource { rawResource = ref
-                               , nativeCid = cid }
-            void $ mkWeakIORef ref $ finalizeNow res
-            return res)
-          =<<
-          currentContextID
+            -> Context s (Resource s a)
+newResource resource_creator finalizer normal_finalizer = mask_ $ do
+    cid <- currentContextID
+    resource <- resource_creator
+    liftIO $ do
+        let opengl_finalizer = finalizer resource
+        ref <- newIORef (Just ( resource
+                                , opengl_finalizer
+                                , normal_finalizer ))
+        let res = Resource { rawResource = ref }
+        void $ mkWeakIORef ref $ finalizeNow res cid
+        return res
 
 -- | Promptly finalize a resource.
 --
 -- The ordinary finalizer will be run immediately. The OpenGL finalizer will be
--- run if the current thread is the same OpenGL thread where the resource was
--- created.
---
--- If you want asynchronous finalization, then use `finalizeAsync`, which
--- behaves more like actual garbage collection, only more promptly.
---
--- I recommend you use `finalizeAsync` because it is more consistent with
--- normal garbage collection behaviour and thus is more difficult to use
--- incorrectly.
+-- scheduled to run in next `runPendingFinalizers`.
 --
 -- If ordinary finalizer throws an exception, the OpenGL finalizer is not run
 -- and the resource is marked as finalized. The exception propagates out from
@@ -103,42 +90,30 @@ newResource resource_creator finalizer normal_finalizer = mask_ $
 -- like this because other resources might refer to them. How do we handle
 -- resources that can refer to each other? Right now, we cannot. So we can't
 -- allow users to finalize things by themselves.
-finalizeNow :: Resource a -> IO ()
-finalizeNow resource = mask_ $ do
+finalizeNow :: Resource s a -> ContextID -> IO ()
+finalizeNow resource cid = mask_ $ do
     maybe_res <- atomicModifyIORef (rawResource resource) $
         \old -> ( Nothing, old )
     case maybe_res of
         Nothing -> return ()
         Just (_, opengl_finalizer, normal_finalizer) -> do
             normal_finalizer
-            let schedule = scheduleFinalizer (nativeCid resource)
-                                              opengl_finalizer
-            maybe schedule
-                  (\cid ->
-                    if cid == nativeCid resource
-                      then opengl_finalizer
-                      else schedule)
-                  =<<
-                  currentContextID
+            scheduleFinalizer cid opengl_finalizer
 
 -- | Uses a resource.
 --
 -- Throws an user error if the resource is used in a wrong or dead context.
-withResource :: Resource a
-             -> (a -> IO b)   -- ^ Use the resource inside this action. Don't
-                              -- return the unmanaged resource from this
-                              -- because behaviour is then undefined.
-             -> IO b
+withResource :: Resource s a
+             -> (a -> Context s b)
+                -- ^ Use the resource inside this action. Don't
+                -- return the unmanaged resource from this
+                -- because behaviour is then undefined.
+             -> Context s b
 withResource resource action =
     maybe (error "withResource: resource has been finalized.")
-          (\(res, _, _) -> do
-              cid <- currentContextID
-              if cid == Just (nativeCid resource)
-                then action res <* touchIORef ref
-                else error $ "withResource: attempted resource use " <>
-                             "in a wrong context.")
+          (\(res, _, _) -> action res <* touchIORef ref)
           =<<
-          readIORef ref
+          liftIO (readIORef ref)
   where
     ref = rawResource resource
     touchIORef !_ = return ()

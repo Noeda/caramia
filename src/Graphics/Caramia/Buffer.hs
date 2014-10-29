@@ -8,7 +8,7 @@
 -- TODO: Add glBufferStorage based implementation.
 -- OpenGLRaw (1.4.0.0) doesn't have this yet.
 
-{-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
+{-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude, RankNTypes #-}
 
 module Graphics.Caramia.Buffer
     ( -- * Creation
@@ -42,14 +42,18 @@ import Graphics.Caramia.Prelude hiding ( map )
 import Graphics.Caramia.Buffer.Internal
 
 import Graphics.Caramia.Resource
+import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Internal.FlextGLReader
 
 import qualified Data.Vector.Storable as V
 import qualified Data.Set as S
 
 import Data.Bits
 import Foreign
-import Control.Exception
+import Control.Monad.Catch
+import Control.Monad.IO.Class
+import Control.Monad.Reader
 
 -- | The frequency of access to a buffer.
 --
@@ -147,17 +151,19 @@ defaultBufferCreation = BufferCreation {
 
 -- | Creates a new buffer according to `BufferCreation` specification.
 newBuffer :: BufferCreation
-          -> IO Buffer
+          -> Context s (Buffer s)
 newBuffer creation
     | size creation <= 0 =
         error "newBuffer: size must be positive."
     | otherwise = mask_ $ do
+        gl <- ask
         resource <-
             newResource createBuffer
-                        (\(Buffer_ bufname) -> mglDeleteBuffer bufname)
+                        (\(Buffer_ bufname) ->
+                            runFlextGLM gl $ mglDeleteBuffer bufname)
                         (return ())
-        initial_status <- newIORef BufferStatus { mapped = False }
-        oi <- atomicModifyIORef' bufferOrdIndex $ \old -> ( old+1, old )
+        initial_status <- liftIO $ newIORef BufferStatus { mapped = False }
+        oi <- liftIO $ atomicModifyIORef' bufferOrdIndex $ \old -> ( old+1, old )
         return Buffer { resource = resource
                       , status = initial_status
                       , viewAllowedMappings = accessFlags creation
@@ -187,8 +193,8 @@ map2 :: S.Set MapFlag
      -> Int
      -> Int
      -> AccessFlags
-     -> Buffer
-     -> IO (Ptr ())
+     -> Buffer s
+     -> Context s (Ptr ())
 map2 map_flags offset num_bytes access_flags buffer
     -- a lot of this implementation is just error checking...
 
@@ -203,7 +209,7 @@ map2 map_flags offset num_bytes access_flags buffer
                   show (offset + num_bytes - 1) <> "]."
     | otherwise =
     withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
-        bufstatus <- readIORef (status buffer)
+        bufstatus <- liftIO $ readIORef (status buffer)
         -- make sure buffer has not been alreayd mapped
         when (mapped bufstatus) $
             error "map: buffer is already mapped."
@@ -227,7 +233,7 @@ map2 map_flags offset num_bytes access_flags buffer
             error $ "map: for some reason, mapping a buffer failed. " <>
                     "You might want to check OpenGL debug log."
 
-        atomicModifyIORef' (status buffer) $ \old ->
+        liftIO $ atomicModifyIORef' (status buffer) $ \old ->
             ( old { mapped = True }, () )
 
         return ptr
@@ -243,15 +249,15 @@ map :: Int         -- ^ Offset, in bytes, from start of the buffer from where
                    --   to map.
     -> Int         -- ^ How many bytes to map.
     -> AccessFlags -- ^ What access is allowed in the mapping.
-    -> Buffer
-    -> IO (Ptr ())
+    -> Buffer s
+    -> Context s (Ptr ())
 map = map2 S.empty
 
 -- | Exception that is thrown from `unmap` when buffer corruption is detected.
 --
 -- Corruption can happen due to external factors and is system-specific.
-data BufferCorruption = BufferCorruption Buffer
-                        deriving ( Eq, Typeable )
+data BufferCorruption = BufferCorruption
+                        deriving ( Typeable )
 
 instance Show BufferCorruption where
     show _ = "BufferCorruption <#Buffer>"
@@ -266,15 +272,15 @@ instance Exception BufferCorruption
 -- mapped. If there was corruption, `BufferCorruption` is thrown in this call.
 --
 -- Corruption means that the contents of the buffer are now undefined.
-unmap :: Buffer -> IO ()
+unmap :: Buffer s -> Context s ()
 unmap buffer = do
-    bufstatus <- readIORef (status buffer)
+    bufstatus <- liftIO $ readIORef (status buffer)
     when (mapped bufstatus) $
         withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
             result <- mglUnmapNamedBuffer buf
             when (fromIntegral result == gl_FALSE) $
-                throwIO $ BufferCorruption buffer
-            atomicModifyIORef' (status buffer) $ \old ->
+                throwM $ BufferCorruption
+            liftIO $ atomicModifyIORef' (status buffer) $ \old ->
                 ( old { mapped = False }, () )
 
 -- | Same as `withMapping` but with map flags.
@@ -284,19 +290,19 @@ withMapping2 :: S.Set MapFlag
              -> Int
              -> Int
              -> AccessFlags
-             -> Buffer
-             -> (Ptr () -> IO a)
-             -> IO a
+             -> Buffer s
+             -> (Ptr () -> Context s a)
+             -> Context s a
 withMapping2 map_flags offset num_bytes access_flags buffer action =
     mask $ \restore -> do
         ptr <- map2 map_flags offset num_bytes access_flags buffer
         did_it_work <- try $ restore $ action ptr
         did_unmapping_work <- try $ unmap buffer
         case did_it_work of
-            Left exc -> throwIO (exc :: SomeException)
+            Left exc -> throwM (exc :: SomeException)
             Right result ->
                 case did_unmapping_work of
-                    Left no -> throwIO (no :: BufferCorruption)
+                    Left no -> throwM (no :: BufferCorruption)
                     Right () -> return result
 
 -- | A convenience function over map/unmap that automatically unmaps the buffer
@@ -317,9 +323,10 @@ withMapping2 map_flags offset num_bytes access_flags buffer action =
 withMapping :: Int
             -> Int
             -> AccessFlags
-            -> Buffer
-            -> (Ptr () -> IO a)   -- ^ The pointer is valid during this action.
-            -> IO a
+            -> Buffer s
+            -> (Ptr () -> Context s a)
+            -- ^ The pointer is valid during this action.
+            -> Context s a
 withMapping = withMapping2 S.empty
 
 -- | A convenience function to upload a storable vector to a buffer.
@@ -329,12 +336,13 @@ uploadVector :: V.Storable a
              => V.Vector a    -- ^ The vector from which to pull data.
              -> Int           -- ^ Offset, in bytes, to which point in the
                               --   buffer to copy the data.
-             -> Buffer
-             -> IO ()
-uploadVector vec offset buffer =
-    V.unsafeWith vec $ \src_ptr ->
+             -> Buffer s
+             -> Context s ()
+uploadVector vec offset buffer = do
+    st <- contextState
+    liftIO $ V.unsafeWith vec $ \src_ptr -> unsafeResumeContext st $
         withMapping offset byte_size WriteAccess buffer $ \tgt_ptr ->
-            copyBytes tgt_ptr (castPtr src_ptr) byte_size
+            liftIO $ copyBytes tgt_ptr (castPtr src_ptr) byte_size
   where
     byte_size = V.length vec * sizeOf (undefined `asTypeOf` (vec V.! 0))
 
@@ -350,12 +358,12 @@ uploadVector vec offset buffer =
 --
 -- You can use the same buffer for both destination and source but the copying
 -- area may not overlap.
-copy :: Buffer      -- ^ Destination buffer.
+copy :: Buffer s    -- ^ Destination buffer.
      -> Int         -- ^ Offset in destination buffer.
-     -> Buffer      -- ^ Source buffer.
+     -> Buffer s    -- ^ Source buffer.
      -> Int         -- ^ Offset in source buffer.
      -> Int         -- ^ How many bytes to copy.
-     -> IO ()
+     -> Context s ()
 copy dst_buffer dst_offset src_buffer src_offset num_bytes
     | dst_offset < 0 ||
       src_offset < 0 ||
@@ -367,10 +375,10 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
     | otherwise =
         withResource (resource dst_buffer) $ \(Buffer_ dst) ->
             withResource (resource src_buffer) $ \(Buffer_ src) -> do
-                dst_status <- readIORef (status dst_buffer)
+                dst_status <- liftIO $ readIORef (status dst_buffer)
                 when (mapped dst_status) $
                     error "copy: destination buffer is mapped."
-                src_status <- readIORef (status src_buffer)
+                src_status <- liftIO $ readIORef (status src_buffer)
                 when (mapped src_status) $
                     error "copy: source buffer is mapped."
 
@@ -402,10 +410,10 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
 -- extension is not present, then this simply does nothing.
 --
 -- See <https://www.opengl.org/wiki/Buffer_Object#Invalidation>.
-invalidateBuffer :: Buffer -> IO ()
+invalidateBuffer :: Buffer s -> Context s ()
 invalidateBuffer buf = do
-    has_it <- has_GL_ARB_invalidate_subdata
-    when has_it $
+    gl <- ask
+    when (has_GL_ARB_invalidate_subdata gl) $
         withResource (resource buf) $ \(Buffer_ name) ->
             glInvalidateBufferData name
 

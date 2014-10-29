@@ -19,20 +19,24 @@ module Graphics.Caramia.Sync
     , Fence() )
     where
 
+import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Internal.FlextGLReader
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
-import Control.Exception
+import Control.Monad.Catch
+import Control.Monad.Reader
 
-newtype Fence = Fence (Resource GLsync)
-                deriving ( Eq, Typeable )
+newtype Fence s = Fence (Resource s GLsync)
+                  deriving ( Eq, Typeable )
 
 -- | Create a fence.
-fence :: IO Fence
+fence :: Context s (Fence s)
 fence = mask_ $ do
+    gl <- ask
     resource <-
         newResource createFence
-                    glDeleteSync
+                    (rglDeleteSync gl)
                     (return ())
     return $ Fence resource
   where
@@ -42,12 +46,13 @@ fence = mask_ $ do
 --
 -- IMPORTANT: this is not interruptible by asynchronous exceptions.
 waitFence :: Int           -- ^ Number of microseconds to wait.
-          -> Fence
-          -> IO Bool       -- ^ `True` if the fence was signalled,
-                           --   `False` if waiting timed out.
+          -> Fence s
+          -> Context s Bool       -- ^ `True` if the fence was signalled,
+                                  --   `False` if waiting timed out.
 waitFence useconds (Fence resource) =
     withResource resource $ \fencesync -> do
-        ret <- glClientWaitSync fencesync gl_SYNC_FLUSH_COMMANDS_BIT
+        ret <- glClientWaitSync fencesync
+                                gl_SYNC_FLUSH_COMMANDS_BIT
                                 (fromIntegral actual_seconds)
         if | ret == gl_ALREADY_SIGNALED -> return True
            | ret == gl_TIMEOUT_EXPIRED -> return False
@@ -63,6 +68,6 @@ waitFence useconds (Fence resource) =
 -- | Checks if a fence has been signalled.
 --
 -- @ isFenceSignalled = waitFence 0 @
-isFenceSignalled :: Fence -> IO Bool
+isFenceSignalled :: Fence s -> Context s Bool
 isFenceSignalled = waitFence 0
 

@@ -116,6 +116,10 @@ library
                        Graphics.Caramia.Internal.OpenGLCApi
                        Graphics.Caramia.Internal.Lens
                        Graphics.Caramia.Internal.FlextGLReentrant
+                       Graphics.Caramia.Internal.FlextGLReader
+                       Graphics.Caramia.Internal.FlextGLFlipped
+                       Graphics.Caramia.Internal.FlextGLTypes
+                       Graphics.Caramia.Context.Internal
                        Graphics.Caramia.Render.Internal
                        Graphics.Caramia.Framebuffer.Internal
                        Graphics.Caramia.Texture.Internal
@@ -128,14 +132,15 @@ library
   ghc-options:         -Wall -fno-warn-name-shadowing
 
   build-depends:       base >=4.6 && <5.0.0.0
-                      ,bytestring   >=0.10 && <1.0
-                      ,exceptions   >=0.6.1 && <1.0
-                      ,containers   >=0.5 && <1.0
-                      ,vector       >=0.10 && <1.0
-                      ,text         >=0.9 && <2.0
-                      ,transformers >=0.4 && <1.0
-                      ,semigroups   >=0.15 && <1.0
-                      ,OpenGLRaw    >=1.5 && <2.0
+                      ,bytestring    >=0.10 && <1.0
+                      ,exceptions    >=0.6.1 && <1.0
+                      ,containers    >=0.5 && <1.0
+                      ,vector        >=0.10 && <1.0
+                      ,text          >=0.9 && <2.0
+                      ,transformers  >=0.4 && <1.0
+                      ,mtl           >=2.2 && <3.0
+                      ,semigroups    >=0.15 && <1.0
+                      ,OpenGLRaw     >=1.5 && <2.0
 
   if !os(windows)
     build-depends:     unix >=2.7 && <3.0

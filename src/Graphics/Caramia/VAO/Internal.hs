@@ -9,12 +9,12 @@ import Graphics.Caramia.Internal.OpenGLCApi
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 
 -- | The vertex array object data type.
-data VAO = VAO
-    { resource :: !(Resource VAO_)
-    , boundBuffers :: !(IORef [Buf.Buffer]) }
+data VAO s = VAO
+    { resource :: !(Resource s VAO_)
+    , boundBuffers :: !(IORef [Buf.Buffer s]) }
     deriving ( Typeable )
 
-instance Eq VAO where
+instance Eq (VAO s) where
     (resource -> res1) == (resource -> res2) = res1 == res2
 
 newtype VAO_ = VAO_ GLuint

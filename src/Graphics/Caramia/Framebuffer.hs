@@ -35,7 +35,7 @@ module Graphics.Caramia.Framebuffer
     where
 
 import Graphics.Caramia.Prelude
-import Graphics.Caramia.Context
+import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Color
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Texture
@@ -43,7 +43,11 @@ import Graphics.Caramia.Framebuffer.Internal
 import qualified Graphics.Caramia.Texture.Internal as Tex
 import Graphics.Caramia.ImageFormats
 import Graphics.Caramia.Internal.OpenGLCApi
-import Control.Exception
+import Graphics.Caramia.Internal.FlextGLReader
+import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
+import Control.Monad.Catch
+import Control.Monad.IO.Class
+import Control.Monad.Reader
 import Data.List ( nub )
 import Data.Bits
 import System.IO.Unsafe
@@ -61,14 +65,14 @@ import qualified Data.IntSet as IS
 --
 -- This makes it easy to check if any framebuffer happens to be the screen
 -- framebuffer.
-screenFramebuffer :: Framebuffer
+screenFramebuffer :: Framebuffer s
 screenFramebuffer = ScreenFramebuffer
 
 -- | Make a texture target that is the \"front\" of the given texture.
 --
 -- This is the most common use case. \"front\" means the first texture in a
 -- texture array and the base layer mipmap level.
-frontTextureTarget :: Tex.Texture -> TextureTarget
+frontTextureTarget :: Tex.Texture s -> TextureTarget s
 frontTextureTarget tex = TextureTarget {
     attacher = \attachment ->
         withResource (Tex.resource tex) $ \(Tex.Texture_ texname) ->
@@ -80,9 +84,9 @@ frontTextureTarget tex = TextureTarget {
   , texture = tex }
 
 -- | Map a specific mipmlayer from a texture.
-mipmapTextureTarget :: Tex.Texture
+mipmapTextureTarget :: Tex.Texture s
                     -> Int            -- ^ Which mipmap layer?
-                    -> TextureTarget
+                    -> TextureTarget s
 mipmapTextureTarget tex mipmap_layer = TextureTarget {
     attacher = \attachment ->
         withResource (Tex.resource tex) $ \(Tex.Texture_ texname) ->
@@ -94,10 +98,10 @@ mipmapTextureTarget tex mipmap_layer = TextureTarget {
   , texture = tex }
 
 -- | Map a specific mipmap layer of a specific layer in a 3D or array texture.
-layerTextureTarget :: Tex.Texture
+layerTextureTarget :: Tex.Texture s
                    -> Int            -- ^ Which mipmap layer?
                    -> Int            -- ^ Which topological layer?
-                   -> TextureTarget
+                   -> TextureTarget s
 layerTextureTarget tex mipmap_layer topo_layer = TextureTarget {
     attacher = \attachment ->
         withResource (Tex.resource tex) $ \(Tex.Texture_ texname) ->
@@ -119,8 +123,8 @@ toConstantA DepthAttachment = gl_DEPTH_ATTACHMENT
 toConstantA StencilAttachment = gl_STENCIL_ATTACHMENT
 
 -- | Creates a new framebuffer.
-newFramebuffer :: [(Attachment, TextureTarget)]
-               -> IO Framebuffer
+newFramebuffer :: [(Attachment, TextureTarget s)]
+               -> Context s (Framebuffer s)
 newFramebuffer targets
     | null targets =
         error "newFramebuffer: no texture targets specified."
@@ -130,10 +134,11 @@ newFramebuffer targets
         max_bufs <- getMaximumDrawBuffers
         targetsSanityCheck max_bufs
 
+        gl <- ask
         res <- newResource (creator max_bufs)
-                           deleter
+                           (deleter gl)
                            (return ())
-        index <- atomicModifyIORef' runningIndices $ \old ->
+        index <- liftIO $ atomicModifyIORef' runningIndices $ \old ->
             ( old+1, old )
         return Framebuffer { resource = res
                            , ordIndex = index
@@ -154,17 +159,18 @@ newFramebuffer targets
         bracketOnError mglGenFramebuffer
                        mglDeleteFramebuffer $ \fbuf_name -> do
             withBoundDrawFramebuffer fbuf_name $ do
-                forM_ targets $ \(index, tex) ->
+                for_ targets $ \(index, tex) ->
                     attacher tex (toConstantA index)
 
-                allocaArray max_bufs $ \buf_ptr -> do
-                    forM_ [0..max_bufs-1] $ \bufnum ->
+                gl <- ask
+                liftIO $ allocaArray max_bufs $ \buf_ptr -> do
+                    for_ [0..max_bufs-1] $ \bufnum ->
                         pokeElemOff buf_ptr bufnum $
                             if IS.member bufnum color_attachments
                                 then gl_COLOR_ATTACHMENT0 +
                                      fromIntegral bufnum
                                 else gl_NONE
-                    glDrawBuffers (fromIntegral max_bufs) buf_ptr
+                    F.glDrawBuffers (fromIntegral max_bufs) buf_ptr gl
 
             return $ Framebuffer_ fbuf_name
 
@@ -176,10 +182,10 @@ newFramebuffer targets
         folder accum (ColorAttachment x) = IS.insert x accum
         folder accum _ = accum
 
-    deleter (Framebuffer_ fbuf_name) =
-        mglDeleteFramebuffer fbuf_name
+    deleter gl (Framebuffer_ fbuf_name) =
+        runFlextGLM gl $ mglDeleteFramebuffer fbuf_name
 
-    targetsSanityCheck max_bufs = forM_ targets $ \(attachment, target) -> do
+    targetsSanityCheck max_bufs = for_ targets $ \(attachment, target) -> do
         let format = Tex.imageFormat $ Tex.viewSpecification $ texture target
         unless (isRenderTargettable format) $
             error $ "newFramebuffer: cannot render to " <> show format
@@ -210,14 +216,15 @@ newFramebuffer targets
     withThisFramebuffer res action = mask $ \restore -> do
         old_draw_framebuffer <- gi gl_DRAW_FRAMEBUFFER_BINDING
         old_read_framebuffer <- gi gl_READ_FRAMEBUFFER_BINDING
-        allocaArray 4 $ \viewport_ptr -> do
+        st <- contextState
+        liftIO $ allocaArray 4 $ \viewport_ptr -> unsafeResumeContext st $ do
             glGetIntegerv gl_VIEWPORT viewport_ptr
             withResource res $ \(Framebuffer_ fbuf_name) -> do
                 glBindFramebuffer gl_FRAMEBUFFER fbuf_name
-                x <- peekElemOff viewport_ptr 0
-                y <- peekElemOff viewport_ptr 1
-                w <- peekElemOff viewport_ptr 2
-                h <- peekElemOff viewport_ptr 3
+                x <- liftIO $ peekElemOff viewport_ptr 0
+                y <- liftIO $ peekElemOff viewport_ptr 1
+                w <- liftIO $ peekElemOff viewport_ptr 2
+                h <- liftIO $ peekElemOff viewport_ptr 3
                 glViewport 0 0 (fromIntegral fw) (fromIntegral fh)
                 finally (restore action) $ do
                     glViewport x y w h
@@ -227,9 +234,8 @@ newFramebuffer targets
 -- | Returns the maximum number of draw buffers in the current context.
 --
 -- Almost all GPUs in the last few years have at least 8.
-getMaximumDrawBuffers :: IO Int
-getMaximumDrawBuffers = do
-    _ <- currentContextID
+getMaximumDrawBuffers :: Context s Int
+getMaximumDrawBuffers = liftFlextGLM $ do
     -- number of draw buffers
     num_drawbuffers <- gi gl_MAX_DRAW_BUFFERS
     -- number of attachments
@@ -261,7 +267,7 @@ clearing = Clearing { clearDepth = Nothing
                     , clearColor = Nothing }
 
 -- | Clears values in a framebuffer.
-clear :: Clearing -> Framebuffer -> IO ()
+clear :: Clearing -> Framebuffer s -> Context s ()
 clear clearing fbuf = withBinding fbuf $ mask_ $
     recColor (clearColor clearing)
   where
@@ -270,32 +276,33 @@ clear clearing fbuf = withBinding fbuf $ mask_ $
            maybe 0 (const gl_STENCIL_BUFFER_BIT) (clearStencil clearing)
 
     recColor Nothing = recDepth (clearDepth clearing)
-    recColor (Just (viewRgba -> (r, g, b, a))) =
-        allocaArray 4 $ \ptr -> do
+    recColor (Just (viewRgba -> (r, g, b, a))) = do
+        st <- contextState
+        liftIO $ allocaArray 4 $ \ptr -> unsafeResumeContext st $ do
             glGetFloatv gl_COLOR_CLEAR_VALUE ptr
             glClearColor (CFloat r)
                          (CFloat g)
                          (CFloat b)
                          (CFloat a)
             recDepth (clearDepth clearing)
-            nr <- peekElemOff ptr 0
-            ng <- peekElemOff ptr 1
-            nb <- peekElemOff ptr 2
-            na <- peekElemOff ptr 3
+            nr <- liftIO $ peekElemOff ptr 0
+            ng <- liftIO $ peekElemOff ptr 1
+            nb <- liftIO $ peekElemOff ptr 2
+            na <- liftIO $ peekElemOff ptr 3
             glClearColor (nr :: CFloat) ng nb na
 
     recDepth Nothing = recStencil (clearStencil clearing)
     recDepth (Just depth) = do
-        old_depth <- alloca $ \ptr ->
-            glGetDoublev gl_DEPTH_CLEAR_VALUE ptr *> peek ptr
+        gl <- ask
+        old_depth <- liftIO $ alloca $ \ptr ->
+            F.glGetDoublev gl_DEPTH_CLEAR_VALUE ptr gl *> peek ptr
         glClearDepth (CDouble $ float2Double depth)
         recStencil (clearStencil clearing)
         glClearDepth old_depth
 
     recStencil Nothing = glClear bits
     recStencil (Just stencil) = do
-        old_stencil <- alloca $ \ptr ->
-            glGetIntegerv gl_STENCIL_CLEAR_VALUE ptr *> peek ptr
+        old_stencil <- fromIntegral <$> gi gl_STENCIL_CLEAR_VALUE
         glClearStencil (safeFromIntegral stencil)
         glClear bits
         glClearStencil old_stencil

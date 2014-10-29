@@ -10,8 +10,8 @@ import Graphics.Caramia.Internal.OpenGLCApi
 import System.IO.Unsafe
 
 -- | Buffer data type.
-data Buffer = Buffer
-    { resource   :: !(Resource Buffer_)
+data Buffer s = Buffer
+    { resource   :: !(Resource s Buffer_)
     , status     :: !(IORef BufferStatus)
     , viewAllowedMappings :: !AccessFlags -- ^ Returns the allowed mappings.
     , viewSize   :: !Int -- ^ Returns the size of the buffer, in bytes.
@@ -23,19 +23,19 @@ bufferOrdIndex :: IORef Int
 bufferOrdIndex = unsafePerformIO $ newIORef 0
 {-# NOINLINE bufferOrdIndex #-}
 
-instance Ord Buffer where
+instance Eq (Buffer s) where
+    (resource -> res1) == (resource -> res2) = res1 == res2
+
+instance Ord (Buffer s) where
     (ordIndex -> o1) `compare` (ordIndex -> o2) = o1 `compare` o2
 
 data BufferStatus = BufferStatus
     { mapped :: !Bool }
 
-instance Show Buffer where
+instance Show (Buffer s) where
     show (Buffer{..}) =
         "<Buffer bytesize(" <> show viewSize <> ") idx(" <>
          show ordIndex <> ")>"
-
-instance Eq Buffer where
-    (resource -> res1) == (resource -> res2) = res1 == res2
 
 newtype Buffer_ = Buffer_ GLuint
 

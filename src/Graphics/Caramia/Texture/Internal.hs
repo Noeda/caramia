@@ -7,15 +7,17 @@ import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Internal.FlextGLReader
+import Graphics.Caramia.Context.Internal
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats
 import System.IO.Unsafe
-import Control.Exception
+import Control.Monad.Catch
 
-data Texture = Texture
-    { resource :: !(Resource Texture_)
+data Texture s = Texture
+    { resource :: !(Resource s Texture_)
     , ordIndex :: !Int
-    , viewSpecification :: !TextureSpecification }
+    , viewSpecification :: !(TextureSpecification s) }
     deriving ( Typeable )
 
 newtype Texture_ = Texture_ GLuint
@@ -30,10 +32,10 @@ ordIndices :: IORef Int
 ordIndices = unsafePerformIO $ newIORef 0
 {-# NOINLINE ordIndices #-}
 
-instance Eq Texture where
+instance Eq (Texture s) where
     tex1 == tex2 = resource tex1 == resource tex2
 
-instance Ord Texture where
+instance Ord (Texture s) where
     tex1 `compare` tex2 = ordIndex tex1 `compare` ordIndex tex2
 
 -- | Specification on what the texture should be like.
@@ -41,8 +43,8 @@ instance Ord Texture where
 -- Use `textureSpecification` and set at least `topology` and `imageFormat`.
 -- Future minor versions remain compatible if you use `textureSpecification`
 -- instead of the constructor directly.
-data TextureSpecification = TextureSpecification
-    { topology     :: Topology
+data TextureSpecification s = TextureSpecification
+    { topology     :: Topology s
     , imageFormat  :: ImageFormat
     , mipmapLevels :: Int -- ^ How many mipmap levels including the base
                           --  level? Must be at least 1.
@@ -50,10 +52,10 @@ data TextureSpecification = TextureSpecification
                           --  Ignored and not evaluated for multisampling
                           --  textures.
     }
-    deriving ( Eq, Typeable )
+    deriving ( Eq, Show, Typeable )
 
 -- | Specifies a topology of a texture.
-data Topology =
+data Topology s =
     Tex1D { width1D  :: !Int }
   | Tex2D { width2D  :: !Int
           , height2D :: !Int }
@@ -79,17 +81,17 @@ data Topology =
           , samples2DMSArray :: !Int
           , fixedSampleLocations2DMSArray :: !Bool }
   | TexCube { widthCube  :: Int }
-  | TexBuffer { texBuffer :: !Buf.Buffer }
+  | TexBuffer { texBuffer :: !(Buf.Buffer s) }
     -- ^ Buffer textures, see
     -- <https://www.opengl.org/wiki/Buffer_Texture>
   deriving ( Eq, Show, Typeable )
 
-withBinding :: GLenum -> GLenum -> GLuint -> FlextGLM a -> FlextGLM a
+withBinding :: GLenum -> GLenum -> GLuint -> Context s a -> Context s a
 withBinding tex tex_binding tex_name action = do
     old <- gi tex_binding
     finally
-        (fgl (glBindTexture tex tex_name) *> action)
-        (fgl $ glBindTexture tex old)
+        (glBindTexture tex tex_name *> action)
+        (glBindTexture tex old)
 
 -- | Given a bind location (such as gl_TEXTURE_3D), returns the query enum that
 -- retrieves the current binding from glGetIntegerv (such as
@@ -108,7 +110,7 @@ bindingQueryPoint x =
        | otherwise ->
            error $ "bindingQueryPoint: unknown texture target: " <> show x
 
-getTopologyBindPoints :: Topology -> (GLenum, GLenum)
+getTopologyBindPoints :: Topology s -> (GLenum, GLenum)
 getTopologyBindPoints = \case
     Tex1D {..} -> (gl_TEXTURE_1D, gl_TEXTURE_BINDING_1D)
     Tex2D {..} -> (gl_TEXTURE_2D, gl_TEXTURE_BINDING_2D)
@@ -128,7 +130,7 @@ getTopologyBindPoints = \case
         (gl_TEXTURE_BUFFER
         ,gl_TEXTURE_BINDING_BUFFER)
 
-withBindingByTopology :: Texture -> (GLenum -> FlextGLM a) -> FlextGLM a
+withBindingByTopology :: Texture s -> (GLenum -> Context s a) -> Context s a
 withBindingByTopology tex action =
     withResource (resource tex) $ \(Texture_ name) ->
         let (bind_target, bind_query) = getTopologyBindPoints topo
@@ -136,10 +138,10 @@ withBindingByTopology tex action =
   where
     topo = topology $ viewSpecification tex
 
-withTextureBinding :: Texture -> TextureUnit -> FlextGLM a -> FlextGLM a
+withTextureBinding :: Texture s -> TextureUnit -> Context s a -> Context s a
 withTextureBinding tex unit action = do
     old_active <- gi gl_ACTIVE_TEXTURE
-    fgl $ glActiveTexture (gl_TEXTURE0 + fromIntegral unit)
+    glActiveTexture (gl_TEXTURE0 + fromIntegral unit)
     finally (withBindingByTopology tex $ const action) $
-        fgl $ glActiveTexture old_active
+        glActiveTexture old_active
 

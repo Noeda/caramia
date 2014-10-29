@@ -54,21 +54,25 @@ import Graphics.Caramia.Prelude
 import Graphics.Caramia.Texture.Internal
 import Graphics.Caramia.Internal.TexStorage
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Internal.FlextGLReader
+import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats.Internal
 import Graphics.Caramia.Resource
-import Control.Exception
+import Graphics.Caramia.Context.Internal
+import Control.Monad.Catch
+import Control.Monad.Reader
 import Foreign
 import Foreign.C.Types
 
-textureSpecification :: TextureSpecification
+textureSpecification :: TextureSpecification s
 textureSpecification = TextureSpecification {
     topology = error "textureSpecification: topology is not set."
   , imageFormat = error "textureSpecification: image format is not set."
   , mipmapLevels = 1 }
 
 -- | Returns the width of a texture.
-viewWidth :: Texture -> Int
+viewWidth :: Texture s -> Int
 viewWidth (viewSpecification -> spec) = viewWidth' (topology spec)
   where
     viewWidth' (Tex1D {..}) = width1D
@@ -87,7 +91,7 @@ viewWidth (viewSpecification -> spec) = viewWidth' (topology spec)
 -- | Returns the height of a texture.
 --
 -- This is 1 for one-dimensional textures.
-viewHeight :: Texture -> Int
+viewHeight :: Texture s -> Int
 viewHeight (viewSpecification -> spec) = viewHeight' (topology spec)
   where
     viewHeight' (Tex1D {..}) = 1
@@ -103,7 +107,7 @@ viewHeight (viewSpecification -> spec) = viewHeight' (topology spec)
 -- | Returns the depth of a 3D texture or number of layers in array textures.
 --
 -- This is 1 for any other type of texture.
-viewDepth :: Texture -> Int
+viewDepth :: Texture s -> Int
 viewDepth (viewSpecification -> spec) = viewDepth' (topology spec)
   where
     viewDepth' (Tex1D {..}) = 1
@@ -116,10 +120,10 @@ viewDepth (viewSpecification -> spec) = viewDepth' (topology spec)
     viewDepth' (TexCube {..}) = 1
     viewDepth' (TexBuffer {}) = 1
 
-viewMipmapLevels :: Texture -> Int
+viewMipmapLevels :: Texture s -> Int
 viewMipmapLevels = mipmapLevels . viewSpecification
 
-isMultisamplingTopology :: Topology -> Bool
+isMultisamplingTopology :: Topology s -> Bool
 isMultisamplingTopology (Tex2DMultisample {..}) = True
 isMultisamplingTopology (Tex2DMultisampleArray {..}) = True
 isMultisamplingTopology _ = False
@@ -129,19 +133,20 @@ isMultisamplingTopology _ = False
 -- Initially the contents of the texture are undefined.
 --
 -- Texture dimensions must be positive.
-newTexture :: TextureSpecification
-           -> IO Texture
+newTexture :: forall s. TextureSpecification s
+           -> Context s (Texture s)
 newTexture spec = mask_ $ do
     topologySanityCheck (topology spec)
     when (not (isMultisamplingTopology (topology spec)) &&
           mipmapLevels spec < 1) $
         error "newTexture: mipmapLevels is not positive."
 
+    gl <- askFlextGL
     res <- newResource creator
-                       deleter
+                       (deleter gl)
                        (return ())
 
-    index <- atomicModifyIORef' ordIndices $ \old -> ( old+1, old )
+    index <- liftIO $ atomicModifyIORef' ordIndices $ \old -> ( old+1, old )
     return Texture { resource = res
                    , ordIndex = index
                    , viewSpecification = spec }
@@ -192,37 +197,37 @@ newTexture spec = mask_ $ do
     badMipmaps =
         error $ "newTexture: bad number of mipmap levels: " <> show num_mipmaps
 
-    deleter (Texture_ name) =
-        with name $ glDeleteTextures 1
+    deleter gl (Texture_ name) =
+        with name $ \ptr -> F.glDeleteTextures 1 ptr gl
 
     creator = do
+        gl <- ask
         name <- bracketOnError
-            (alloca $ \name_ptr ->
-                glGenTextures 1 name_ptr *> peek name_ptr)
-            (deleter . Texture_ )
+            (liftIO $ alloca $ \name_ptr ->
+                F.glGenTextures 1 name_ptr gl *> peek name_ptr)
+            (liftIO . deleter gl . Texture_)
             (\name -> do
-                has_tex_storage <- has_GL_ARB_texture_storage
-                if has_tex_storage
+                if has_GL_ARB_texture_storage gl
                   then createByTopologyTexStorage name (topology spec)
                   else createByTopologyFakeTextureStorage name (topology spec)
                 return name)
         return (Texture_ name)
 
-    createByTopologyFakeTextureStorage :: GLuint -> Topology -> IO ()
-    createByTopologyFakeTextureStorage name (Tex1D {..}) =
+    createByTopologyFakeTextureStorage :: GLuint -> Topology s -> Context s ()
+    createByTopologyFakeTextureStorage name (Tex1D {..}) = liftFlextGLM $
         fakeTextureStorage1D name
                              gl_TEXTURE_1D
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width1D)
-    createByTopologyFakeTextureStorage name (Tex2D {..}) =
+    createByTopologyFakeTextureStorage name (Tex2D {..}) = liftFlextGLM $
         fakeTextureStorage2D name
                              gl_TEXTURE_2D
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width2D)
                              (safeFromIntegral height2D)
-    createByTopologyFakeTextureStorage name (Tex3D {..}) =
+    createByTopologyFakeTextureStorage name (Tex3D {..}) = liftFlextGLM $
         fakeTextureStorage3D name
                              gl_TEXTURE_3D
                              (safeFromIntegral num_mipmaps)
@@ -230,14 +235,14 @@ newTexture spec = mask_ $ do
                              (safeFromIntegral width3D)
                              (safeFromIntegral height3D)
                              (safeFromIntegral depth3D)
-    createByTopologyFakeTextureStorage name (Tex1DArray {..}) =
+    createByTopologyFakeTextureStorage name (Tex1DArray {..}) = liftFlextGLM $
         fakeTextureStorage2D name
                              gl_TEXTURE_1D_ARRAY
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width1DArray)
                              (safeFromIntegral layers1D)
-    createByTopologyFakeTextureStorage name (Tex2DArray {..}) =
+    createByTopologyFakeTextureStorage name (Tex2DArray {..}) = liftFlextGLM $
         fakeTextureStorage3D name
                              gl_TEXTURE_2D_ARRAY
                              (safeFromIntegral num_mipmaps)
@@ -249,7 +254,7 @@ newTexture spec = mask_ $ do
         createByTopologyTexStorage name tex
     createByTopologyFakeTextureStorage name tex@(Tex2DMultisampleArray {..}) =
         createByTopologyTexStorage name tex
-    createByTopologyFakeTextureStorage name (TexCube {..}) =
+    createByTopologyFakeTextureStorage name (TexCube {..}) = liftFlextGLM $
         fakeTextureStorage2D name
                              gl_TEXTURE_CUBE_MAP
                              (safeFromIntegral num_mipmaps)
@@ -261,7 +266,7 @@ newTexture spec = mask_ $ do
 
     -- TODO: use DSA when available, perhaps add mglTextureStorage* functions
     -- to Caramia.Internal.OpenGLCApi?
-    createByTopologyTexStorage :: GLuint -> Topology -> IO ()
+    createByTopologyTexStorage :: GLuint -> Topology s -> Context s ()
     createByTopologyTexStorage name (Tex1D {..}) =
         withBinding gl_TEXTURE_1D gl_TEXTURE_BINDING_1D name $
             glTexStorage1D gl_TEXTURE_1D
@@ -343,7 +348,7 @@ newTexture spec = mask_ $ do
 
 -- | Generate all mipmaps for a texture. If mipmap levels were specified, that
 -- is.
-generateMipmaps :: Texture -> IO ()
+generateMipmaps :: Texture s -> Context s ()
 generateMipmaps = flip withBindingByTopology glGenerateMipmap
 
 -- | Specifies the format in which buffer data is for the purposes of uploading
@@ -384,8 +389,8 @@ toConstantUF USTENCIL_INDEX = gl_STENCIL_INDEX
 -- It is recommended that you use one of the smart constructors as they
 -- implement the common use cases so you don't have to fill all these fields by
 -- yourself.
-data Uploading = Uploading
-    { fromBuffer    :: !Buf.Buffer  -- ^ From which buffer to upload.
+data Uploading s = Uploading
+    { fromBuffer    :: !(Buf.Buffer s) -- ^ From which buffer to upload.
     , bufferOffset  :: !Int     -- ^ Offset in the buffer, in bytes,
                                 --   from where to start uploading.
     , toMipmapLevel :: !Int     -- ^ To which mipmap level to upload.
@@ -437,11 +442,11 @@ toConstantCS PositiveZ = gl_TEXTURE_CUBE_MAP_POSITIVE_Z
 toConstantCS NegativeZ = gl_TEXTURE_CUBE_MAP_NEGATIVE_Z
 
 -- | Constructs a common 1D uploading.
-uploading1D :: Buf.Buffer
+uploading1D :: Buf.Buffer s
             -> Int     -- ^ How many pixels to upload.
             -> SpecificationType
             -> UploadFormat
-            -> Uploading
+            -> Uploading s
 uploading1D buffer pixels stype uf =
     Uploading {
          fromBuffer = buffer
@@ -463,12 +468,12 @@ uploading1D buffer pixels stype uf =
 -- | Constructs a common 2D uploading.
 --
 -- This can also be used for uploading into 1D texture arrays.
-uploading2D :: Buf.Buffer
+uploading2D :: Buf.Buffer s
             -> Int     -- ^ Width of the image to upload.
             -> Int     -- ^ Height of the image to upload.
             -> SpecificationType
             -> UploadFormat
-            -> Uploading
+            -> Uploading s
 uploading2D buffer width height stype uf =
     Uploading {
          fromBuffer = buffer
@@ -490,13 +495,13 @@ uploading2D buffer width height stype uf =
 -- | Constructs a common 3D uploading.
 --
 -- This can also be used for uploading into 2D texture arrays.
-uploading3D :: Buf.Buffer
+uploading3D :: Buf.Buffer s
             -> Int     -- ^ Width of the image to upload.
             -> Int     -- ^ Height of the image to upload.
             -> Int     -- ^ Number of images to upload.
             -> SpecificationType
             -> UploadFormat
-            -> Uploading
+            -> Uploading s
 uploading3D buffer width height depth stype uf =
     Uploading {
          fromBuffer = buffer
@@ -516,12 +521,13 @@ uploading3D buffer width height depth stype uf =
        , pixelAlignment = 1 }
 
 -- | Uploads an image to a texture.
-uploadToTexture :: Uploading
-                -> Texture
-                -> IO ()
-uploadToTexture uploading tex = mask_ $
+uploadToTexture :: Uploading s
+                -> Texture s
+                -> Context s ()
+uploadToTexture uploading tex = mask_ $ do
+    st <- contextState
     withResource (Buf.resource (fromBuffer uploading)) $ \(Buf.Buffer_ buf) ->
-    withBoundPixelUnpackBuffer buf $ do
+     liftFlextGLM $ withBoundPixelUnpackBuffer buf $ liftIO $ unsafeResumeContext st $ do
         old_num_cols  <- fromIntegral <$> gi gl_UNPACK_ROW_LENGTH
         old_num_rows  <- fromIntegral <$> gi gl_UNPACK_IMAGE_HEIGHT
         old_alignment <- fromIntegral <$> gi gl_UNPACK_ALIGNMENT
@@ -566,7 +572,7 @@ uploadToTexture uploading tex = mask_ $
                             "buffer textures. (please upload directly to the " <>
                             "associated buffer instead.)"
 
-upload1D :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
+upload1D :: GLenum -> GLenum -> GLuint -> Uploading s -> Context s ()
 upload1D target binding tex (Uploading {..}) =
     withBinding target binding tex $
         glTexSubImage1D target
@@ -578,7 +584,7 @@ upload1D target binding tex (Uploading {..}) =
                         (intPtrToPtr $
                          fromIntegral bufferOffset)
 
-upload2D :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
+upload2D :: GLenum -> GLenum -> GLuint -> Uploading s -> Context s ()
 upload2D target binding tex (Uploading {..}) =
     withBinding target binding tex $
         glTexSubImage2D target
@@ -592,7 +598,7 @@ upload2D target binding tex (Uploading {..}) =
                         (intPtrToPtr $
                          fromIntegral bufferOffset)
 
-upload3D :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
+upload3D :: GLenum -> GLenum -> GLuint -> Uploading s -> Context s ()
 upload3D target binding tex (Uploading {..}) =
     withBinding target binding tex $
         glTexSubImage3D target
@@ -608,7 +614,7 @@ upload3D target binding tex (Uploading {..}) =
                         (intPtrToPtr $
                          fromIntegral bufferOffset)
 
-uploadCube :: GLenum -> GLenum -> GLuint -> Uploading -> IO ()
+uploadCube :: GLenum -> GLenum -> GLuint -> Uploading s -> Context s ()
 uploadCube target binding tex (Uploading {..}) =
     withBinding target binding tex $
         glTexSubImage2D (toConstantCS cubeSide)
@@ -702,70 +708,71 @@ instance TexParam MagFilter where
         | c == gl_LINEAR  = MaLinear
         | otherwise = error "MagFilter: unexpected filtering value."
 
-setMinFilter :: MinFilter -> Texture -> IO ()
+setMinFilter :: MinFilter -> Texture s -> Context s ()
 setMinFilter = setTexParam
 
-setMagFilter :: MagFilter -> Texture -> IO ()
+setMagFilter :: MagFilter -> Texture s -> Context s ()
 setMagFilter = setTexParam
 
-getMinFilter :: Texture -> IO MinFilter
+getMinFilter :: Texture s -> Context s MinFilter
 getMinFilter = getTexParam
 
-getMagFilter :: Texture -> IO MagFilter
+getMagFilter :: Texture s -> Context s MagFilter
 getMagFilter = getTexParam
 
-setTexParam :: TexParam a => a -> Texture -> IO ()
+setTexParam :: TexParam a => a -> Texture s -> Context s ()
 setTexParam param tex = withBindingByTopology tex $ \target ->
     glTexParameteri target (tpEnum param) (fromIntegral $ tpToConstant param)
 
-getTexParam :: forall a. TexParam a => Texture -> IO a
+getTexParam :: forall s a. TexParam a => Texture s -> Context s a
 getTexParam tex = withBindingByTopology tex $ \target ->
-    alloca $ \result_ptr -> do
-        glGetTexParameteriv target (tpEnum (undefined :: a)) result_ptr
+    ask >>= \gl -> liftIO $ alloca $ \result_ptr -> do
+        F.glGetTexParameteriv target (tpEnum (undefined :: a)) result_ptr gl
         tpFromConstant . fromIntegral <$> peek result_ptr
 
-setWrapping :: Wrapping -> Texture -> IO ()
+setWrapping :: Wrapping -> Texture s -> Context s ()
 setWrapping wrapping tex = withBindingByTopology tex $ \target -> do
     glTexParameteri target gl_TEXTURE_WRAP_S
-                           (fromIntegral $ toConstantW wrapping)
+                        (fromIntegral $ toConstantW wrapping)
     glTexParameteri target gl_TEXTURE_WRAP_T
-                           (fromIntegral $ toConstantW wrapping)
+                        (fromIntegral $ toConstantW wrapping)
     glTexParameteri target gl_TEXTURE_WRAP_R
-                           (fromIntegral $ toConstantW wrapping)
+                        (fromIntegral $ toConstantW wrapping)
 
-setCompareMode :: CompareMode -> Texture -> IO ()
+setCompareMode :: CompareMode -> Texture s -> Context s ()
 setCompareMode cmp_mode tex = withBindingByTopology tex $ \target ->
     glTexParameteri target gl_TEXTURE_COMPARE_MODE
                     (fromIntegral $ toConstantC cmp_mode)
 
-getCompareMode :: Texture -> IO CompareMode
+getCompareMode :: Texture s -> Context s CompareMode
 getCompareMode tex = withBindingByTopology tex $ \target ->
-    alloca $ \result_ptr -> do
-        glGetTexParameteriv target gl_TEXTURE_COMPARE_MODE result_ptr
+    ask >>= \gl -> liftIO $ alloca $ \result_ptr -> do
+        F.glGetTexParameteriv target gl_TEXTURE_COMPARE_MODE result_ptr gl
         result <- fromIntegral <$> peek result_ptr
         return $ if
             | result == gl_NONE -> NoCompare
             | result == gl_COMPARE_REF_TO_TEXTURE -> CompareRefToTexture
             | otherwise -> error "getCompareMode: unexpected comparing mode."
 
-getWrapping :: Texture -> IO Wrapping
-getWrapping tex = withBindingByTopology tex $ \target ->
-    alloca $ \result_ptr -> do
-        glGetTexParameteriv target gl_TEXTURE_WRAP_S result_ptr
+getWrapping :: Texture s -> Context s Wrapping
+getWrapping tex = withBindingByTopology tex $ \target -> do
+    ask >>= \gl -> liftIO $ alloca $ \result_ptr -> do
+        F.glGetTexParameteriv target gl_TEXTURE_WRAP_S result_ptr gl
         result <- fromIntegral <$> peek result_ptr
         return $ if
             | result == gl_CLAMP_TO_EDGE -> Clamp
             | result == gl_REPEAT -> Repeat
             | otherwise -> error "getWrapping: unexpected wrapping mode."
 
-setAnisotropy :: Float -> Texture -> IO ()
+setAnisotropy :: Float -> Texture s -> Context s ()
 setAnisotropy ani tex = withBindingByTopology tex $ \target ->
     glTexParameterf target gl_TEXTURE_MAX_ANISOTROPY_EXT (CFloat ani)
 
-getAnisotropy :: Texture -> IO Float
-getAnisotropy tex = withBindingByTopology tex $ \target ->
-    alloca $ \ani_ptr -> do
-        glGetTexParameterfv target gl_TEXTURE_MAX_ANISOTROPY_EXT ani_ptr
+getAnisotropy :: Texture s -> Context s Float
+getAnisotropy tex = withBindingByTopology tex $ \target -> do
+    gl <- ask
+    liftIO $ alloca $ \ani_ptr -> do
+        F.glGetTexParameterfv target gl_TEXTURE_MAX_ANISOTROPY_EXT ani_ptr gl
         unwrap <$> peek ani_ptr
   where
     unwrap (CFloat f) = f
