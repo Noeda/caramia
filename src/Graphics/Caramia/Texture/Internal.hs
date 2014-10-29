@@ -84,13 +84,12 @@ data Topology =
     -- <https://www.opengl.org/wiki/Buffer_Texture>
   deriving ( Eq, Show, Typeable )
 
-withBinding :: GLenum -> GLenum -> GLuint -> IO a -> IO a
+withBinding :: GLenum -> GLenum -> GLuint -> FlextGLM a -> FlextGLM a
 withBinding tex tex_binding tex_name action = do
     old <- gi tex_binding
     finally
-        (glBindTexture tex tex_name *>
-         action)
-        (glBindTexture tex old)
+        (fgl (glBindTexture tex tex_name) *> action)
+        (fgl $ glBindTexture tex old)
 
 -- | Given a bind location (such as gl_TEXTURE_3D), returns the query enum that
 -- retrieves the current binding from glGetIntegerv (such as
@@ -129,7 +128,7 @@ getTopologyBindPoints = \case
         (gl_TEXTURE_BUFFER
         ,gl_TEXTURE_BINDING_BUFFER)
 
-withBindingByTopology :: Texture -> (GLenum -> IO a) -> IO a
+withBindingByTopology :: Texture -> (GLenum -> FlextGLM a) -> FlextGLM a
 withBindingByTopology tex action =
     withResource (resource tex) $ \(Texture_ name) ->
         let (bind_target, bind_query) = getTopologyBindPoints topo
@@ -137,10 +136,10 @@ withBindingByTopology tex action =
   where
     topo = topology $ viewSpecification tex
 
-withTextureBinding :: Texture -> TextureUnit -> IO a -> IO a
+withTextureBinding :: Texture -> TextureUnit -> FlextGLM a -> FlextGLM a
 withTextureBinding tex unit action = do
     old_active <- gi gl_ACTIVE_TEXTURE
-    glActiveTexture (gl_TEXTURE0 + fromIntegral unit)
+    fgl $ glActiveTexture (gl_TEXTURE0 + fromIntegral unit)
     finally (withBindingByTopology tex $ const action) $
-        glActiveTexture old_active
+        fgl $ glActiveTexture old_active
 
