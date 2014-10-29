@@ -15,7 +15,7 @@ module Graphics.Caramia.Internal.TexStorage
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Texture.Internal
-import Control.Exception
+import Control.Monad.Catch
 import Foreign.Ptr
 
 -- | glTextureStorage1D
@@ -24,18 +24,18 @@ fakeTextureStorage1D :: GLuint
                      -> GLsizei
                      -> GLenum
                      -> GLsizei
-                     -> IO ()
+                     -> FlextGLM ()
 fakeTextureStorage1D texture target levels internalformat width = mask_ $ do
-    has_ext <- has_GL_EXT_direct_state_access
-    if has_ext then dsaFakeTextureStorage1D
-               else nodsaFakeTextureStorage1D
+    branchExt has_GL_EXT_direct_state_access
+              dsaFakeTextureStorage1D
+              nodsaFakeTextureStorage1D
   where
     rec fun i w | i < levels = fun i w >>
                                rec fun (i+1) (max 1 $ w `div` 2)
                 | otherwise = return ()
 
     dsaFakeTextureStorage1D = do
-        rec (\i w -> do
+        rec (\i w -> fgl $
             glTextureImage1DEXT texture
                                 target
                                 i
@@ -45,12 +45,12 @@ fakeTextureStorage1D texture target levels internalformat width = mask_ $ do
                                 (formatFromInternalFormat internalformat)
                                 (typeFromInternalFormat internalformat)
                                 nullPtr) 0 width
-        glTextureParameteriEXT texture target gl_TEXTURE_MAX_LEVEL (levels-1)
+        fgl $ glTextureParameteriEXT texture target gl_TEXTURE_MAX_LEVEL (levels-1)
 
     nodsaFakeTextureStorage1D = do
         old_tex <- gi $ bindingQueryPoint target
-        glBindTexture target texture
-        rec (\i w ->
+        fgl $ glBindTexture target texture
+        rec (\i w -> fgl $
                 glTexImage1D target
                              i
                              (fromIntegral internalformat)
@@ -59,8 +59,8 @@ fakeTextureStorage1D texture target levels internalformat width = mask_ $ do
                              (formatFromInternalFormat internalformat)
                              (typeFromInternalFormat internalformat)
                              nullPtr) 0 width
-        glTexParameteri target gl_TEXTURE_MAX_LEVEL (levels-1)
-        glBindTexture target old_tex
+        fgl $ glTexParameteri target gl_TEXTURE_MAX_LEVEL (levels-1)
+        fgl $ glBindTexture target old_tex
 
 -- | glTextureStorage2D
 fakeTextureStorage2D :: GLuint
@@ -69,12 +69,11 @@ fakeTextureStorage2D :: GLuint
                      -> GLenum
                      -> GLsizei
                      -> GLsizei
-                     -> IO ()
+                     -> FlextGLM ()
 fakeTextureStorage2D texture target levels internalformat width height =
-    mask_ $ do
-        has_ext <- has_GL_EXT_direct_state_access
-        if has_ext then dsaFakeTextureStorage2D
-                   else nodsaFakeTextureStorage2D
+    mask_ $ branchExt has_GL_EXT_direct_state_access
+                      dsaFakeTextureStorage2D
+                      nodsaFakeTextureStorage2D
   where
     rec fun i w h | i < levels = fun i w h >>
                                  rec fun
@@ -84,7 +83,7 @@ fakeTextureStorage2D texture target levels internalformat width height =
                   | otherwise = return ()
 
     dsaFakeTextureStorage2D = do
-        rec (\i w h ->
+        rec (\i w h -> fgl $ \gl ->
             if target /= gl_TEXTURE_CUBE_MAP
               then glTextureImage2DEXT texture
                                     target
@@ -96,6 +95,7 @@ fakeTextureStorage2D texture target levels internalformat width height =
                                     (formatFromInternalFormat internalformat)
                                     (typeFromInternalFormat internalformat)
                                     nullPtr
+                                    gl
               else for_ cubeSides $ \side ->
                 glTextureImage2DEXT texture
                                     side
@@ -106,24 +106,14 @@ fakeTextureStorage2D texture target levels internalformat width height =
                                     0
                                     (formatFromInternalFormat internalformat)
                                     (typeFromInternalFormat internalformat)
-                                    nullPtr) 0 width height
-        glTextureParameteriEXT texture target gl_TEXTURE_MAX_LEVEL (levels-1)
+                                    nullPtr gl) 0 width height
+        fgl $ glTextureParameteriEXT texture target gl_TEXTURE_MAX_LEVEL (levels-1)
 
     nodsaFakeTextureStorage2D = do
         old_tex <- gi $ bindingQueryPoint target
-        glBindTexture target texture
+        fgl $ glBindTexture target texture
         rec (\i w h -> if target /= gl_TEXTURE_CUBE_MAP
-                         then glTexImage2D target
-                                i
-                                (fromIntegral internalformat)
-                                w
-                                h
-                                0
-                                (formatFromInternalFormat internalformat)
-                                (typeFromInternalFormat internalformat)
-                                nullPtr
-                         else for_ cubeSides $ \side ->
-                                glTexImage2D side
+                         then fgl (glTexImage2D target
                                     i
                                     (fromIntegral internalformat)
                                     w
@@ -132,9 +122,19 @@ fakeTextureStorage2D texture target levels internalformat width height =
                                     (formatFromInternalFormat internalformat)
                                     (typeFromInternalFormat internalformat)
                                     nullPtr)
+                         else fgl $ \gl -> for_ cubeSides $ \side ->
+                                glTexImage2D side
+                                    i
+                                    (fromIntegral internalformat)
+                                    w
+                                    h
+                                    0
+                                    (formatFromInternalFormat internalformat)
+                                    (typeFromInternalFormat internalformat)
+                                    nullPtr gl)
                                     0 width height
-        glTexParameteri target gl_TEXTURE_MAX_LEVEL (levels-1)
-        glBindTexture target old_tex
+        fgl $ glTexParameteri target gl_TEXTURE_MAX_LEVEL (levels-1)
+        fgl $ glBindTexture target old_tex
 
 cubeSides :: [GLenum]
 cubeSides = [gl_TEXTURE_CUBE_MAP_POSITIVE_X
@@ -152,12 +152,11 @@ fakeTextureStorage3D :: GLuint
                      -> GLsizei
                      -> GLsizei
                      -> GLsizei
-                     -> IO ()
+                     -> FlextGLM ()
 fakeTextureStorage3D texture target levels internalformat width height depth =
-    mask_ $ do
-        has_ext <- has_GL_EXT_direct_state_access
-        if has_ext then dsaFakeTextureStorage3D
-                   else nodsaFakeTextureStorage3D
+    mask_ $ branchExt has_GL_EXT_direct_state_access
+                      dsaFakeTextureStorage3D
+                      nodsaFakeTextureStorage3D
   where
     rec fun i w h z | i < levels = fun i w h z >>
                                    rec fun
@@ -168,7 +167,7 @@ fakeTextureStorage3D texture target levels internalformat width height depth =
                     | otherwise = return ()
 
     dsaFakeTextureStorage3D = do
-        rec (\i w h z ->
+        rec (\i w h z -> fgl $
             glTextureImage3DEXT texture
                                 target
                                 i
@@ -180,12 +179,12 @@ fakeTextureStorage3D texture target levels internalformat width height depth =
                                 (formatFromInternalFormat internalformat)
                                 (typeFromInternalFormat internalformat)
                                 nullPtr) 0 width height depth
-        glTextureParameteriEXT texture target gl_TEXTURE_MAX_LEVEL (levels-1)
+        fgl $ glTextureParameteriEXT texture target gl_TEXTURE_MAX_LEVEL (levels-1)
 
     nodsaFakeTextureStorage3D = do
         old_tex <- gi $ bindingQueryPoint target
-        glBindTexture target texture
-        rec (\i w h z -> glTexImage3D
+        fgl $ glBindTexture target texture
+        rec (\i w h z -> fgl $ glTexImage3D
                              target
                              i
                              (fromIntegral internalformat)
@@ -196,8 +195,8 @@ fakeTextureStorage3D texture target levels internalformat width height depth =
                              (formatFromInternalFormat internalformat)
                              (typeFromInternalFormat internalformat)
                              nullPtr) 0 width height depth
-        glTexParameteri target gl_TEXTURE_MAX_LEVEL (levels-1)
-        glBindTexture target old_tex
+        fgl $ glTexParameteri target gl_TEXTURE_MAX_LEVEL (levels-1)
+        fgl $ glBindTexture target old_tex
 
 typeFromInternalFormat :: GLenum -> GLenum
 typeFromInternalFormat x =

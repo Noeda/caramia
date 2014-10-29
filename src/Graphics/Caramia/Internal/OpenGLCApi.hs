@@ -6,10 +6,17 @@
 -- stuff there instead.
 --
 
-{-# LANGUAGE ForeignFunctionInterface, NoImplicitPrelude #-}
+{-# LANGUAGE ForeignFunctionInterface, NoImplicitPrelude, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor, GeneralizedNewtypeDeriving #-}
 
 module Graphics.Caramia.Internal.OpenGLCApi
     ( module Ex
+
+    , FlextGLM()
+    , runFlextGLM
+    , askGL
+    , fgl
+    , branchExt
 
     , gi
     , gf
@@ -59,248 +66,281 @@ module Graphics.Caramia.Internal.OpenGLCApi
 
 import Graphics.Caramia.Prelude
 
-import Graphics.Caramia.Internal.FlextGL as Ex
+import Graphics.Caramia.Internal.FlextGLReentrant as Ex
+import Control.Monad.IO.Class
+import Control.Monad.Catch
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Class ( lift )
 import Foreign.Ptr
 import Foreign.C.Types
 import Foreign.Storable
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
-import Control.Exception
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
-whenExt :: IO Bool -> IO a -> IO a -> IO a
-whenExt test action other_action = do
-    x <- test
-    if x then action else other_action
-{-# INLINE whenExt #-}
+newtype FlextGLM a = FlextGLM (ReaderT FlextGL IO a)
+                     deriving ( Typeable, Functor, Monad, Applicative
+                              , MonadMask, MonadCatch, MonadThrow, MonadIO )
 
-mglDeleteBuffer :: GLuint -> IO ()
-mglDeleteBuffer x = with x $ \x_ptr -> glDeleteBuffers 1 x_ptr
+runFlextGLM :: FlextGL -> FlextGLM a -> IO a
+runFlextGLM gl (FlextGLM r) = runReaderT r gl
+{-# INLINE runFlextGLM #-}
 
-mglDeleteVertexArray :: GLuint -> IO ()
-mglDeleteVertexArray x = with x $ \x_ptr -> glDeleteVertexArrays 1 x_ptr
+fgl :: (FlextGL -> IO a) -> FlextGLM a
+fgl fun = FlextGLM $ ask >>= lift . fun
+{-# INLINE fgl #-}
 
-mglGenBuffer :: IO GLuint
-mglGenBuffer = alloca $ \x_ptr -> glGenBuffers 1 x_ptr *> peek x_ptr
+askGL :: FlextGLM FlextGL
+askGL = FlextGLM ask
+{-# INLINE askGL #-}
 
-mglGenVertexArray :: IO GLuint
-mglGenVertexArray = alloca $ \x_ptr -> glGenVertexArrays 1 x_ptr *> peek x_ptr
+-- | Executes the first action if given boolean is true, otherwise the second
+-- one.
+--
+-- The type is written so that it is easy to plug in the extension query
+-- function (e.g. `has_GL_EXT_direct_state_access`) there.
+branchExt :: (FlextGL -> Bool) -> FlextGLM a -> FlextGLM a -> FlextGLM a
+branchExt test action other_action = do
+    gl <- askGL
+    if test gl then action else other_action
+{-# INLINE branchExt #-}
 
-mglGenFramebuffer :: IO GLuint
-mglGenFramebuffer = alloca $ \x_ptr -> glGenFramebuffers 1 x_ptr *> peek x_ptr
+mglDeleteBuffer :: GLuint -> FlextGLM ()
+mglDeleteBuffer x = do
+    gl <- askGL
+    liftIO $ with x $ \x_ptr -> glDeleteBuffers 1 x_ptr gl
 
-mglDeleteFramebuffer :: GLuint -> IO ()
-mglDeleteFramebuffer x = with x $ \x_ptr -> glDeleteFramebuffers 1 x_ptr
+mglDeleteVertexArray :: GLuint -> FlextGLM ()
+mglDeleteVertexArray x = do
+    gl <- askGL
+    liftIO $ with x $ \x_ptr -> glDeleteVertexArrays 1 x_ptr gl
 
-withBoundDrawFramebuffer :: GLuint -> IO a -> IO a
+mglGenBuffer :: FlextGLM GLuint
+mglGenBuffer = do
+    gl <- askGL
+    liftIO $ alloca $ \x_ptr -> glGenBuffers 1 x_ptr gl *> peek x_ptr
+
+mglGenVertexArray :: FlextGLM GLuint
+mglGenVertexArray = do
+    gl <- askGL
+    liftIO $ alloca $ \x_ptr -> glGenVertexArrays 1 x_ptr gl *> peek x_ptr
+
+mglGenFramebuffer :: FlextGLM GLuint
+mglGenFramebuffer = do
+    gl <- askGL
+    liftIO $ alloca $ \x_ptr -> glGenFramebuffers 1 x_ptr gl *> peek x_ptr
+
+mglDeleteFramebuffer :: GLuint -> FlextGLM ()
+mglDeleteFramebuffer x = do
+    gl <- askGL
+    liftIO $ with x $ \x_ptr -> glDeleteFramebuffers 1 x_ptr gl
+
+withBoundDrawFramebuffer :: GLuint -> FlextGLM a -> FlextGLM a
 withBoundDrawFramebuffer x action = do
     old <- gi gl_DRAW_FRAMEBUFFER_BINDING
-    finally (glBindFramebuffer gl_DRAW_FRAMEBUFFER x *> action)
-            (glBindFramebuffer gl_DRAW_FRAMEBUFFER old)
+    finally (fgl (glBindFramebuffer gl_DRAW_FRAMEBUFFER x) *> action)
+            (fgl $ glBindFramebuffer gl_DRAW_FRAMEBUFFER old)
 
-withBoundProgram :: GLuint -> IO a -> IO a
+withBoundProgram :: GLuint -> FlextGLM a -> FlextGLM a
 withBoundProgram program action = do
-    old <-
-        alloca $ \x_ptr -> glGetIntegerv gl_CURRENT_PROGRAM x_ptr *> peek x_ptr
-    finally (glUseProgram program *> action)
-            (glUseProgram $ fromIntegral old)
+    old <- gi gl_CURRENT_PROGRAM
+    finally (fgl (glUseProgram program) *> action)
+            (fgl $ glUseProgram $ fromIntegral old)
 
-setBoundProgram :: GLuint -> IO ()
-setBoundProgram = glUseProgram
+setBoundProgram :: GLuint -> FlextGLM ()
+setBoundProgram = fgl . glUseProgram
 
-withBoundBuffer :: GLuint -> IO a -> IO a
+withBoundBuffer :: GLuint -> FlextGLM a -> FlextGLM a
 withBoundBuffer buf action = do
-    old <-
-        alloca $ \x_ptr -> glGetIntegerv gl_ARRAY_BUFFER_BINDING x_ptr *>
-                           peek x_ptr
-    finally (glBindBuffer gl_ARRAY_BUFFER buf *> action)
-            (glBindBuffer gl_ARRAY_BUFFER $ fromIntegral old)
+    old <- gi gl_ARRAY_BUFFER_BINDING
+    finally (fgl (glBindBuffer gl_ARRAY_BUFFER buf) *> action)
+            (fgl $ glBindBuffer gl_ARRAY_BUFFER $ fromIntegral old)
 
-setBoundElementBuffer :: GLuint -> IO ()
-setBoundElementBuffer =
-    glBindBuffer gl_ELEMENT_ARRAY_BUFFER
+setBoundElementBuffer :: GLuint -> FlextGLM ()
+setBoundElementBuffer = fgl . glBindBuffer gl_ELEMENT_ARRAY_BUFFER
 
-withBoundElementBuffer :: GLuint -> IO a -> IO a
+withBoundElementBuffer :: GLuint -> FlextGLM a -> FlextGLM a
 withBoundElementBuffer buf action = do
-    old <-
-        alloca $ \x_ptr -> glGetIntegerv gl_ELEMENT_ARRAY_BUFFER_BINDING x_ptr *>
-                           peek x_ptr
-    finally (glBindBuffer gl_ELEMENT_ARRAY_BUFFER buf *> action)
-            (glBindBuffer gl_ELEMENT_ARRAY_BUFFER $ fromIntegral old)
+    old <- gi gl_ELEMENT_ARRAY_BUFFER_BINDING
+    finally (fgl (glBindBuffer gl_ELEMENT_ARRAY_BUFFER buf) *> action)
+            (fgl $ glBindBuffer gl_ELEMENT_ARRAY_BUFFER $ fromIntegral old)
 
-withBoundPixelUnpackBuffer :: GLuint -> IO a -> IO a
+withBoundPixelUnpackBuffer :: GLuint -> FlextGLM a -> FlextGLM a
 withBoundPixelUnpackBuffer buf action = do
-    old <-
-        alloca $ \x_ptr -> glGetIntegerv gl_PIXEL_UNPACK_BUFFER_BINDING x_ptr *>
-                           peek x_ptr
-    finally (glBindBuffer gl_PIXEL_UNPACK_BUFFER buf *> action)
-            (glBindBuffer gl_PIXEL_UNPACK_BUFFER $ fromIntegral old)
+    old <- gi gl_PIXEL_UNPACK_BUFFER_BINDING
+    finally (fgl (glBindBuffer gl_PIXEL_UNPACK_BUFFER buf) *> action)
+            (fgl $ glBindBuffer gl_PIXEL_UNPACK_BUFFER $ fromIntegral old)
 
-withBoundVAO :: GLuint -> IO a -> IO a
+withBoundVAO :: GLuint -> FlextGLM a -> FlextGLM a
 withBoundVAO vao action = do
-    old <-
-        alloca $ \x_ptr -> glGetIntegerv gl_VERTEX_ARRAY_BINDING x_ptr *>
-                           peek x_ptr
-    finally (glBindVertexArray vao *> action)
-            (glBindVertexArray $ fromIntegral old)
+    old <- gi gl_VERTEX_ARRAY_BINDING
+    finally (fgl (glBindVertexArray vao) *> action)
+            (fgl $ glBindVertexArray $ fromIntegral old)
 
 mglVertexArrayVertexAttribDivisor ::
-    GLuint -> GLuint -> GLuint -> IO ()
-mglVertexArrayVertexAttribDivisor vaobj index divisor = mask_ $
-    withBoundVAO vaobj $
-        glVertexAttribDivisor index divisor
+    GLuint -> GLuint -> GLuint -> FlextGLM ()
+mglVertexArrayVertexAttribDivisor vaobj index divisor =
+    withBoundVAO vaobj $ fgl $ glVertexAttribDivisor index divisor
 
 mglVertexArrayVertexAttribOffsetAndEnable ::
         GLuint -> GLuint -> GLuint -> GLint -> GLenum
-     -> GLboolean -> GLsizei -> CPtrdiff -> IO ()
+     -> GLboolean -> GLsizei -> CPtrdiff -> FlextGLM ()
 mglVertexArrayVertexAttribOffsetAndEnable
-    vaobj buffer index size dtype normalized stride (CPtrdiff offset) = mask_ $
+    vaobj buffer index size dtype normalized stride (CPtrdiff offset) =
 
     withBoundVAO vaobj $
         withBoundBuffer buffer $ do
-            glEnableVertexAttribArray index
-            glVertexAttribPointer index size dtype normalized stride
-                                  (intPtrToPtr $ fromIntegral offset)
+            fgl $ glEnableVertexAttribArray index
+            fgl $ glVertexAttribPointer index size dtype normalized stride
+                                        (intPtrToPtr $ fromIntegral offset)
 
 mglVertexArrayVertexAttribIOffsetAndEnable ::
         GLuint -> GLuint -> GLuint -> GLint -> GLenum
-     -> GLsizei -> GLintptr -> IO ()
+     -> GLsizei -> GLintptr -> FlextGLM ()
 mglVertexArrayVertexAttribIOffsetAndEnable
     vaobj buffer index size dtype stride offset = mask_ $
 
     withBoundVAO vaobj $
         withBoundBuffer buffer $ do
-            glEnableVertexAttribArray index
-            glVertexAttribIPointer index size dtype stride
-                                   (intPtrToPtr $ fromIntegral offset)
+            fgl $ glEnableVertexAttribArray index
+            fgl $ glVertexAttribIPointer index size dtype stride
+                                         (intPtrToPtr $ fromIntegral offset)
 
 mglNamedBufferData :: GLuint
                    -> GLsizeiptr
                    -> Ptr ()
                    -> GLenum
-                   -> IO ()
+                   -> FlextGLM ()
 mglNamedBufferData buf size ptr usage =
-    whenExt has_GL_EXT_direct_state_access
-        (glNamedBufferDataEXT buf size ptr usage)
-        (withBoundBuffer buf $ glBufferData gl_ARRAY_BUFFER size ptr usage)
+    branchExt has_GL_EXT_direct_state_access
+              (fgl $ glNamedBufferDataEXT buf size ptr usage)
+              (withBoundBuffer buf $ fgl $ glBufferData gl_ARRAY_BUFFER size ptr usage)
 
-mglProgramUniform1ui :: GLuint -> GLint -> GLuint -> IO ()
-mglProgramUniform1ui program loc v1 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniform1ui program loc v1)
-          (withBoundProgram program $ glUniform1ui loc v1)
+mglProgramUniform1ui :: GLuint -> GLint -> GLuint -> FlextGLM ()
+mglProgramUniform1ui =
+    makeProgramUniformFunction
+        (\p l a -> glProgramUniform1ui p l a)
+        (\l a -> glUniform1ui l a)
 
-mglProgramUniform2ui :: GLuint -> GLint -> GLuint -> GLuint -> IO ()
-mglProgramUniform2ui program loc v1 v2 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniform2ui program loc v1 v2)
-          (withBoundProgram program $ glUniform2ui loc v1 v2)
+mglProgramUniform2ui :: GLuint -> GLint -> (GLuint, GLuint) -> FlextGLM ()
+mglProgramUniform2ui =
+    makeProgramUniformFunction
+        (\p l (a, b) -> glProgramUniform2ui p l a b)
+        (\l (a, b) -> glUniform2ui l a b)
 
-mglProgramUniform3ui :: GLuint -> GLint -> GLuint -> GLuint -> GLuint -> IO ()
-mglProgramUniform3ui program loc v1 v2 v3 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniform3ui program loc v1 v2 v3)
-          (withBoundProgram program $ glUniform3ui loc v1 v2 v3)
+mglProgramUniform3ui :: GLuint -> GLint -> (GLuint, GLuint, GLuint) -> FlextGLM ()
+mglProgramUniform3ui =
+    makeProgramUniformFunction
+        (\p l (a, b, c) -> glProgramUniform3ui p l a b c)
+        (\l (a, b, c) -> glUniform3ui l a b c)
 
-mglProgramUniform4ui :: GLuint -> GLint -> GLuint -> GLuint -> GLuint
-                     -> GLuint -> IO ()
-mglProgramUniform4ui program loc v1 v2 v3 v4 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniform4ui program loc v1 v2 v3 v4)
-          (withBoundProgram program $ glUniform4ui loc v1 v2 v3 v4)
+mglProgramUniform4ui :: GLuint -> GLint -> (GLuint, GLuint, GLuint, GLuint) -> FlextGLM ()
+mglProgramUniform4ui =
+    makeProgramUniformFunction
+        (\p l (a, b, c, d) -> glProgramUniform4ui p l a b c d)
+        (\l (a, b, c, d) -> glUniform4ui l a b c d)
 
-mglProgramUniform1i :: GLuint -> GLint -> GLint -> IO ()
-mglProgramUniform1i program loc v1 =
-    whenExt has_GL_ARB_separate_shader_objects (glProgramUniform1i program loc v1)
-          (withBoundProgram program $ glUniform1i loc v1)
+mglProgramUniform1i :: GLuint -> GLint -> GLint -> FlextGLM ()
+mglProgramUniform1i =
+    makeProgramUniformFunction
+        (\p l a -> glProgramUniform1i p l a)
+        (\l a -> glUniform1i l a)
 
-mglProgramUniform2i :: GLuint -> GLint -> GLint -> GLint -> IO ()
-mglProgramUniform2i program loc v1 v2 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniform2i program loc v1 v2)
-          (withBoundProgram program $ glUniform2i loc v1 v2)
+mglProgramUniform2i :: GLuint -> GLint -> (GLint, GLint) -> FlextGLM ()
+mglProgramUniform2i =
+    makeProgramUniformFunction
+        (\p l (a, b) -> glProgramUniform2i p l a b)
+        (\l (a, b) -> glUniform2i l a b)
 
-mglProgramUniform3i :: GLuint -> GLint -> GLint -> GLint -> GLint -> IO ()
-mglProgramUniform3i program loc v1 v2 v3 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniform3i program loc v1 v2 v3)
-          (withBoundProgram program $ glUniform3i loc v1 v2 v3)
+mglProgramUniform3i :: GLuint -> GLint -> (GLint, GLint, GLint) -> FlextGLM ()
+mglProgramUniform3i =
+    makeProgramUniformFunction
+        (\p l (a, b, c) -> glProgramUniform3i p l a b c)
+        (\l (a, b, c) -> glUniform3i l a b c)
 
-mglProgramUniform4i :: GLuint -> GLint -> GLint -> GLint -> GLint
-                     -> GLint -> IO ()
-mglProgramUniform4i program loc v1 v2 v3 v4 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniform4i program loc v1 v2 v3 v4)
-          (withBoundProgram program $ glUniform4i loc v1 v2 v3 v4)
+mglProgramUniform4i :: GLuint -> GLint -> (GLint, GLint, GLint, GLint) -> FlextGLM ()
+mglProgramUniform4i =
+    makeProgramUniformFunction
+        (\p l (a, b, c, d) -> glProgramUniform4i p l a b c d)
+        (\l (a, b, c, d) -> glUniform4i l a b c d)
 
-mglProgramUniform1f :: GLuint -> GLint -> GLfloat -> IO ()
-mglProgramUniform1f program loc v1 =
-    whenExt has_GL_ARB_separate_shader_objects
-        (glProgramUniform1f program loc v1)
-        (withBoundProgram program $ glUniform1f loc v1)
+mglProgramUniform1f :: GLuint -> GLint -> GLfloat -> FlextGLM ()
+mglProgramUniform1f =
+    makeProgramUniformFunction
+        (\p l a -> glProgramUniform1f p l a)
+        (\l a -> glUniform1f l a)
 
-mglProgramUniform2f :: GLuint -> GLint -> GLfloat -> GLfloat -> IO ()
-mglProgramUniform2f program loc v1 v2 =
-    whenExt has_GL_ARB_separate_shader_objects
-        (glProgramUniform2f program loc v1 v2)
-        (withBoundProgram program $ glUniform2f loc v1 v2)
+mglProgramUniform2f :: GLuint -> GLint -> (GLfloat, GLfloat) -> FlextGLM ()
+mglProgramUniform2f =
+    makeProgramUniformFunction
+        (\p l (a, b) -> glProgramUniform2f p l a b)
+        (\l (a, b) -> glUniform2f l a b)
 
-mglProgramUniform3f :: GLuint -> GLint -> GLfloat -> GLfloat -> GLfloat -> IO ()
-mglProgramUniform3f program loc v1 v2 v3 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniform3f program loc v1 v2 v3)
-          (withBoundProgram program $ glUniform3f loc v1 v2 v3)
+mglProgramUniform3f :: GLuint -> GLint -> (GLfloat, GLfloat, GLfloat) -> FlextGLM ()
+mglProgramUniform3f =
+    makeProgramUniformFunction
+        (\p l (a, b, c) -> glProgramUniform3f p l a b c)
+        (\l (a, b, c) -> glUniform3f l a b c)
 
-mglProgramUniform4f :: GLuint -> GLint
-                    -> GLfloat -> GLfloat -> GLfloat -> GLfloat -> IO ()
-mglProgramUniform4f program loc v1 v2 v3 v4 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniform4f program loc v1 v2 v3 v4)
-          (withBoundProgram program $ glUniform4f loc v1 v2 v3 v4)
+mglProgramUniform4f :: GLuint -> GLint -> (GLfloat, GLfloat, GLfloat, GLfloat) -> FlextGLM ()
+mglProgramUniform4f =
+    makeProgramUniformFunction
+        (\p l (a, b, c, d) -> glProgramUniform4f p l a b c d)
+        (\l (a, b, c, d) -> glUniform4f l a b c d)
 
-mglProgramUniformMatrix4fv :: GLuint -> GLint
-                           -> GLsizei -> GLboolean -> Ptr GLfloat -> IO ()
-mglProgramUniformMatrix4fv program loc count transpose m44 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniformMatrix4fv program loc count transpose m44)
-          (withBoundProgram program $
-              glUniformMatrix4fv loc count transpose m44)
+mglProgramUniformMatrix4fv :: GLuint -> GLint -> (GLsizei, GLboolean, Ptr GLfloat) -> FlextGLM ()
+mglProgramUniformMatrix4fv =
+    makeProgramUniformFunction
+        (\p l (a, b, c) -> glProgramUniformMatrix4fv p l a b c)
+        (\l (a, b, c) -> glUniformMatrix4fv l a b c)
 
-mglProgramUniformMatrix3fv :: GLuint -> GLint
-                           -> GLsizei -> GLboolean -> Ptr GLfloat -> IO ()
-mglProgramUniformMatrix3fv program loc count transpose m33 =
-    whenExt has_GL_ARB_separate_shader_objects
-          (glProgramUniformMatrix3fv program loc count transpose m33)
-          (withBoundProgram program $
-              glUniformMatrix3fv loc count transpose m33)
+mglProgramUniformMatrix3fv :: GLuint -> GLint -> (GLsizei, GLboolean, Ptr GLfloat) -> FlextGLM ()
+mglProgramUniformMatrix3fv =
+    makeProgramUniformFunction
+        (\p l (a, b, c) -> glProgramUniformMatrix3fv p l a b c)
+        (\l (a, b, c) -> glUniformMatrix3fv l a b c)
+
+makeProgramUniformFunction :: (GLuint -> GLint -> a -> FlextGL -> IO ())
+                           -> (GLint -> a -> FlextGL -> IO ())
+                           -> GLuint -> GLint -> a -> FlextGLM ()
+makeProgramUniformFunction fun1 fun2 program loc args =
+    branchExt has_GL_ARB_separate_shader_objects
+              (fgl $ fun1 program loc args)
+              (withBoundProgram program $ fgl $ fun2 loc args)
+{-# INLINE makeProgramUniformFunction #-}
 
 mglMapNamedBufferRange :: GLuint -> GLintptr
-                       -> GLsizeiptr -> GLbitfield -> IO (Ptr ())
+                       -> GLsizeiptr -> GLbitfield -> FlextGLM (Ptr ())
 mglMapNamedBufferRange buffer offset length access =
     withBoundBuffer buffer $
-        glMapBufferRange gl_ARRAY_BUFFER offset length access
+        fgl $ glMapBufferRange gl_ARRAY_BUFFER offset length access
 
-mglUnmapNamedBuffer :: GLuint -> IO GLboolean
+mglUnmapNamedBuffer :: GLuint -> FlextGLM GLboolean
 mglUnmapNamedBuffer buffer =
-    withBoundBuffer buffer $ glUnmapBuffer gl_ARRAY_BUFFER
+    withBoundBuffer buffer $ fgl $ glUnmapBuffer gl_ARRAY_BUFFER
 
 mglNamedCopyBufferSubData :: GLuint -> GLuint
-                          -> GLintptr -> GLintptr -> GLsizeiptr -> IO ()
+                          -> GLintptr -> GLintptr -> GLsizeiptr -> FlextGLM ()
 mglNamedCopyBufferSubData src dst src_offset dst_offset num_bytes =
     withBoundElementBuffer src $
         withBoundBuffer dst $
-            glCopyBufferSubData gl_ELEMENT_ARRAY_BUFFER
-                                gl_ARRAY_BUFFER
-                                src_offset
-                                dst_offset
-                                num_bytes
+            fgl $ glCopyBufferSubData gl_ELEMENT_ARRAY_BUFFER
+                                      gl_ARRAY_BUFFER
+                                      src_offset
+                                      dst_offset
+                                      num_bytes
 
 -- | Shortcut to `glGetIntegerv` when you query only one integer.
-gi :: GLenum -> IO GLuint
-gi x = alloca $ \get_ptr -> glGetIntegerv x (castPtr get_ptr) *>
-                            peek get_ptr
+gi :: GLenum -> FlextGLM GLuint
+gi x = do
+    gl <- askGL
+    liftIO $ alloca $ \get_ptr -> glGetIntegerv x (castPtr get_ptr) gl *>
+                                  peek get_ptr
 
-gf :: GLenum -> IO GLfloat
-gf x = alloca $ \get_ptr -> glGetFloatv x (castPtr get_ptr) *> peek get_ptr
+gf :: GLenum -> FlextGLM GLfloat
+gf x = do
+    gl <- askGL
+    liftIO $ alloca $ \get_ptr -> glGetFloatv x (castPtr get_ptr) gl *>
+                                  peek get_ptr
 
