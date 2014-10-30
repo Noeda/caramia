@@ -44,7 +44,6 @@ import Graphics.Caramia.Buffer.Internal
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 
 import qualified Data.Vector.Storable as V
 import qualified Data.Set as S

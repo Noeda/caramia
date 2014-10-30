@@ -6,6 +6,8 @@
 -- At the moment, the only place where these objects are useful in Caramia is
 -- unsynchronized buffer mapping.
 --
+-- <https://www.opengl.org/wiki/Sync_Object>
+--
 
 {-# LANGUAGE NoImplicitPrelude, DeriveDataTypeable, MultiWayIf #-}
 
@@ -21,7 +23,6 @@ module Graphics.Caramia.Sync
 
 import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
 import Control.Monad.Catch

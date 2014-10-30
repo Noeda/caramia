@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude, GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, StandaloneDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Graphics.Caramia.Context.Internal
     ( Context(..)
@@ -26,9 +27,10 @@ newtype Context s a = Context (FlextGLM a)
                                , MonadThrow
                                , MonadMask
                                , MonadCatch
-                               , MonadReader FlextGL
-                               -- ^ This allows you to use an escape hatch and run any OpenGL function.
                                , Typeable )
+
+-- | This allows you to use an escape hatch and run any OpenGL function.
+deriving instance MonadReader FlextGL (Context s)
 
 newtype ContextState s = ContextState FlextGL
 

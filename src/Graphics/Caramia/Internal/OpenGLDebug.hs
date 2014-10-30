@@ -11,7 +11,6 @@ module Graphics.Caramia.Internal.OpenGLDebug
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Graphics.Caramia.Internal.ContextLocalData
 import Control.Monad.Trans.State.Strict

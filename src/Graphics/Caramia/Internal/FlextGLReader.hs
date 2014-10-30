@@ -9,7 +9,8 @@
 
 module Graphics.Caramia.Internal.FlextGLReader
     (
-      FlextGL()
+      askGL
+    , HasFlextGL(..)
     , glCullFace
     , glFrontFace
     , glHint
@@ -709,67 +710,77 @@ import Graphics.Caramia.Internal.FlextGLTypes
 import Control.Monad.Reader
 import Foreign.Ptr
 
-glCullFace :: (MonadIO m, MonadReader FlextGL m) =>
+class HasFlextGL e where
+    scope :: e -> FlextGL
+
+instance HasFlextGL FlextGL where
+    scope = id
+
+askGL :: (MonadReader e m, HasFlextGL e, Functor m) => m FlextGL
+askGL = scope `fmap` ask
+{-# INLINE askGL #-}
+
+glCullFace :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glCullFace
     a0
-    = ask >>= \fgl -> (liftIO $ rglCullFace fgl
+    = askGL >>= \fgl -> (liftIO $ rglCullFace fgl
 
     a0
     )
-glFrontFace :: (MonadIO m, MonadReader FlextGL m) =>
+glFrontFace :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glFrontFace
     a0
-    = ask >>= \fgl -> (liftIO $ rglFrontFace fgl
+    = askGL >>= \fgl -> (liftIO $ rglFrontFace fgl
 
     a0
     )
-glHint :: (MonadIO m, MonadReader FlextGL m) =>
+glHint :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     m ( () )
 glHint
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglHint fgl
+    = askGL >>= \fgl -> (liftIO $ rglHint fgl
 
     a0
     a1
     )
-glLineWidth :: (MonadIO m, MonadReader FlextGL m) =>
+glLineWidth :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLfloat ->
     m ( () )
 glLineWidth
     a0
-    = ask >>= \fgl -> (liftIO $ rglLineWidth fgl
+    = askGL >>= \fgl -> (liftIO $ rglLineWidth fgl
 
     a0
     )
-glPointSize :: (MonadIO m, MonadReader FlextGL m) =>
+glPointSize :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLfloat ->
     m ( () )
 glPointSize
     a0
-    = ask >>= \fgl -> (liftIO $ rglPointSize fgl
+    = askGL >>= \fgl -> (liftIO $ rglPointSize fgl
 
     a0
     )
-glPolygonMode :: (MonadIO m, MonadReader FlextGL m) =>
+glPolygonMode :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     m ( () )
 glPolygonMode
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglPolygonMode fgl
+    = askGL >>= \fgl -> (liftIO $ rglPolygonMode fgl
 
     a0
     a1
     )
-glScissor :: (MonadIO m, MonadReader FlextGL m) =>
+glScissor :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLint ->
     GLsizei ->
@@ -780,14 +791,14 @@ glScissor
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglScissor fgl
+    = askGL >>= \fgl -> (liftIO $ rglScissor fgl
 
     a0
     a1
     a2
     a3
     )
-glTexParameterf :: (MonadIO m, MonadReader FlextGL m) =>
+glTexParameterf :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLfloat ->
@@ -796,13 +807,13 @@ glTexParameterf
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglTexParameterf fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexParameterf fgl
 
     a0
     a1
     a2
     )
-glTexParameterfv :: (MonadIO m, MonadReader FlextGL m) =>
+glTexParameterfv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLfloat) ->
@@ -811,13 +822,13 @@ glTexParameterfv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglTexParameterfv fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexParameterfv fgl
 
     a0
     a1
     a2
     )
-glTexParameteri :: (MonadIO m, MonadReader FlextGL m) =>
+glTexParameteri :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -826,13 +837,13 @@ glTexParameteri
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglTexParameteri fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexParameteri fgl
 
     a0
     a1
     a2
     )
-glTexParameteriv :: (MonadIO m, MonadReader FlextGL m) =>
+glTexParameteriv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLint) ->
@@ -841,13 +852,13 @@ glTexParameteriv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglTexParameteriv fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexParameteriv fgl
 
     a0
     a1
     a2
     )
-glTexImage1D :: (MonadIO m, MonadReader FlextGL m) =>
+glTexImage1D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -866,7 +877,7 @@ glTexImage1D
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglTexImage1D fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexImage1D fgl
 
     a0
     a1
@@ -877,7 +888,7 @@ glTexImage1D
     a6
     a7
     )
-glTexImage2D :: (MonadIO m, MonadReader FlextGL m) =>
+glTexImage2D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -898,7 +909,7 @@ glTexImage2D
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglTexImage2D fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexImage2D fgl
 
     a0
     a1
@@ -910,25 +921,25 @@ glTexImage2D
     a7
     a8
     )
-glDrawBuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glDrawBuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glDrawBuffer
     a0
-    = ask >>= \fgl -> (liftIO $ rglDrawBuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglDrawBuffer fgl
 
     a0
     )
-glClear :: (MonadIO m, MonadReader FlextGL m) =>
+glClear :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLbitfield ->
     m ( () )
 glClear
     a0
-    = ask >>= \fgl -> (liftIO $ rglClear fgl
+    = askGL >>= \fgl -> (liftIO $ rglClear fgl
 
     a0
     )
-glClearColor :: (MonadIO m, MonadReader FlextGL m) =>
+glClearColor :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLfloat ->
     GLfloat ->
     GLfloat ->
@@ -939,41 +950,41 @@ glClearColor
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglClearColor fgl
+    = askGL >>= \fgl -> (liftIO $ rglClearColor fgl
 
     a0
     a1
     a2
     a3
     )
-glClearStencil :: (MonadIO m, MonadReader FlextGL m) =>
+glClearStencil :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     m ( () )
 glClearStencil
     a0
-    = ask >>= \fgl -> (liftIO $ rglClearStencil fgl
+    = askGL >>= \fgl -> (liftIO $ rglClearStencil fgl
 
     a0
     )
-glClearDepth :: (MonadIO m, MonadReader FlextGL m) =>
+glClearDepth :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLdouble ->
     m ( () )
 glClearDepth
     a0
-    = ask >>= \fgl -> (liftIO $ rglClearDepth fgl
+    = askGL >>= \fgl -> (liftIO $ rglClearDepth fgl
 
     a0
     )
-glStencilMask :: (MonadIO m, MonadReader FlextGL m) =>
+glStencilMask :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glStencilMask
     a0
-    = ask >>= \fgl -> (liftIO $ rglStencilMask fgl
+    = askGL >>= \fgl -> (liftIO $ rglStencilMask fgl
 
     a0
     )
-glColorMask :: (MonadIO m, MonadReader FlextGL m) =>
+glColorMask :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLboolean ->
     GLboolean ->
     GLboolean ->
@@ -984,74 +995,74 @@ glColorMask
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglColorMask fgl
+    = askGL >>= \fgl -> (liftIO $ rglColorMask fgl
 
     a0
     a1
     a2
     a3
     )
-glDepthMask :: (MonadIO m, MonadReader FlextGL m) =>
+glDepthMask :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLboolean ->
     m ( () )
 glDepthMask
     a0
-    = ask >>= \fgl -> (liftIO $ rglDepthMask fgl
+    = askGL >>= \fgl -> (liftIO $ rglDepthMask fgl
 
     a0
     )
-glDisable :: (MonadIO m, MonadReader FlextGL m) =>
+glDisable :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glDisable
     a0
-    = ask >>= \fgl -> (liftIO $ rglDisable fgl
+    = askGL >>= \fgl -> (liftIO $ rglDisable fgl
 
     a0
     )
-glEnable :: (MonadIO m, MonadReader FlextGL m) =>
+glEnable :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glEnable
     a0
-    = ask >>= \fgl -> (liftIO $ rglEnable fgl
+    = askGL >>= \fgl -> (liftIO $ rglEnable fgl
 
     a0
     )
-glFinish :: (MonadIO m, MonadReader FlextGL m) =>
+glFinish :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     m ( () )
 glFinish
-    = ask >>= \fgl -> (liftIO $ rglFinish fgl
+    = askGL >>= \fgl -> (liftIO $ rglFinish fgl
 
     )
-glFlush :: (MonadIO m, MonadReader FlextGL m) =>
+glFlush :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     m ( () )
 glFlush
-    = ask >>= \fgl -> (liftIO $ rglFlush fgl
+    = askGL >>= \fgl -> (liftIO $ rglFlush fgl
 
     )
-glBlendFunc :: (MonadIO m, MonadReader FlextGL m) =>
+glBlendFunc :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     m ( () )
 glBlendFunc
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglBlendFunc fgl
+    = askGL >>= \fgl -> (liftIO $ rglBlendFunc fgl
 
     a0
     a1
     )
-glLogicOp :: (MonadIO m, MonadReader FlextGL m) =>
+glLogicOp :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glLogicOp
     a0
-    = ask >>= \fgl -> (liftIO $ rglLogicOp fgl
+    = askGL >>= \fgl -> (liftIO $ rglLogicOp fgl
 
     a0
     )
-glStencilFunc :: (MonadIO m, MonadReader FlextGL m) =>
+glStencilFunc :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLuint ->
@@ -1060,13 +1071,13 @@ glStencilFunc
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglStencilFunc fgl
+    = askGL >>= \fgl -> (liftIO $ rglStencilFunc fgl
 
     a0
     a1
     a2
     )
-glStencilOp :: (MonadIO m, MonadReader FlextGL m) =>
+glStencilOp :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -1075,55 +1086,55 @@ glStencilOp
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglStencilOp fgl
+    = askGL >>= \fgl -> (liftIO $ rglStencilOp fgl
 
     a0
     a1
     a2
     )
-glDepthFunc :: (MonadIO m, MonadReader FlextGL m) =>
+glDepthFunc :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glDepthFunc
     a0
-    = ask >>= \fgl -> (liftIO $ rglDepthFunc fgl
+    = askGL >>= \fgl -> (liftIO $ rglDepthFunc fgl
 
     a0
     )
-glPixelStoref :: (MonadIO m, MonadReader FlextGL m) =>
+glPixelStoref :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLfloat ->
     m ( () )
 glPixelStoref
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglPixelStoref fgl
+    = askGL >>= \fgl -> (liftIO $ rglPixelStoref fgl
 
     a0
     a1
     )
-glPixelStorei :: (MonadIO m, MonadReader FlextGL m) =>
+glPixelStorei :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     m ( () )
 glPixelStorei
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglPixelStorei fgl
+    = askGL >>= \fgl -> (liftIO $ rglPixelStorei fgl
 
     a0
     a1
     )
-glReadBuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glReadBuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glReadBuffer
     a0
-    = ask >>= \fgl -> (liftIO $ rglReadBuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglReadBuffer fgl
 
     a0
     )
-glReadPixels :: (MonadIO m, MonadReader FlextGL m) =>
+glReadPixels :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLint ->
     GLsizei ->
@@ -1140,7 +1151,7 @@ glReadPixels
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglReadPixels fgl
+    = askGL >>= \fgl -> (liftIO $ rglReadPixels fgl
 
     a0
     a1
@@ -1150,70 +1161,70 @@ glReadPixels
     a5
     a6
     )
-glGetBooleanv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetBooleanv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLboolean) ->
     m ( () )
 glGetBooleanv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetBooleanv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetBooleanv fgl
 
     a0
     a1
     )
-glGetDoublev :: (MonadIO m, MonadReader FlextGL m) =>
+glGetDoublev :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLdouble) ->
     m ( () )
 glGetDoublev
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetDoublev fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetDoublev fgl
 
     a0
     a1
     )
-glGetError :: (MonadIO m, MonadReader FlextGL m) =>
+glGetError :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     m ( GLenum )
 glGetError
-    = ask >>= \fgl -> (liftIO $ rglGetError fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetError fgl
 
     )
-glGetFloatv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetFloatv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLfloat) ->
     m ( () )
 glGetFloatv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetFloatv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetFloatv fgl
 
     a0
     a1
     )
-glGetIntegerv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetIntegerv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLint) ->
     m ( () )
 glGetIntegerv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetIntegerv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetIntegerv fgl
 
     a0
     a1
     )
-glGetString :: (MonadIO m, MonadReader FlextGL m) =>
+glGetString :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( Ptr (GLubyte) )
 glGetString
     a0
-    = ask >>= \fgl -> (liftIO $ rglGetString fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetString fgl
 
     a0
     )
-glGetTexImage :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTexImage :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLenum ->
@@ -1226,7 +1237,7 @@ glGetTexImage
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetTexImage fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTexImage fgl
 
     a0
     a1
@@ -1234,7 +1245,7 @@ glGetTexImage
     a3
     a4
     )
-glGetTexParameterfv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTexParameterfv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLfloat) ->
@@ -1243,13 +1254,13 @@ glGetTexParameterfv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetTexParameterfv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTexParameterfv fgl
 
     a0
     a1
     a2
     )
-glGetTexParameteriv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTexParameteriv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLint) ->
@@ -1258,13 +1269,13 @@ glGetTexParameteriv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetTexParameteriv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTexParameteriv fgl
 
     a0
     a1
     a2
     )
-glGetTexLevelParameterfv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTexLevelParameterfv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLenum ->
@@ -1275,14 +1286,14 @@ glGetTexLevelParameterfv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetTexLevelParameterfv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTexLevelParameterfv fgl
 
     a0
     a1
     a2
     a3
     )
-glGetTexLevelParameteriv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTexLevelParameteriv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLenum ->
@@ -1293,35 +1304,35 @@ glGetTexLevelParameteriv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetTexLevelParameteriv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTexLevelParameteriv fgl
 
     a0
     a1
     a2
     a3
     )
-glIsEnabled :: (MonadIO m, MonadReader FlextGL m) =>
+glIsEnabled :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( GLboolean )
 glIsEnabled
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsEnabled fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsEnabled fgl
 
     a0
     )
-glDepthRange :: (MonadIO m, MonadReader FlextGL m) =>
+glDepthRange :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLdouble ->
     GLdouble ->
     m ( () )
 glDepthRange
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDepthRange fgl
+    = askGL >>= \fgl -> (liftIO $ rglDepthRange fgl
 
     a0
     a1
     )
-glViewport :: (MonadIO m, MonadReader FlextGL m) =>
+glViewport :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLint ->
     GLsizei ->
@@ -1332,14 +1343,14 @@ glViewport
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglViewport fgl
+    = askGL >>= \fgl -> (liftIO $ rglViewport fgl
 
     a0
     a1
     a2
     a3
     )
-glDrawArrays :: (MonadIO m, MonadReader FlextGL m) =>
+glDrawArrays :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLsizei ->
@@ -1348,13 +1359,13 @@ glDrawArrays
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglDrawArrays fgl
+    = askGL >>= \fgl -> (liftIO $ rglDrawArrays fgl
 
     a0
     a1
     a2
     )
-glDrawElements :: (MonadIO m, MonadReader FlextGL m) =>
+glDrawElements :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     GLenum ->
@@ -1365,26 +1376,26 @@ glDrawElements
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglDrawElements fgl
+    = askGL >>= \fgl -> (liftIO $ rglDrawElements fgl
 
     a0
     a1
     a2
     a3
     )
-glPolygonOffset :: (MonadIO m, MonadReader FlextGL m) =>
+glPolygonOffset :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLfloat ->
     GLfloat ->
     m ( () )
 glPolygonOffset
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglPolygonOffset fgl
+    = askGL >>= \fgl -> (liftIO $ rglPolygonOffset fgl
 
     a0
     a1
     )
-glCopyTexImage1D :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyTexImage1D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLenum ->
@@ -1401,7 +1412,7 @@ glCopyTexImage1D
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglCopyTexImage1D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyTexImage1D fgl
 
     a0
     a1
@@ -1411,7 +1422,7 @@ glCopyTexImage1D
     a5
     a6
     )
-glCopyTexImage2D :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyTexImage2D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLenum ->
@@ -1430,7 +1441,7 @@ glCopyTexImage2D
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglCopyTexImage2D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyTexImage2D fgl
 
     a0
     a1
@@ -1441,7 +1452,7 @@ glCopyTexImage2D
     a6
     a7
     )
-glCopyTexSubImage1D :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyTexSubImage1D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -1456,7 +1467,7 @@ glCopyTexSubImage1D
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglCopyTexSubImage1D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyTexSubImage1D fgl
 
     a0
     a1
@@ -1465,7 +1476,7 @@ glCopyTexSubImage1D
     a4
     a5
     )
-glCopyTexSubImage2D :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyTexSubImage2D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -1484,7 +1495,7 @@ glCopyTexSubImage2D
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglCopyTexSubImage2D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyTexSubImage2D fgl
 
     a0
     a1
@@ -1495,7 +1506,7 @@ glCopyTexSubImage2D
     a6
     a7
     )
-glTexSubImage1D :: (MonadIO m, MonadReader FlextGL m) =>
+glTexSubImage1D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -1512,7 +1523,7 @@ glTexSubImage1D
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglTexSubImage1D fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexSubImage1D fgl
 
     a0
     a1
@@ -1522,7 +1533,7 @@ glTexSubImage1D
     a5
     a6
     )
-glTexSubImage2D :: (MonadIO m, MonadReader FlextGL m) =>
+glTexSubImage2D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -1543,7 +1554,7 @@ glTexSubImage2D
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglTexSubImage2D fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexSubImage2D fgl
 
     a0
     a1
@@ -1555,52 +1566,52 @@ glTexSubImage2D
     a7
     a8
     )
-glBindTexture :: (MonadIO m, MonadReader FlextGL m) =>
+glBindTexture :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glBindTexture
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglBindTexture fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindTexture fgl
 
     a0
     a1
     )
-glDeleteTextures :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteTextures :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glDeleteTextures
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDeleteTextures fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteTextures fgl
 
     a0
     a1
     )
-glGenTextures :: (MonadIO m, MonadReader FlextGL m) =>
+glGenTextures :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glGenTextures
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGenTextures fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenTextures fgl
 
     a0
     a1
     )
-glIsTexture :: (MonadIO m, MonadReader FlextGL m) =>
+glIsTexture :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glIsTexture
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsTexture fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsTexture fgl
 
     a0
     )
-glDrawRangeElements :: (MonadIO m, MonadReader FlextGL m) =>
+glDrawRangeElements :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     GLuint ->
@@ -1615,7 +1626,7 @@ glDrawRangeElements
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglDrawRangeElements fgl
+    = askGL >>= \fgl -> (liftIO $ rglDrawRangeElements fgl
 
     a0
     a1
@@ -1624,7 +1635,7 @@ glDrawRangeElements
     a4
     a5
     )
-glTexImage3D :: (MonadIO m, MonadReader FlextGL m) =>
+glTexImage3D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -1647,7 +1658,7 @@ glTexImage3D
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglTexImage3D fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexImage3D fgl
 
     a0
     a1
@@ -1660,7 +1671,7 @@ glTexImage3D
     a8
     a9
     )
-glTexSubImage3D :: (MonadIO m, MonadReader FlextGL m) =>
+glTexSubImage3D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -1685,7 +1696,7 @@ glTexSubImage3D
     a8
     a9
     a10
-    = ask >>= \fgl -> (liftIO $ rglTexSubImage3D fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexSubImage3D fgl
 
     a0
     a1
@@ -1699,7 +1710,7 @@ glTexSubImage3D
     a9
     a10
     )
-glCopyTexSubImage3D :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyTexSubImage3D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -1720,7 +1731,7 @@ glCopyTexSubImage3D
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglCopyTexSubImage3D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyTexSubImage3D fgl
 
     a0
     a1
@@ -1732,28 +1743,28 @@ glCopyTexSubImage3D
     a7
     a8
     )
-glActiveTexture :: (MonadIO m, MonadReader FlextGL m) =>
+glActiveTexture :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glActiveTexture
     a0
-    = ask >>= \fgl -> (liftIO $ rglActiveTexture fgl
+    = askGL >>= \fgl -> (liftIO $ rglActiveTexture fgl
 
     a0
     )
-glSampleCoverage :: (MonadIO m, MonadReader FlextGL m) =>
+glSampleCoverage :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLfloat ->
     GLboolean ->
     m ( () )
 glSampleCoverage
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglSampleCoverage fgl
+    = askGL >>= \fgl -> (liftIO $ rglSampleCoverage fgl
 
     a0
     a1
     )
-glCompressedTexImage3D :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTexImage3D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLenum ->
@@ -1774,7 +1785,7 @@ glCompressedTexImage3D
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglCompressedTexImage3D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTexImage3D fgl
 
     a0
     a1
@@ -1786,7 +1797,7 @@ glCompressedTexImage3D
     a7
     a8
     )
-glCompressedTexImage2D :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTexImage2D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLenum ->
@@ -1805,7 +1816,7 @@ glCompressedTexImage2D
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglCompressedTexImage2D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTexImage2D fgl
 
     a0
     a1
@@ -1816,7 +1827,7 @@ glCompressedTexImage2D
     a6
     a7
     )
-glCompressedTexImage1D :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTexImage1D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLenum ->
@@ -1833,7 +1844,7 @@ glCompressedTexImage1D
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglCompressedTexImage1D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTexImage1D fgl
 
     a0
     a1
@@ -1843,7 +1854,7 @@ glCompressedTexImage1D
     a5
     a6
     )
-glCompressedTexSubImage3D :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTexSubImage3D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -1868,7 +1879,7 @@ glCompressedTexSubImage3D
     a8
     a9
     a10
-    = ask >>= \fgl -> (liftIO $ rglCompressedTexSubImage3D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTexSubImage3D fgl
 
     a0
     a1
@@ -1882,7 +1893,7 @@ glCompressedTexSubImage3D
     a9
     a10
     )
-glCompressedTexSubImage2D :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTexSubImage2D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -1903,7 +1914,7 @@ glCompressedTexSubImage2D
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglCompressedTexSubImage2D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTexSubImage2D fgl
 
     a0
     a1
@@ -1915,7 +1926,7 @@ glCompressedTexSubImage2D
     a7
     a8
     )
-glCompressedTexSubImage1D :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTexSubImage1D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLint ->
@@ -1932,7 +1943,7 @@ glCompressedTexSubImage1D
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglCompressedTexSubImage1D fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTexSubImage1D fgl
 
     a0
     a1
@@ -1942,7 +1953,7 @@ glCompressedTexSubImage1D
     a5
     a6
     )
-glGetCompressedTexImage :: (MonadIO m, MonadReader FlextGL m) =>
+glGetCompressedTexImage :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     Ptr () ->
@@ -1951,13 +1962,13 @@ glGetCompressedTexImage
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetCompressedTexImage fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetCompressedTexImage fgl
 
     a0
     a1
     a2
     )
-glBlendFuncSeparate :: (MonadIO m, MonadReader FlextGL m) =>
+glBlendFuncSeparate :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -1968,14 +1979,14 @@ glBlendFuncSeparate
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglBlendFuncSeparate fgl
+    = askGL >>= \fgl -> (liftIO $ rglBlendFuncSeparate fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiDrawArrays :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiDrawArrays :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLint) ->
     Ptr (GLsizei) ->
@@ -1986,14 +1997,14 @@ glMultiDrawArrays
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiDrawArrays fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiDrawArrays fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiDrawElements :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiDrawElements :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLsizei) ->
     GLenum ->
@@ -2006,7 +2017,7 @@ glMultiDrawElements
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglMultiDrawElements fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiDrawElements fgl
 
     a0
     a1
@@ -2014,55 +2025,55 @@ glMultiDrawElements
     a3
     a4
     )
-glPointParameterf :: (MonadIO m, MonadReader FlextGL m) =>
+glPointParameterf :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLfloat ->
     m ( () )
 glPointParameterf
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglPointParameterf fgl
+    = askGL >>= \fgl -> (liftIO $ rglPointParameterf fgl
 
     a0
     a1
     )
-glPointParameterfv :: (MonadIO m, MonadReader FlextGL m) =>
+glPointParameterfv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLfloat) ->
     m ( () )
 glPointParameterfv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglPointParameterfv fgl
+    = askGL >>= \fgl -> (liftIO $ rglPointParameterfv fgl
 
     a0
     a1
     )
-glPointParameteri :: (MonadIO m, MonadReader FlextGL m) =>
+glPointParameteri :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     m ( () )
 glPointParameteri
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglPointParameteri fgl
+    = askGL >>= \fgl -> (liftIO $ rglPointParameteri fgl
 
     a0
     a1
     )
-glPointParameteriv :: (MonadIO m, MonadReader FlextGL m) =>
+glPointParameteriv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLint) ->
     m ( () )
 glPointParameteriv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglPointParameteriv fgl
+    = askGL >>= \fgl -> (liftIO $ rglPointParameteriv fgl
 
     a0
     a1
     )
-glBlendColor :: (MonadIO m, MonadReader FlextGL m) =>
+glBlendColor :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLfloat ->
     GLfloat ->
     GLfloat ->
@@ -2073,77 +2084,77 @@ glBlendColor
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglBlendColor fgl
+    = askGL >>= \fgl -> (liftIO $ rglBlendColor fgl
 
     a0
     a1
     a2
     a3
     )
-glBlendEquation :: (MonadIO m, MonadReader FlextGL m) =>
+glBlendEquation :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glBlendEquation
     a0
-    = ask >>= \fgl -> (liftIO $ rglBlendEquation fgl
+    = askGL >>= \fgl -> (liftIO $ rglBlendEquation fgl
 
     a0
     )
-glGenQueries :: (MonadIO m, MonadReader FlextGL m) =>
+glGenQueries :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glGenQueries
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGenQueries fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenQueries fgl
 
     a0
     a1
     )
-glDeleteQueries :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteQueries :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glDeleteQueries
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDeleteQueries fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteQueries fgl
 
     a0
     a1
     )
-glIsQuery :: (MonadIO m, MonadReader FlextGL m) =>
+glIsQuery :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glIsQuery
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsQuery fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsQuery fgl
 
     a0
     )
-glBeginQuery :: (MonadIO m, MonadReader FlextGL m) =>
+glBeginQuery :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glBeginQuery
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglBeginQuery fgl
+    = askGL >>= \fgl -> (liftIO $ rglBeginQuery fgl
 
     a0
     a1
     )
-glEndQuery :: (MonadIO m, MonadReader FlextGL m) =>
+glEndQuery :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glEndQuery
     a0
-    = ask >>= \fgl -> (liftIO $ rglEndQuery fgl
+    = askGL >>= \fgl -> (liftIO $ rglEndQuery fgl
 
     a0
     )
-glGetQueryiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetQueryiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLint) ->
@@ -2152,13 +2163,13 @@ glGetQueryiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetQueryiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetQueryiv fgl
 
     a0
     a1
     a2
     )
-glGetQueryObjectiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetQueryObjectiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -2167,13 +2178,13 @@ glGetQueryObjectiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetQueryObjectiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetQueryObjectiv fgl
 
     a0
     a1
     a2
     )
-glGetQueryObjectuiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetQueryObjectuiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLuint) ->
@@ -2182,58 +2193,58 @@ glGetQueryObjectuiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetQueryObjectuiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetQueryObjectuiv fgl
 
     a0
     a1
     a2
     )
-glBindBuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glBindBuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glBindBuffer
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglBindBuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindBuffer fgl
 
     a0
     a1
     )
-glDeleteBuffers :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteBuffers :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glDeleteBuffers
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDeleteBuffers fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteBuffers fgl
 
     a0
     a1
     )
-glGenBuffers :: (MonadIO m, MonadReader FlextGL m) =>
+glGenBuffers :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glGenBuffers
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGenBuffers fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenBuffers fgl
 
     a0
     a1
     )
-glIsBuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glIsBuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glIsBuffer
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsBuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsBuffer fgl
 
     a0
     )
-glBufferData :: (MonadIO m, MonadReader FlextGL m) =>
+glBufferData :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizeiptr ->
     Ptr () ->
@@ -2244,14 +2255,14 @@ glBufferData
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglBufferData fgl
+    = askGL >>= \fgl -> (liftIO $ rglBufferData fgl
 
     a0
     a1
     a2
     a3
     )
-glBufferSubData :: (MonadIO m, MonadReader FlextGL m) =>
+glBufferSubData :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLintptr ->
     GLsizeiptr ->
@@ -2262,14 +2273,14 @@ glBufferSubData
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglBufferSubData fgl
+    = askGL >>= \fgl -> (liftIO $ rglBufferSubData fgl
 
     a0
     a1
     a2
     a3
     )
-glGetBufferSubData :: (MonadIO m, MonadReader FlextGL m) =>
+glGetBufferSubData :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLintptr ->
     GLsizeiptr ->
@@ -2280,35 +2291,35 @@ glGetBufferSubData
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetBufferSubData fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetBufferSubData fgl
 
     a0
     a1
     a2
     a3
     )
-glMapBuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glMapBuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     m ( Ptr () )
 glMapBuffer
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglMapBuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglMapBuffer fgl
 
     a0
     a1
     )
-glUnmapBuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glUnmapBuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( GLboolean )
 glUnmapBuffer
     a0
-    = ask >>= \fgl -> (liftIO $ rglUnmapBuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglUnmapBuffer fgl
 
     a0
     )
-glGetBufferParameteriv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetBufferParameteriv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLint) ->
@@ -2317,13 +2328,13 @@ glGetBufferParameteriv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetBufferParameteriv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetBufferParameteriv fgl
 
     a0
     a1
     a2
     )
-glGetBufferPointerv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetBufferPointerv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (Ptr ()) ->
@@ -2332,37 +2343,37 @@ glGetBufferPointerv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetBufferPointerv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetBufferPointerv fgl
 
     a0
     a1
     a2
     )
-glBlendEquationSeparate :: (MonadIO m, MonadReader FlextGL m) =>
+glBlendEquationSeparate :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     m ( () )
 glBlendEquationSeparate
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglBlendEquationSeparate fgl
+    = askGL >>= \fgl -> (liftIO $ rglBlendEquationSeparate fgl
 
     a0
     a1
     )
-glDrawBuffers :: (MonadIO m, MonadReader FlextGL m) =>
+glDrawBuffers :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLenum) ->
     m ( () )
 glDrawBuffers
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDrawBuffers fgl
+    = askGL >>= \fgl -> (liftIO $ rglDrawBuffers fgl
 
     a0
     a1
     )
-glStencilOpSeparate :: (MonadIO m, MonadReader FlextGL m) =>
+glStencilOpSeparate :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -2373,14 +2384,14 @@ glStencilOpSeparate
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglStencilOpSeparate fgl
+    = askGL >>= \fgl -> (liftIO $ rglStencilOpSeparate fgl
 
     a0
     a1
     a2
     a3
     )
-glStencilFuncSeparate :: (MonadIO m, MonadReader FlextGL m) =>
+glStencilFuncSeparate :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -2391,38 +2402,38 @@ glStencilFuncSeparate
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglStencilFuncSeparate fgl
+    = askGL >>= \fgl -> (liftIO $ rglStencilFuncSeparate fgl
 
     a0
     a1
     a2
     a3
     )
-glStencilMaskSeparate :: (MonadIO m, MonadReader FlextGL m) =>
+glStencilMaskSeparate :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glStencilMaskSeparate
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglStencilMaskSeparate fgl
+    = askGL >>= \fgl -> (liftIO $ rglStencilMaskSeparate fgl
 
     a0
     a1
     )
-glAttachShader :: (MonadIO m, MonadReader FlextGL m) =>
+glAttachShader :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     m ( () )
 glAttachShader
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglAttachShader fgl
+    = askGL >>= \fgl -> (liftIO $ rglAttachShader fgl
 
     a0
     a1
     )
-glBindAttribLocation :: (MonadIO m, MonadReader FlextGL m) =>
+glBindAttribLocation :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     Ptr (GLchar) ->
@@ -2431,85 +2442,85 @@ glBindAttribLocation
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglBindAttribLocation fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindAttribLocation fgl
 
     a0
     a1
     a2
     )
-glCompileShader :: (MonadIO m, MonadReader FlextGL m) =>
+glCompileShader :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glCompileShader
     a0
-    = ask >>= \fgl -> (liftIO $ rglCompileShader fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompileShader fgl
 
     a0
     )
-glCreateProgram :: (MonadIO m, MonadReader FlextGL m) =>
+glCreateProgram :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     m ( GLuint )
 glCreateProgram
-    = ask >>= \fgl -> (liftIO $ rglCreateProgram fgl
+    = askGL >>= \fgl -> (liftIO $ rglCreateProgram fgl
 
     )
-glCreateShader :: (MonadIO m, MonadReader FlextGL m) =>
+glCreateShader :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( GLuint )
 glCreateShader
     a0
-    = ask >>= \fgl -> (liftIO $ rglCreateShader fgl
+    = askGL >>= \fgl -> (liftIO $ rglCreateShader fgl
 
     a0
     )
-glDeleteProgram :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteProgram :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glDeleteProgram
     a0
-    = ask >>= \fgl -> (liftIO $ rglDeleteProgram fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteProgram fgl
 
     a0
     )
-glDeleteShader :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteShader :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glDeleteShader
     a0
-    = ask >>= \fgl -> (liftIO $ rglDeleteShader fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteShader fgl
 
     a0
     )
-glDetachShader :: (MonadIO m, MonadReader FlextGL m) =>
+glDetachShader :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     m ( () )
 glDetachShader
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDetachShader fgl
+    = askGL >>= \fgl -> (liftIO $ rglDetachShader fgl
 
     a0
     a1
     )
-glDisableVertexAttribArray :: (MonadIO m, MonadReader FlextGL m) =>
+glDisableVertexAttribArray :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glDisableVertexAttribArray
     a0
-    = ask >>= \fgl -> (liftIO $ rglDisableVertexAttribArray fgl
+    = askGL >>= \fgl -> (liftIO $ rglDisableVertexAttribArray fgl
 
     a0
     )
-glEnableVertexAttribArray :: (MonadIO m, MonadReader FlextGL m) =>
+glEnableVertexAttribArray :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glEnableVertexAttribArray
     a0
-    = ask >>= \fgl -> (liftIO $ rglEnableVertexAttribArray fgl
+    = askGL >>= \fgl -> (liftIO $ rglEnableVertexAttribArray fgl
 
     a0
     )
-glGetActiveAttrib :: (MonadIO m, MonadReader FlextGL m) =>
+glGetActiveAttrib :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLsizei ->
@@ -2526,7 +2537,7 @@ glGetActiveAttrib
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglGetActiveAttrib fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetActiveAttrib fgl
 
     a0
     a1
@@ -2536,7 +2547,7 @@ glGetActiveAttrib
     a5
     a6
     )
-glGetActiveUniform :: (MonadIO m, MonadReader FlextGL m) =>
+glGetActiveUniform :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLsizei ->
@@ -2553,7 +2564,7 @@ glGetActiveUniform
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglGetActiveUniform fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetActiveUniform fgl
 
     a0
     a1
@@ -2563,7 +2574,7 @@ glGetActiveUniform
     a5
     a6
     )
-glGetAttachedShaders :: (MonadIO m, MonadReader FlextGL m) =>
+glGetAttachedShaders :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (GLsizei) ->
@@ -2574,26 +2585,26 @@ glGetAttachedShaders
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetAttachedShaders fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetAttachedShaders fgl
 
     a0
     a1
     a2
     a3
     )
-glGetAttribLocation :: (MonadIO m, MonadReader FlextGL m) =>
+glGetAttribLocation :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLchar) ->
     m ( GLint )
 glGetAttribLocation
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetAttribLocation fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetAttribLocation fgl
 
     a0
     a1
     )
-glGetProgramiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetProgramiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -2602,13 +2613,13 @@ glGetProgramiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetProgramiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetProgramiv fgl
 
     a0
     a1
     a2
     )
-glGetProgramInfoLog :: (MonadIO m, MonadReader FlextGL m) =>
+glGetProgramInfoLog :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (GLsizei) ->
@@ -2619,14 +2630,14 @@ glGetProgramInfoLog
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetProgramInfoLog fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetProgramInfoLog fgl
 
     a0
     a1
     a2
     a3
     )
-glGetShaderiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetShaderiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -2635,13 +2646,13 @@ glGetShaderiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetShaderiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetShaderiv fgl
 
     a0
     a1
     a2
     )
-glGetShaderInfoLog :: (MonadIO m, MonadReader FlextGL m) =>
+glGetShaderInfoLog :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (GLsizei) ->
@@ -2652,14 +2663,14 @@ glGetShaderInfoLog
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetShaderInfoLog fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetShaderInfoLog fgl
 
     a0
     a1
     a2
     a3
     )
-glGetShaderSource :: (MonadIO m, MonadReader FlextGL m) =>
+glGetShaderSource :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (GLsizei) ->
@@ -2670,26 +2681,26 @@ glGetShaderSource
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetShaderSource fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetShaderSource fgl
 
     a0
     a1
     a2
     a3
     )
-glGetUniformLocation :: (MonadIO m, MonadReader FlextGL m) =>
+glGetUniformLocation :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLchar) ->
     m ( GLint )
 glGetUniformLocation
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetUniformLocation fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetUniformLocation fgl
 
     a0
     a1
     )
-glGetUniformfv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetUniformfv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     Ptr (GLfloat) ->
@@ -2698,13 +2709,13 @@ glGetUniformfv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetUniformfv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetUniformfv fgl
 
     a0
     a1
     a2
     )
-glGetUniformiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetUniformiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     Ptr (GLint) ->
@@ -2713,13 +2724,13 @@ glGetUniformiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetUniformiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetUniformiv fgl
 
     a0
     a1
     a2
     )
-glGetVertexAttribdv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetVertexAttribdv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLdouble) ->
@@ -2728,13 +2739,13 @@ glGetVertexAttribdv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetVertexAttribdv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetVertexAttribdv fgl
 
     a0
     a1
     a2
     )
-glGetVertexAttribfv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetVertexAttribfv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLfloat) ->
@@ -2743,13 +2754,13 @@ glGetVertexAttribfv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetVertexAttribfv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetVertexAttribfv fgl
 
     a0
     a1
     a2
     )
-glGetVertexAttribiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetVertexAttribiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -2758,13 +2769,13 @@ glGetVertexAttribiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetVertexAttribiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetVertexAttribiv fgl
 
     a0
     a1
     a2
     )
-glGetVertexAttribPointerv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetVertexAttribPointerv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (Ptr ()) ->
@@ -2773,40 +2784,40 @@ glGetVertexAttribPointerv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetVertexAttribPointerv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetVertexAttribPointerv fgl
 
     a0
     a1
     a2
     )
-glIsProgram :: (MonadIO m, MonadReader FlextGL m) =>
+glIsProgram :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glIsProgram
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsProgram fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsProgram fgl
 
     a0
     )
-glIsShader :: (MonadIO m, MonadReader FlextGL m) =>
+glIsShader :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glIsShader
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsShader fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsShader fgl
 
     a0
     )
-glLinkProgram :: (MonadIO m, MonadReader FlextGL m) =>
+glLinkProgram :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glLinkProgram
     a0
-    = ask >>= \fgl -> (liftIO $ rglLinkProgram fgl
+    = askGL >>= \fgl -> (liftIO $ rglLinkProgram fgl
 
     a0
     )
-glShaderSource :: (MonadIO m, MonadReader FlextGL m) =>
+glShaderSource :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (Ptr (GLchar)) ->
@@ -2817,35 +2828,35 @@ glShaderSource
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglShaderSource fgl
+    = askGL >>= \fgl -> (liftIO $ rglShaderSource fgl
 
     a0
     a1
     a2
     a3
     )
-glUseProgram :: (MonadIO m, MonadReader FlextGL m) =>
+glUseProgram :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glUseProgram
     a0
-    = ask >>= \fgl -> (liftIO $ rglUseProgram fgl
+    = askGL >>= \fgl -> (liftIO $ rglUseProgram fgl
 
     a0
     )
-glUniform1f :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform1f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLfloat ->
     m ( () )
 glUniform1f
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglUniform1f fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform1f fgl
 
     a0
     a1
     )
-glUniform2f :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform2f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLfloat ->
     GLfloat ->
@@ -2854,13 +2865,13 @@ glUniform2f
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform2f fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform2f fgl
 
     a0
     a1
     a2
     )
-glUniform3f :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform3f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLfloat ->
     GLfloat ->
@@ -2871,14 +2882,14 @@ glUniform3f
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniform3f fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform3f fgl
 
     a0
     a1
     a2
     a3
     )
-glUniform4f :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform4f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLfloat ->
     GLfloat ->
@@ -2891,7 +2902,7 @@ glUniform4f
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglUniform4f fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform4f fgl
 
     a0
     a1
@@ -2899,19 +2910,19 @@ glUniform4f
     a3
     a4
     )
-glUniform1i :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform1i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLint ->
     m ( () )
 glUniform1i
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglUniform1i fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform1i fgl
 
     a0
     a1
     )
-glUniform2i :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform2i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLint ->
     GLint ->
@@ -2920,13 +2931,13 @@ glUniform2i
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform2i fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform2i fgl
 
     a0
     a1
     a2
     )
-glUniform3i :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform3i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLint ->
     GLint ->
@@ -2937,14 +2948,14 @@ glUniform3i
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniform3i fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform3i fgl
 
     a0
     a1
     a2
     a3
     )
-glUniform4i :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform4i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLint ->
     GLint ->
@@ -2957,7 +2968,7 @@ glUniform4i
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglUniform4i fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform4i fgl
 
     a0
     a1
@@ -2965,7 +2976,7 @@ glUniform4i
     a3
     a4
     )
-glUniform1fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform1fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLfloat) ->
@@ -2974,13 +2985,13 @@ glUniform1fv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform1fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform1fv fgl
 
     a0
     a1
     a2
     )
-glUniform2fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform2fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLfloat) ->
@@ -2989,13 +3000,13 @@ glUniform2fv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform2fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform2fv fgl
 
     a0
     a1
     a2
     )
-glUniform3fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform3fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLfloat) ->
@@ -3004,13 +3015,13 @@ glUniform3fv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform3fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform3fv fgl
 
     a0
     a1
     a2
     )
-glUniform4fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform4fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLfloat) ->
@@ -3019,13 +3030,13 @@ glUniform4fv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform4fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform4fv fgl
 
     a0
     a1
     a2
     )
-glUniform1iv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform1iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLint) ->
@@ -3034,13 +3045,13 @@ glUniform1iv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform1iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform1iv fgl
 
     a0
     a1
     a2
     )
-glUniform2iv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform2iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLint) ->
@@ -3049,13 +3060,13 @@ glUniform2iv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform2iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform2iv fgl
 
     a0
     a1
     a2
     )
-glUniform3iv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform3iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLint) ->
@@ -3064,13 +3075,13 @@ glUniform3iv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform3iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform3iv fgl
 
     a0
     a1
     a2
     )
-glUniform4iv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform4iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLint) ->
@@ -3079,13 +3090,13 @@ glUniform4iv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform4iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform4iv fgl
 
     a0
     a1
     a2
     )
-glUniformMatrix2fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniformMatrix2fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     GLboolean ->
@@ -3096,14 +3107,14 @@ glUniformMatrix2fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniformMatrix2fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniformMatrix2fv fgl
 
     a0
     a1
     a2
     a3
     )
-glUniformMatrix3fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniformMatrix3fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     GLboolean ->
@@ -3114,14 +3125,14 @@ glUniformMatrix3fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniformMatrix3fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniformMatrix3fv fgl
 
     a0
     a1
     a2
     a3
     )
-glUniformMatrix4fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniformMatrix4fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     GLboolean ->
@@ -3132,95 +3143,95 @@ glUniformMatrix4fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniformMatrix4fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniformMatrix4fv fgl
 
     a0
     a1
     a2
     a3
     )
-glValidateProgram :: (MonadIO m, MonadReader FlextGL m) =>
+glValidateProgram :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glValidateProgram
     a0
-    = ask >>= \fgl -> (liftIO $ rglValidateProgram fgl
+    = askGL >>= \fgl -> (liftIO $ rglValidateProgram fgl
 
     a0
     )
-glVertexAttrib1d :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib1d :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLdouble ->
     m ( () )
 glVertexAttrib1d
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib1d fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib1d fgl
 
     a0
     a1
     )
-glVertexAttrib1dv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib1dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLdouble) ->
     m ( () )
 glVertexAttrib1dv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib1dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib1dv fgl
 
     a0
     a1
     )
-glVertexAttrib1f :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib1f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLfloat ->
     m ( () )
 glVertexAttrib1f
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib1f fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib1f fgl
 
     a0
     a1
     )
-glVertexAttrib1fv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib1fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLfloat) ->
     m ( () )
 glVertexAttrib1fv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib1fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib1fv fgl
 
     a0
     a1
     )
-glVertexAttrib1s :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib1s :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLshort ->
     m ( () )
 glVertexAttrib1s
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib1s fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib1s fgl
 
     a0
     a1
     )
-glVertexAttrib1sv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib1sv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLshort) ->
     m ( () )
 glVertexAttrib1sv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib1sv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib1sv fgl
 
     a0
     a1
     )
-glVertexAttrib2d :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib2d :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLdouble ->
     GLdouble ->
@@ -3229,25 +3240,25 @@ glVertexAttrib2d
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib2d fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib2d fgl
 
     a0
     a1
     a2
     )
-glVertexAttrib2dv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib2dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLdouble) ->
     m ( () )
 glVertexAttrib2dv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib2dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib2dv fgl
 
     a0
     a1
     )
-glVertexAttrib2f :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib2f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLfloat ->
     GLfloat ->
@@ -3256,25 +3267,25 @@ glVertexAttrib2f
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib2f fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib2f fgl
 
     a0
     a1
     a2
     )
-glVertexAttrib2fv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib2fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLfloat) ->
     m ( () )
 glVertexAttrib2fv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib2fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib2fv fgl
 
     a0
     a1
     )
-glVertexAttrib2s :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib2s :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLshort ->
     GLshort ->
@@ -3283,25 +3294,25 @@ glVertexAttrib2s
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib2s fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib2s fgl
 
     a0
     a1
     a2
     )
-glVertexAttrib2sv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib2sv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLshort) ->
     m ( () )
 glVertexAttrib2sv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib2sv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib2sv fgl
 
     a0
     a1
     )
-glVertexAttrib3d :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib3d :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLdouble ->
     GLdouble ->
@@ -3312,26 +3323,26 @@ glVertexAttrib3d
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib3d fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib3d fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttrib3dv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib3dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLdouble) ->
     m ( () )
 glVertexAttrib3dv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib3dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib3dv fgl
 
     a0
     a1
     )
-glVertexAttrib3f :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib3f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLfloat ->
     GLfloat ->
@@ -3342,26 +3353,26 @@ glVertexAttrib3f
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib3f fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib3f fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttrib3fv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib3fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLfloat) ->
     m ( () )
 glVertexAttrib3fv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib3fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib3fv fgl
 
     a0
     a1
     )
-glVertexAttrib3s :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib3s :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLshort ->
     GLshort ->
@@ -3372,62 +3383,62 @@ glVertexAttrib3s
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib3s fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib3s fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttrib3sv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib3sv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLshort) ->
     m ( () )
 glVertexAttrib3sv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib3sv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib3sv fgl
 
     a0
     a1
     )
-glVertexAttrib4Nbv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4Nbv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLbyte) ->
     m ( () )
 glVertexAttrib4Nbv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4Nbv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4Nbv fgl
 
     a0
     a1
     )
-glVertexAttrib4Niv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4Niv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLint) ->
     m ( () )
 glVertexAttrib4Niv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4Niv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4Niv fgl
 
     a0
     a1
     )
-glVertexAttrib4Nsv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4Nsv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLshort) ->
     m ( () )
 glVertexAttrib4Nsv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4Nsv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4Nsv fgl
 
     a0
     a1
     )
-glVertexAttrib4Nub :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4Nub :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLubyte ->
     GLubyte ->
@@ -3440,7 +3451,7 @@ glVertexAttrib4Nub
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4Nub fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4Nub fgl
 
     a0
     a1
@@ -3448,55 +3459,55 @@ glVertexAttrib4Nub
     a3
     a4
     )
-glVertexAttrib4Nubv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4Nubv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLubyte) ->
     m ( () )
 glVertexAttrib4Nubv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4Nubv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4Nubv fgl
 
     a0
     a1
     )
-glVertexAttrib4Nuiv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4Nuiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLuint) ->
     m ( () )
 glVertexAttrib4Nuiv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4Nuiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4Nuiv fgl
 
     a0
     a1
     )
-glVertexAttrib4Nusv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4Nusv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLushort) ->
     m ( () )
 glVertexAttrib4Nusv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4Nusv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4Nusv fgl
 
     a0
     a1
     )
-glVertexAttrib4bv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4bv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLbyte) ->
     m ( () )
 glVertexAttrib4bv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4bv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4bv fgl
 
     a0
     a1
     )
-glVertexAttrib4d :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4d :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLdouble ->
     GLdouble ->
@@ -3509,7 +3520,7 @@ glVertexAttrib4d
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4d fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4d fgl
 
     a0
     a1
@@ -3517,19 +3528,19 @@ glVertexAttrib4d
     a3
     a4
     )
-glVertexAttrib4dv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLdouble) ->
     m ( () )
 glVertexAttrib4dv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4dv fgl
 
     a0
     a1
     )
-glVertexAttrib4f :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLfloat ->
     GLfloat ->
@@ -3542,7 +3553,7 @@ glVertexAttrib4f
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4f fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4f fgl
 
     a0
     a1
@@ -3550,31 +3561,31 @@ glVertexAttrib4f
     a3
     a4
     )
-glVertexAttrib4fv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLfloat) ->
     m ( () )
 glVertexAttrib4fv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4fv fgl
 
     a0
     a1
     )
-glVertexAttrib4iv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLint) ->
     m ( () )
 glVertexAttrib4iv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4iv fgl
 
     a0
     a1
     )
-glVertexAttrib4s :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4s :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLshort ->
     GLshort ->
@@ -3587,7 +3598,7 @@ glVertexAttrib4s
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4s fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4s fgl
 
     a0
     a1
@@ -3595,55 +3606,55 @@ glVertexAttrib4s
     a3
     a4
     )
-glVertexAttrib4sv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4sv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLshort) ->
     m ( () )
 glVertexAttrib4sv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4sv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4sv fgl
 
     a0
     a1
     )
-glVertexAttrib4ubv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4ubv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLubyte) ->
     m ( () )
 glVertexAttrib4ubv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4ubv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4ubv fgl
 
     a0
     a1
     )
-glVertexAttrib4uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLuint) ->
     m ( () )
 glVertexAttrib4uiv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4uiv fgl
 
     a0
     a1
     )
-glVertexAttrib4usv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttrib4usv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLushort) ->
     m ( () )
 glVertexAttrib4usv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttrib4usv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttrib4usv fgl
 
     a0
     a1
     )
-glVertexAttribPointer :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribPointer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLenum ->
@@ -3658,7 +3669,7 @@ glVertexAttribPointer
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribPointer fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribPointer fgl
 
     a0
     a1
@@ -3667,7 +3678,7 @@ glVertexAttribPointer
     a4
     a5
     )
-glUniformMatrix2x3fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniformMatrix2x3fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     GLboolean ->
@@ -3678,14 +3689,14 @@ glUniformMatrix2x3fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniformMatrix2x3fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniformMatrix2x3fv fgl
 
     a0
     a1
     a2
     a3
     )
-glUniformMatrix3x2fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniformMatrix3x2fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     GLboolean ->
@@ -3696,14 +3707,14 @@ glUniformMatrix3x2fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniformMatrix3x2fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniformMatrix3x2fv fgl
 
     a0
     a1
     a2
     a3
     )
-glUniformMatrix2x4fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniformMatrix2x4fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     GLboolean ->
@@ -3714,14 +3725,14 @@ glUniformMatrix2x4fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniformMatrix2x4fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniformMatrix2x4fv fgl
 
     a0
     a1
     a2
     a3
     )
-glUniformMatrix4x2fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniformMatrix4x2fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     GLboolean ->
@@ -3732,14 +3743,14 @@ glUniformMatrix4x2fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniformMatrix4x2fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniformMatrix4x2fv fgl
 
     a0
     a1
     a2
     a3
     )
-glUniformMatrix3x4fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniformMatrix3x4fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     GLboolean ->
@@ -3750,14 +3761,14 @@ glUniformMatrix3x4fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniformMatrix3x4fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniformMatrix3x4fv fgl
 
     a0
     a1
     a2
     a3
     )
-glUniformMatrix4x3fv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniformMatrix4x3fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     GLboolean ->
@@ -3768,14 +3779,14 @@ glUniformMatrix4x3fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniformMatrix4x3fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniformMatrix4x3fv fgl
 
     a0
     a1
     a2
     a3
     )
-glColorMaski :: (MonadIO m, MonadReader FlextGL m) =>
+glColorMaski :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLboolean ->
     GLboolean ->
@@ -3788,7 +3799,7 @@ glColorMaski
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglColorMaski fgl
+    = askGL >>= \fgl -> (liftIO $ rglColorMaski fgl
 
     a0
     a1
@@ -3796,7 +3807,7 @@ glColorMaski
     a3
     a4
     )
-glGetBooleani_v :: (MonadIO m, MonadReader FlextGL m) =>
+glGetBooleani_v :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (GLboolean) ->
@@ -3805,13 +3816,13 @@ glGetBooleani_v
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetBooleani_v fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetBooleani_v fgl
 
     a0
     a1
     a2
     )
-glGetIntegeri_v :: (MonadIO m, MonadReader FlextGL m) =>
+glGetIntegeri_v :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (GLint) ->
@@ -3820,64 +3831,64 @@ glGetIntegeri_v
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetIntegeri_v fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetIntegeri_v fgl
 
     a0
     a1
     a2
     )
-glEnablei :: (MonadIO m, MonadReader FlextGL m) =>
+glEnablei :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glEnablei
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglEnablei fgl
+    = askGL >>= \fgl -> (liftIO $ rglEnablei fgl
 
     a0
     a1
     )
-glDisablei :: (MonadIO m, MonadReader FlextGL m) =>
+glDisablei :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glDisablei
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDisablei fgl
+    = askGL >>= \fgl -> (liftIO $ rglDisablei fgl
 
     a0
     a1
     )
-glIsEnabledi :: (MonadIO m, MonadReader FlextGL m) =>
+glIsEnabledi :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( GLboolean )
 glIsEnabledi
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglIsEnabledi fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsEnabledi fgl
 
     a0
     a1
     )
-glBeginTransformFeedback :: (MonadIO m, MonadReader FlextGL m) =>
+glBeginTransformFeedback :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glBeginTransformFeedback
     a0
-    = ask >>= \fgl -> (liftIO $ rglBeginTransformFeedback fgl
+    = askGL >>= \fgl -> (liftIO $ rglBeginTransformFeedback fgl
 
     a0
     )
-glEndTransformFeedback :: (MonadIO m, MonadReader FlextGL m) =>
+glEndTransformFeedback :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     m ( () )
 glEndTransformFeedback
-    = ask >>= \fgl -> (liftIO $ rglEndTransformFeedback fgl
+    = askGL >>= \fgl -> (liftIO $ rglEndTransformFeedback fgl
 
     )
-glBindBufferRange :: (MonadIO m, MonadReader FlextGL m) =>
+glBindBufferRange :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     GLuint ->
@@ -3890,7 +3901,7 @@ glBindBufferRange
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglBindBufferRange fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindBufferRange fgl
 
     a0
     a1
@@ -3898,7 +3909,7 @@ glBindBufferRange
     a3
     a4
     )
-glBindBufferBase :: (MonadIO m, MonadReader FlextGL m) =>
+glBindBufferBase :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     GLuint ->
@@ -3907,13 +3918,13 @@ glBindBufferBase
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglBindBufferBase fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindBufferBase fgl
 
     a0
     a1
     a2
     )
-glTransformFeedbackVaryings :: (MonadIO m, MonadReader FlextGL m) =>
+glTransformFeedbackVaryings :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (Ptr (GLchar)) ->
@@ -3924,14 +3935,14 @@ glTransformFeedbackVaryings
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglTransformFeedbackVaryings fgl
+    = askGL >>= \fgl -> (liftIO $ rglTransformFeedbackVaryings fgl
 
     a0
     a1
     a2
     a3
     )
-glGetTransformFeedbackVarying :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTransformFeedbackVarying :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLsizei ->
@@ -3948,7 +3959,7 @@ glGetTransformFeedbackVarying
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglGetTransformFeedbackVarying fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTransformFeedbackVarying fgl
 
     a0
     a1
@@ -3958,37 +3969,37 @@ glGetTransformFeedbackVarying
     a5
     a6
     )
-glClampColor :: (MonadIO m, MonadReader FlextGL m) =>
+glClampColor :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     m ( () )
 glClampColor
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglClampColor fgl
+    = askGL >>= \fgl -> (liftIO $ rglClampColor fgl
 
     a0
     a1
     )
-glBeginConditionalRender :: (MonadIO m, MonadReader FlextGL m) =>
+glBeginConditionalRender :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     m ( () )
 glBeginConditionalRender
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglBeginConditionalRender fgl
+    = askGL >>= \fgl -> (liftIO $ rglBeginConditionalRender fgl
 
     a0
     a1
     )
-glEndConditionalRender :: (MonadIO m, MonadReader FlextGL m) =>
+glEndConditionalRender :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     m ( () )
 glEndConditionalRender
-    = ask >>= \fgl -> (liftIO $ rglEndConditionalRender fgl
+    = askGL >>= \fgl -> (liftIO $ rglEndConditionalRender fgl
 
     )
-glVertexAttribIPointer :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribIPointer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLenum ->
@@ -4001,7 +4012,7 @@ glVertexAttribIPointer
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribIPointer fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribIPointer fgl
 
     a0
     a1
@@ -4009,7 +4020,7 @@ glVertexAttribIPointer
     a3
     a4
     )
-glGetVertexAttribIiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetVertexAttribIiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -4018,13 +4029,13 @@ glGetVertexAttribIiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetVertexAttribIiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetVertexAttribIiv fgl
 
     a0
     a1
     a2
     )
-glGetVertexAttribIuiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetVertexAttribIuiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLuint) ->
@@ -4033,25 +4044,25 @@ glGetVertexAttribIuiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetVertexAttribIuiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetVertexAttribIuiv fgl
 
     a0
     a1
     a2
     )
-glVertexAttribI1i :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI1i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     m ( () )
 glVertexAttribI1i
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI1i fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI1i fgl
 
     a0
     a1
     )
-glVertexAttribI2i :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI2i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -4060,13 +4071,13 @@ glVertexAttribI2i
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI2i fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI2i fgl
 
     a0
     a1
     a2
     )
-glVertexAttribI3i :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI3i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -4077,14 +4088,14 @@ glVertexAttribI3i
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI3i fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI3i fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttribI4i :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI4i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -4097,7 +4108,7 @@ glVertexAttribI4i
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI4i fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI4i fgl
 
     a0
     a1
@@ -4105,19 +4116,19 @@ glVertexAttribI4i
     a3
     a4
     )
-glVertexAttribI1ui :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI1ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     m ( () )
 glVertexAttribI1ui
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI1ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI1ui fgl
 
     a0
     a1
     )
-glVertexAttribI2ui :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI2ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -4126,13 +4137,13 @@ glVertexAttribI2ui
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI2ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI2ui fgl
 
     a0
     a1
     a2
     )
-glVertexAttribI3ui :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI3ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -4143,14 +4154,14 @@ glVertexAttribI3ui
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI3ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI3ui fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttribI4ui :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI4ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -4163,7 +4174,7 @@ glVertexAttribI4ui
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI4ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI4ui fgl
 
     a0
     a1
@@ -4171,151 +4182,151 @@ glVertexAttribI4ui
     a3
     a4
     )
-glVertexAttribI1iv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI1iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLint) ->
     m ( () )
 glVertexAttribI1iv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI1iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI1iv fgl
 
     a0
     a1
     )
-glVertexAttribI2iv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI2iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLint) ->
     m ( () )
 glVertexAttribI2iv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI2iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI2iv fgl
 
     a0
     a1
     )
-glVertexAttribI3iv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI3iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLint) ->
     m ( () )
 glVertexAttribI3iv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI3iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI3iv fgl
 
     a0
     a1
     )
-glVertexAttribI4iv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI4iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLint) ->
     m ( () )
 glVertexAttribI4iv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI4iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI4iv fgl
 
     a0
     a1
     )
-glVertexAttribI1uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI1uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLuint) ->
     m ( () )
 glVertexAttribI1uiv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI1uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI1uiv fgl
 
     a0
     a1
     )
-glVertexAttribI2uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI2uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLuint) ->
     m ( () )
 glVertexAttribI2uiv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI2uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI2uiv fgl
 
     a0
     a1
     )
-glVertexAttribI3uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI3uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLuint) ->
     m ( () )
 glVertexAttribI3uiv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI3uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI3uiv fgl
 
     a0
     a1
     )
-glVertexAttribI4uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI4uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLuint) ->
     m ( () )
 glVertexAttribI4uiv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI4uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI4uiv fgl
 
     a0
     a1
     )
-glVertexAttribI4bv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI4bv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLbyte) ->
     m ( () )
 glVertexAttribI4bv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI4bv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI4bv fgl
 
     a0
     a1
     )
-glVertexAttribI4sv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI4sv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLshort) ->
     m ( () )
 glVertexAttribI4sv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI4sv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI4sv fgl
 
     a0
     a1
     )
-glVertexAttribI4ubv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI4ubv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLubyte) ->
     m ( () )
 glVertexAttribI4ubv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI4ubv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI4ubv fgl
 
     a0
     a1
     )
-glVertexAttribI4usv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribI4usv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLushort) ->
     m ( () )
 glVertexAttribI4usv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribI4usv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribI4usv fgl
 
     a0
     a1
     )
-glGetUniformuiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetUniformuiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     Ptr (GLuint) ->
@@ -4324,13 +4335,13 @@ glGetUniformuiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetUniformuiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetUniformuiv fgl
 
     a0
     a1
     a2
     )
-glBindFragDataLocation :: (MonadIO m, MonadReader FlextGL m) =>
+glBindFragDataLocation :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     Ptr (GLchar) ->
@@ -4339,37 +4350,37 @@ glBindFragDataLocation
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglBindFragDataLocation fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindFragDataLocation fgl
 
     a0
     a1
     a2
     )
-glGetFragDataLocation :: (MonadIO m, MonadReader FlextGL m) =>
+glGetFragDataLocation :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLchar) ->
     m ( GLint )
 glGetFragDataLocation
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetFragDataLocation fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetFragDataLocation fgl
 
     a0
     a1
     )
-glUniform1ui :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform1ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLuint ->
     m ( () )
 glUniform1ui
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglUniform1ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform1ui fgl
 
     a0
     a1
     )
-glUniform2ui :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform2ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLuint ->
     GLuint ->
@@ -4378,13 +4389,13 @@ glUniform2ui
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform2ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform2ui fgl
 
     a0
     a1
     a2
     )
-glUniform3ui :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform3ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLuint ->
     GLuint ->
@@ -4395,14 +4406,14 @@ glUniform3ui
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglUniform3ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform3ui fgl
 
     a0
     a1
     a2
     a3
     )
-glUniform4ui :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform4ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLuint ->
     GLuint ->
@@ -4415,7 +4426,7 @@ glUniform4ui
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglUniform4ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform4ui fgl
 
     a0
     a1
@@ -4423,7 +4434,7 @@ glUniform4ui
     a3
     a4
     )
-glUniform1uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform1uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLuint) ->
@@ -4432,13 +4443,13 @@ glUniform1uiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform1uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform1uiv fgl
 
     a0
     a1
     a2
     )
-glUniform2uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform2uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLuint) ->
@@ -4447,13 +4458,13 @@ glUniform2uiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform2uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform2uiv fgl
 
     a0
     a1
     a2
     )
-glUniform3uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform3uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLuint) ->
@@ -4462,13 +4473,13 @@ glUniform3uiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform3uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform3uiv fgl
 
     a0
     a1
     a2
     )
-glUniform4uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glUniform4uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLsizei ->
     Ptr (GLuint) ->
@@ -4477,13 +4488,13 @@ glUniform4uiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniform4uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniform4uiv fgl
 
     a0
     a1
     a2
     )
-glTexParameterIiv :: (MonadIO m, MonadReader FlextGL m) =>
+glTexParameterIiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLint) ->
@@ -4492,13 +4503,13 @@ glTexParameterIiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglTexParameterIiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexParameterIiv fgl
 
     a0
     a1
     a2
     )
-glTexParameterIuiv :: (MonadIO m, MonadReader FlextGL m) =>
+glTexParameterIuiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLuint) ->
@@ -4507,13 +4518,13 @@ glTexParameterIuiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglTexParameterIuiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexParameterIuiv fgl
 
     a0
     a1
     a2
     )
-glGetTexParameterIiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTexParameterIiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLint) ->
@@ -4522,13 +4533,13 @@ glGetTexParameterIiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetTexParameterIiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTexParameterIiv fgl
 
     a0
     a1
     a2
     )
-glGetTexParameterIuiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTexParameterIuiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLuint) ->
@@ -4537,13 +4548,13 @@ glGetTexParameterIuiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetTexParameterIuiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTexParameterIuiv fgl
 
     a0
     a1
     a2
     )
-glClearBufferiv :: (MonadIO m, MonadReader FlextGL m) =>
+glClearBufferiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     Ptr (GLint) ->
@@ -4552,13 +4563,13 @@ glClearBufferiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglClearBufferiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglClearBufferiv fgl
 
     a0
     a1
     a2
     )
-glClearBufferuiv :: (MonadIO m, MonadReader FlextGL m) =>
+glClearBufferuiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     Ptr (GLuint) ->
@@ -4567,13 +4578,13 @@ glClearBufferuiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglClearBufferuiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglClearBufferuiv fgl
 
     a0
     a1
     a2
     )
-glClearBufferfv :: (MonadIO m, MonadReader FlextGL m) =>
+glClearBufferfv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     Ptr (GLfloat) ->
@@ -4582,13 +4593,13 @@ glClearBufferfv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglClearBufferfv fgl
+    = askGL >>= \fgl -> (liftIO $ rglClearBufferfv fgl
 
     a0
     a1
     a2
     )
-glClearBufferfi :: (MonadIO m, MonadReader FlextGL m) =>
+glClearBufferfi :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLfloat ->
@@ -4599,71 +4610,71 @@ glClearBufferfi
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglClearBufferfi fgl
+    = askGL >>= \fgl -> (liftIO $ rglClearBufferfi fgl
 
     a0
     a1
     a2
     a3
     )
-glGetStringi :: (MonadIO m, MonadReader FlextGL m) =>
+glGetStringi :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( Ptr (GLubyte) )
 glGetStringi
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetStringi fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetStringi fgl
 
     a0
     a1
     )
-glIsRenderbuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glIsRenderbuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glIsRenderbuffer
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsRenderbuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsRenderbuffer fgl
 
     a0
     )
-glBindRenderbuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glBindRenderbuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glBindRenderbuffer
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglBindRenderbuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindRenderbuffer fgl
 
     a0
     a1
     )
-glDeleteRenderbuffers :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteRenderbuffers :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glDeleteRenderbuffers
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDeleteRenderbuffers fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteRenderbuffers fgl
 
     a0
     a1
     )
-glGenRenderbuffers :: (MonadIO m, MonadReader FlextGL m) =>
+glGenRenderbuffers :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glGenRenderbuffers
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGenRenderbuffers fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenRenderbuffers fgl
 
     a0
     a1
     )
-glRenderbufferStorage :: (MonadIO m, MonadReader FlextGL m) =>
+glRenderbufferStorage :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLsizei ->
@@ -4674,14 +4685,14 @@ glRenderbufferStorage
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglRenderbufferStorage fgl
+    = askGL >>= \fgl -> (liftIO $ rglRenderbufferStorage fgl
 
     a0
     a1
     a2
     a3
     )
-glGetRenderbufferParameteriv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetRenderbufferParameteriv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLint) ->
@@ -4690,67 +4701,67 @@ glGetRenderbufferParameteriv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetRenderbufferParameteriv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetRenderbufferParameteriv fgl
 
     a0
     a1
     a2
     )
-glIsFramebuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glIsFramebuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glIsFramebuffer
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsFramebuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsFramebuffer fgl
 
     a0
     )
-glBindFramebuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glBindFramebuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glBindFramebuffer
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglBindFramebuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindFramebuffer fgl
 
     a0
     a1
     )
-glDeleteFramebuffers :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteFramebuffers :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glDeleteFramebuffers
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDeleteFramebuffers fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteFramebuffers fgl
 
     a0
     a1
     )
-glGenFramebuffers :: (MonadIO m, MonadReader FlextGL m) =>
+glGenFramebuffers :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glGenFramebuffers
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGenFramebuffers fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenFramebuffers fgl
 
     a0
     a1
     )
-glCheckFramebufferStatus :: (MonadIO m, MonadReader FlextGL m) =>
+glCheckFramebufferStatus :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( GLenum )
 glCheckFramebufferStatus
     a0
-    = ask >>= \fgl -> (liftIO $ rglCheckFramebufferStatus fgl
+    = askGL >>= \fgl -> (liftIO $ rglCheckFramebufferStatus fgl
 
     a0
     )
-glFramebufferTexture1D :: (MonadIO m, MonadReader FlextGL m) =>
+glFramebufferTexture1D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -4763,7 +4774,7 @@ glFramebufferTexture1D
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglFramebufferTexture1D fgl
+    = askGL >>= \fgl -> (liftIO $ rglFramebufferTexture1D fgl
 
     a0
     a1
@@ -4771,7 +4782,7 @@ glFramebufferTexture1D
     a3
     a4
     )
-glFramebufferTexture2D :: (MonadIO m, MonadReader FlextGL m) =>
+glFramebufferTexture2D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -4784,7 +4795,7 @@ glFramebufferTexture2D
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglFramebufferTexture2D fgl
+    = askGL >>= \fgl -> (liftIO $ rglFramebufferTexture2D fgl
 
     a0
     a1
@@ -4792,7 +4803,7 @@ glFramebufferTexture2D
     a3
     a4
     )
-glFramebufferTexture3D :: (MonadIO m, MonadReader FlextGL m) =>
+glFramebufferTexture3D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -4807,7 +4818,7 @@ glFramebufferTexture3D
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglFramebufferTexture3D fgl
+    = askGL >>= \fgl -> (liftIO $ rglFramebufferTexture3D fgl
 
     a0
     a1
@@ -4816,7 +4827,7 @@ glFramebufferTexture3D
     a4
     a5
     )
-glFramebufferRenderbuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glFramebufferRenderbuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -4827,14 +4838,14 @@ glFramebufferRenderbuffer
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglFramebufferRenderbuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglFramebufferRenderbuffer fgl
 
     a0
     a1
     a2
     a3
     )
-glGetFramebufferAttachmentParameteriv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetFramebufferAttachmentParameteriv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -4845,23 +4856,23 @@ glGetFramebufferAttachmentParameteriv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetFramebufferAttachmentParameteriv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetFramebufferAttachmentParameteriv fgl
 
     a0
     a1
     a2
     a3
     )
-glGenerateMipmap :: (MonadIO m, MonadReader FlextGL m) =>
+glGenerateMipmap :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glGenerateMipmap
     a0
-    = ask >>= \fgl -> (liftIO $ rglGenerateMipmap fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenerateMipmap fgl
 
     a0
     )
-glBlitFramebuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glBlitFramebuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLint ->
     GLint ->
     GLint ->
@@ -4884,7 +4895,7 @@ glBlitFramebuffer
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglBlitFramebuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglBlitFramebuffer fgl
 
     a0
     a1
@@ -4897,7 +4908,7 @@ glBlitFramebuffer
     a8
     a9
     )
-glRenderbufferStorageMultisample :: (MonadIO m, MonadReader FlextGL m) =>
+glRenderbufferStorageMultisample :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     GLenum ->
@@ -4910,7 +4921,7 @@ glRenderbufferStorageMultisample
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglRenderbufferStorageMultisample fgl
+    = askGL >>= \fgl -> (liftIO $ rglRenderbufferStorageMultisample fgl
 
     a0
     a1
@@ -4918,7 +4929,7 @@ glRenderbufferStorageMultisample
     a3
     a4
     )
-glFramebufferTextureLayer :: (MonadIO m, MonadReader FlextGL m) =>
+glFramebufferTextureLayer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLuint ->
@@ -4931,7 +4942,7 @@ glFramebufferTextureLayer
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglFramebufferTextureLayer fgl
+    = askGL >>= \fgl -> (liftIO $ rglFramebufferTextureLayer fgl
 
     a0
     a1
@@ -4939,7 +4950,7 @@ glFramebufferTextureLayer
     a3
     a4
     )
-glMapBufferRange :: (MonadIO m, MonadReader FlextGL m) =>
+glMapBufferRange :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLintptr ->
     GLsizeiptr ->
@@ -4950,14 +4961,14 @@ glMapBufferRange
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMapBufferRange fgl
+    = askGL >>= \fgl -> (liftIO $ rglMapBufferRange fgl
 
     a0
     a1
     a2
     a3
     )
-glFlushMappedBufferRange :: (MonadIO m, MonadReader FlextGL m) =>
+glFlushMappedBufferRange :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLintptr ->
     GLsizeiptr ->
@@ -4966,55 +4977,55 @@ glFlushMappedBufferRange
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglFlushMappedBufferRange fgl
+    = askGL >>= \fgl -> (liftIO $ rglFlushMappedBufferRange fgl
 
     a0
     a1
     a2
     )
-glBindVertexArray :: (MonadIO m, MonadReader FlextGL m) =>
+glBindVertexArray :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glBindVertexArray
     a0
-    = ask >>= \fgl -> (liftIO $ rglBindVertexArray fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindVertexArray fgl
 
     a0
     )
-glDeleteVertexArrays :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteVertexArrays :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glDeleteVertexArrays
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDeleteVertexArrays fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteVertexArrays fgl
 
     a0
     a1
     )
-glGenVertexArrays :: (MonadIO m, MonadReader FlextGL m) =>
+glGenVertexArrays :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glGenVertexArrays
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGenVertexArrays fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenVertexArrays fgl
 
     a0
     a1
     )
-glIsVertexArray :: (MonadIO m, MonadReader FlextGL m) =>
+glIsVertexArray :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glIsVertexArray
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsVertexArray fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsVertexArray fgl
 
     a0
     )
-glDrawArraysInstanced :: (MonadIO m, MonadReader FlextGL m) =>
+glDrawArraysInstanced :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLsizei ->
@@ -5025,14 +5036,14 @@ glDrawArraysInstanced
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglDrawArraysInstanced fgl
+    = askGL >>= \fgl -> (liftIO $ rglDrawArraysInstanced fgl
 
     a0
     a1
     a2
     a3
     )
-glDrawElementsInstanced :: (MonadIO m, MonadReader FlextGL m) =>
+glDrawElementsInstanced :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     GLenum ->
@@ -5045,7 +5056,7 @@ glDrawElementsInstanced
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglDrawElementsInstanced fgl
+    = askGL >>= \fgl -> (liftIO $ rglDrawElementsInstanced fgl
 
     a0
     a1
@@ -5053,7 +5064,7 @@ glDrawElementsInstanced
     a3
     a4
     )
-glTexBuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glTexBuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLuint ->
@@ -5062,22 +5073,22 @@ glTexBuffer
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglTexBuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexBuffer fgl
 
     a0
     a1
     a2
     )
-glPrimitiveRestartIndex :: (MonadIO m, MonadReader FlextGL m) =>
+glPrimitiveRestartIndex :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glPrimitiveRestartIndex
     a0
-    = ask >>= \fgl -> (liftIO $ rglPrimitiveRestartIndex fgl
+    = askGL >>= \fgl -> (liftIO $ rglPrimitiveRestartIndex fgl
 
     a0
     )
-glCopyBufferSubData :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyBufferSubData :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLintptr ->
@@ -5090,7 +5101,7 @@ glCopyBufferSubData
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglCopyBufferSubData fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyBufferSubData fgl
 
     a0
     a1
@@ -5098,7 +5109,7 @@ glCopyBufferSubData
     a3
     a4
     )
-glGetUniformIndices :: (MonadIO m, MonadReader FlextGL m) =>
+glGetUniformIndices :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (Ptr (GLchar)) ->
@@ -5109,14 +5120,14 @@ glGetUniformIndices
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetUniformIndices fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetUniformIndices fgl
 
     a0
     a1
     a2
     a3
     )
-glGetActiveUniformsiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetActiveUniformsiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (GLuint) ->
@@ -5129,7 +5140,7 @@ glGetActiveUniformsiv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetActiveUniformsiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetActiveUniformsiv fgl
 
     a0
     a1
@@ -5137,7 +5148,7 @@ glGetActiveUniformsiv
     a3
     a4
     )
-glGetActiveUniformName :: (MonadIO m, MonadReader FlextGL m) =>
+glGetActiveUniformName :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLsizei ->
@@ -5150,7 +5161,7 @@ glGetActiveUniformName
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetActiveUniformName fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetActiveUniformName fgl
 
     a0
     a1
@@ -5158,19 +5169,19 @@ glGetActiveUniformName
     a3
     a4
     )
-glGetUniformBlockIndex :: (MonadIO m, MonadReader FlextGL m) =>
+glGetUniformBlockIndex :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLchar) ->
     m ( GLuint )
 glGetUniformBlockIndex
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetUniformBlockIndex fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetUniformBlockIndex fgl
 
     a0
     a1
     )
-glGetActiveUniformBlockiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetActiveUniformBlockiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLenum ->
@@ -5181,14 +5192,14 @@ glGetActiveUniformBlockiv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetActiveUniformBlockiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetActiveUniformBlockiv fgl
 
     a0
     a1
     a2
     a3
     )
-glGetActiveUniformBlockName :: (MonadIO m, MonadReader FlextGL m) =>
+glGetActiveUniformBlockName :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLsizei ->
@@ -5201,7 +5212,7 @@ glGetActiveUniformBlockName
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetActiveUniformBlockName fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetActiveUniformBlockName fgl
 
     a0
     a1
@@ -5209,7 +5220,7 @@ glGetActiveUniformBlockName
     a3
     a4
     )
-glUniformBlockBinding :: (MonadIO m, MonadReader FlextGL m) =>
+glUniformBlockBinding :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -5218,13 +5229,13 @@ glUniformBlockBinding
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUniformBlockBinding fgl
+    = askGL >>= \fgl -> (liftIO $ rglUniformBlockBinding fgl
 
     a0
     a1
     a2
     )
-glDrawElementsBaseVertex :: (MonadIO m, MonadReader FlextGL m) =>
+glDrawElementsBaseVertex :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     GLenum ->
@@ -5237,7 +5248,7 @@ glDrawElementsBaseVertex
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglDrawElementsBaseVertex fgl
+    = askGL >>= \fgl -> (liftIO $ rglDrawElementsBaseVertex fgl
 
     a0
     a1
@@ -5245,7 +5256,7 @@ glDrawElementsBaseVertex
     a3
     a4
     )
-glDrawRangeElementsBaseVertex :: (MonadIO m, MonadReader FlextGL m) =>
+glDrawRangeElementsBaseVertex :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     GLuint ->
@@ -5262,7 +5273,7 @@ glDrawRangeElementsBaseVertex
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglDrawRangeElementsBaseVertex fgl
+    = askGL >>= \fgl -> (liftIO $ rglDrawRangeElementsBaseVertex fgl
 
     a0
     a1
@@ -5272,7 +5283,7 @@ glDrawRangeElementsBaseVertex
     a5
     a6
     )
-glDrawElementsInstancedBaseVertex :: (MonadIO m, MonadReader FlextGL m) =>
+glDrawElementsInstancedBaseVertex :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     GLenum ->
@@ -5287,7 +5298,7 @@ glDrawElementsInstancedBaseVertex
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglDrawElementsInstancedBaseVertex fgl
+    = askGL >>= \fgl -> (liftIO $ rglDrawElementsInstancedBaseVertex fgl
 
     a0
     a1
@@ -5296,7 +5307,7 @@ glDrawElementsInstancedBaseVertex
     a4
     a5
     )
-glMultiDrawElementsBaseVertex :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiDrawElementsBaseVertex :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLsizei) ->
     GLenum ->
@@ -5311,7 +5322,7 @@ glMultiDrawElementsBaseVertex
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglMultiDrawElementsBaseVertex fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiDrawElementsBaseVertex fgl
 
     a0
     a1
@@ -5320,46 +5331,46 @@ glMultiDrawElementsBaseVertex
     a4
     a5
     )
-glProvokingVertex :: (MonadIO m, MonadReader FlextGL m) =>
+glProvokingVertex :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glProvokingVertex
     a0
-    = ask >>= \fgl -> (liftIO $ rglProvokingVertex fgl
+    = askGL >>= \fgl -> (liftIO $ rglProvokingVertex fgl
 
     a0
     )
-glFenceSync :: (MonadIO m, MonadReader FlextGL m) =>
+glFenceSync :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLbitfield ->
     m ( GLsync )
 glFenceSync
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglFenceSync fgl
+    = askGL >>= \fgl -> (liftIO $ rglFenceSync fgl
 
     a0
     a1
     )
-glIsSync :: (MonadIO m, MonadReader FlextGL m) =>
+glIsSync :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsync ->
     m ( GLboolean )
 glIsSync
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsSync fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsSync fgl
 
     a0
     )
-glDeleteSync :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteSync :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsync ->
     m ( () )
 glDeleteSync
     a0
-    = ask >>= \fgl -> (liftIO $ rglDeleteSync fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteSync fgl
 
     a0
     )
-glClientWaitSync :: (MonadIO m, MonadReader FlextGL m) =>
+glClientWaitSync :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsync ->
     GLbitfield ->
     GLuint64 ->
@@ -5368,13 +5379,13 @@ glClientWaitSync
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglClientWaitSync fgl
+    = askGL >>= \fgl -> (liftIO $ rglClientWaitSync fgl
 
     a0
     a1
     a2
     )
-glWaitSync :: (MonadIO m, MonadReader FlextGL m) =>
+glWaitSync :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsync ->
     GLbitfield ->
     GLuint64 ->
@@ -5383,25 +5394,25 @@ glWaitSync
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglWaitSync fgl
+    = askGL >>= \fgl -> (liftIO $ rglWaitSync fgl
 
     a0
     a1
     a2
     )
-glGetInteger64v :: (MonadIO m, MonadReader FlextGL m) =>
+glGetInteger64v :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLint64) ->
     m ( () )
 glGetInteger64v
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetInteger64v fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetInteger64v fgl
 
     a0
     a1
     )
-glGetSynciv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetSynciv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsync ->
     GLenum ->
     GLsizei ->
@@ -5414,7 +5425,7 @@ glGetSynciv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetSynciv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetSynciv fgl
 
     a0
     a1
@@ -5422,7 +5433,7 @@ glGetSynciv
     a3
     a4
     )
-glGetInteger64i_v :: (MonadIO m, MonadReader FlextGL m) =>
+glGetInteger64i_v :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (GLint64) ->
@@ -5431,13 +5442,13 @@ glGetInteger64i_v
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetInteger64i_v fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetInteger64i_v fgl
 
     a0
     a1
     a2
     )
-glGetBufferParameteri64v :: (MonadIO m, MonadReader FlextGL m) =>
+glGetBufferParameteri64v :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     Ptr (GLint64) ->
@@ -5446,13 +5457,13 @@ glGetBufferParameteri64v
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetBufferParameteri64v fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetBufferParameteri64v fgl
 
     a0
     a1
     a2
     )
-glFramebufferTexture :: (MonadIO m, MonadReader FlextGL m) =>
+glFramebufferTexture :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLuint ->
@@ -5463,14 +5474,14 @@ glFramebufferTexture
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglFramebufferTexture fgl
+    = askGL >>= \fgl -> (liftIO $ rglFramebufferTexture fgl
 
     a0
     a1
     a2
     a3
     )
-glTexImage2DMultisample :: (MonadIO m, MonadReader FlextGL m) =>
+glTexImage2DMultisample :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     GLenum ->
@@ -5485,7 +5496,7 @@ glTexImage2DMultisample
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglTexImage2DMultisample fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexImage2DMultisample fgl
 
     a0
     a1
@@ -5494,7 +5505,7 @@ glTexImage2DMultisample
     a4
     a5
     )
-glTexImage3DMultisample :: (MonadIO m, MonadReader FlextGL m) =>
+glTexImage3DMultisample :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     GLenum ->
@@ -5511,7 +5522,7 @@ glTexImage3DMultisample
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglTexImage3DMultisample fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexImage3DMultisample fgl
 
     a0
     a1
@@ -5521,7 +5532,7 @@ glTexImage3DMultisample
     a5
     a6
     )
-glGetMultisamplefv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultisamplefv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (GLfloat) ->
@@ -5530,25 +5541,25 @@ glGetMultisamplefv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetMultisamplefv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultisamplefv fgl
 
     a0
     a1
     a2
     )
-glSampleMaski :: (MonadIO m, MonadReader FlextGL m) =>
+glSampleMaski :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLbitfield ->
     m ( () )
 glSampleMaski
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglSampleMaski fgl
+    = askGL >>= \fgl -> (liftIO $ rglSampleMaski fgl
 
     a0
     a1
     )
-glBindFragDataLocationIndexed :: (MonadIO m, MonadReader FlextGL m) =>
+glBindFragDataLocationIndexed :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -5559,71 +5570,71 @@ glBindFragDataLocationIndexed
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglBindFragDataLocationIndexed fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindFragDataLocationIndexed fgl
 
     a0
     a1
     a2
     a3
     )
-glGetFragDataIndex :: (MonadIO m, MonadReader FlextGL m) =>
+glGetFragDataIndex :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     Ptr (GLchar) ->
     m ( GLint )
 glGetFragDataIndex
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetFragDataIndex fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetFragDataIndex fgl
 
     a0
     a1
     )
-glGenSamplers :: (MonadIO m, MonadReader FlextGL m) =>
+glGenSamplers :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glGenSamplers
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGenSamplers fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenSamplers fgl
 
     a0
     a1
     )
-glDeleteSamplers :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteSamplers :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glDeleteSamplers
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDeleteSamplers fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteSamplers fgl
 
     a0
     a1
     )
-glIsSampler :: (MonadIO m, MonadReader FlextGL m) =>
+glIsSampler :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glIsSampler
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsSampler fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsSampler fgl
 
     a0
     )
-glBindSampler :: (MonadIO m, MonadReader FlextGL m) =>
+glBindSampler :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     m ( () )
 glBindSampler
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglBindSampler fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindSampler fgl
 
     a0
     a1
     )
-glSamplerParameteri :: (MonadIO m, MonadReader FlextGL m) =>
+glSamplerParameteri :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -5632,13 +5643,13 @@ glSamplerParameteri
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglSamplerParameteri fgl
+    = askGL >>= \fgl -> (liftIO $ rglSamplerParameteri fgl
 
     a0
     a1
     a2
     )
-glSamplerParameteriv :: (MonadIO m, MonadReader FlextGL m) =>
+glSamplerParameteriv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -5647,13 +5658,13 @@ glSamplerParameteriv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglSamplerParameteriv fgl
+    = askGL >>= \fgl -> (liftIO $ rglSamplerParameteriv fgl
 
     a0
     a1
     a2
     )
-glSamplerParameterf :: (MonadIO m, MonadReader FlextGL m) =>
+glSamplerParameterf :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLfloat ->
@@ -5662,13 +5673,13 @@ glSamplerParameterf
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglSamplerParameterf fgl
+    = askGL >>= \fgl -> (liftIO $ rglSamplerParameterf fgl
 
     a0
     a1
     a2
     )
-glSamplerParameterfv :: (MonadIO m, MonadReader FlextGL m) =>
+glSamplerParameterfv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLfloat) ->
@@ -5677,13 +5688,13 @@ glSamplerParameterfv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglSamplerParameterfv fgl
+    = askGL >>= \fgl -> (liftIO $ rglSamplerParameterfv fgl
 
     a0
     a1
     a2
     )
-glSamplerParameterIiv :: (MonadIO m, MonadReader FlextGL m) =>
+glSamplerParameterIiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -5692,13 +5703,13 @@ glSamplerParameterIiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglSamplerParameterIiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglSamplerParameterIiv fgl
 
     a0
     a1
     a2
     )
-glSamplerParameterIuiv :: (MonadIO m, MonadReader FlextGL m) =>
+glSamplerParameterIuiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLuint) ->
@@ -5707,13 +5718,13 @@ glSamplerParameterIuiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglSamplerParameterIuiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglSamplerParameterIuiv fgl
 
     a0
     a1
     a2
     )
-glGetSamplerParameteriv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetSamplerParameteriv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -5722,13 +5733,13 @@ glGetSamplerParameteriv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetSamplerParameteriv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetSamplerParameteriv fgl
 
     a0
     a1
     a2
     )
-glGetSamplerParameterIiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetSamplerParameterIiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -5737,13 +5748,13 @@ glGetSamplerParameterIiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetSamplerParameterIiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetSamplerParameterIiv fgl
 
     a0
     a1
     a2
     )
-glGetSamplerParameterfv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetSamplerParameterfv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLfloat) ->
@@ -5752,13 +5763,13 @@ glGetSamplerParameterfv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetSamplerParameterfv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetSamplerParameterfv fgl
 
     a0
     a1
     a2
     )
-glGetSamplerParameterIuiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetSamplerParameterIuiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLuint) ->
@@ -5767,25 +5778,25 @@ glGetSamplerParameterIuiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetSamplerParameterIuiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetSamplerParameterIuiv fgl
 
     a0
     a1
     a2
     )
-glQueryCounter :: (MonadIO m, MonadReader FlextGL m) =>
+glQueryCounter :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     m ( () )
 glQueryCounter
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglQueryCounter fgl
+    = askGL >>= \fgl -> (liftIO $ rglQueryCounter fgl
 
     a0
     a1
     )
-glGetQueryObjecti64v :: (MonadIO m, MonadReader FlextGL m) =>
+glGetQueryObjecti64v :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint64) ->
@@ -5794,13 +5805,13 @@ glGetQueryObjecti64v
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetQueryObjecti64v fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetQueryObjecti64v fgl
 
     a0
     a1
     a2
     )
-glGetQueryObjectui64v :: (MonadIO m, MonadReader FlextGL m) =>
+glGetQueryObjectui64v :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLuint64) ->
@@ -5809,25 +5820,25 @@ glGetQueryObjectui64v
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetQueryObjectui64v fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetQueryObjectui64v fgl
 
     a0
     a1
     a2
     )
-glVertexAttribDivisor :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribDivisor :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     m ( () )
 glVertexAttribDivisor
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribDivisor fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribDivisor fgl
 
     a0
     a1
     )
-glVertexAttribP1ui :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribP1ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLboolean ->
@@ -5838,14 +5849,14 @@ glVertexAttribP1ui
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribP1ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribP1ui fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttribP1uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribP1uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLboolean ->
@@ -5856,14 +5867,14 @@ glVertexAttribP1uiv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribP1uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribP1uiv fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttribP2ui :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribP2ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLboolean ->
@@ -5874,14 +5885,14 @@ glVertexAttribP2ui
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribP2ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribP2ui fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttribP2uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribP2uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLboolean ->
@@ -5892,14 +5903,14 @@ glVertexAttribP2uiv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribP2uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribP2uiv fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttribP3ui :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribP3ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLboolean ->
@@ -5910,14 +5921,14 @@ glVertexAttribP3ui
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribP3ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribP3ui fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttribP3uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribP3uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLboolean ->
@@ -5928,14 +5939,14 @@ glVertexAttribP3uiv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribP3uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribP3uiv fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttribP4ui :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribP4ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLboolean ->
@@ -5946,14 +5957,14 @@ glVertexAttribP4ui
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribP4ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribP4ui fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexAttribP4uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexAttribP4uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLboolean ->
@@ -5964,14 +5975,14 @@ glVertexAttribP4uiv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexAttribP4uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexAttribP4uiv fgl
 
     a0
     a1
     a2
     a3
     )
-glTexStorage1D :: (MonadIO m, MonadReader FlextGL m) =>
+glTexStorage1D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     GLenum ->
@@ -5982,14 +5993,14 @@ glTexStorage1D
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglTexStorage1D fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexStorage1D fgl
 
     a0
     a1
     a2
     a3
     )
-glTexStorage2D :: (MonadIO m, MonadReader FlextGL m) =>
+glTexStorage2D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     GLenum ->
@@ -6002,7 +6013,7 @@ glTexStorage2D
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglTexStorage2D fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexStorage2D fgl
 
     a0
     a1
@@ -6010,7 +6021,7 @@ glTexStorage2D
     a3
     a4
     )
-glTexStorage3D :: (MonadIO m, MonadReader FlextGL m) =>
+glTexStorage3D :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     GLenum ->
@@ -6025,7 +6036,7 @@ glTexStorage3D
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglTexStorage3D fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexStorage3D fgl
 
     a0
     a1
@@ -6034,7 +6045,7 @@ glTexStorage3D
     a4
     a5
     )
-glDebugMessageControl :: (MonadIO m, MonadReader FlextGL m) =>
+glDebugMessageControl :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -6049,7 +6060,7 @@ glDebugMessageControl
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglDebugMessageControl fgl
+    = askGL >>= \fgl -> (liftIO $ rglDebugMessageControl fgl
 
     a0
     a1
@@ -6058,7 +6069,7 @@ glDebugMessageControl
     a4
     a5
     )
-glDebugMessageInsert :: (MonadIO m, MonadReader FlextGL m) =>
+glDebugMessageInsert :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLuint ->
@@ -6073,7 +6084,7 @@ glDebugMessageInsert
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglDebugMessageInsert fgl
+    = askGL >>= \fgl -> (liftIO $ rglDebugMessageInsert fgl
 
     a0
     a1
@@ -6082,19 +6093,19 @@ glDebugMessageInsert
     a4
     a5
     )
-glDebugMessageCallback :: (MonadIO m, MonadReader FlextGL m) =>
+glDebugMessageCallback :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLDEBUGPROC ->
     Ptr () ->
     m ( () )
 glDebugMessageCallback
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDebugMessageCallback fgl
+    = askGL >>= \fgl -> (liftIO $ rglDebugMessageCallback fgl
 
     a0
     a1
     )
-glGetDebugMessageLog :: (MonadIO m, MonadReader FlextGL m) =>
+glGetDebugMessageLog :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (GLenum) ->
@@ -6113,7 +6124,7 @@ glGetDebugMessageLog
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglGetDebugMessageLog fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetDebugMessageLog fgl
 
     a0
     a1
@@ -6124,7 +6135,7 @@ glGetDebugMessageLog
     a6
     a7
     )
-glPushDebugGroup :: (MonadIO m, MonadReader FlextGL m) =>
+glPushDebugGroup :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     GLsizei ->
@@ -6135,20 +6146,20 @@ glPushDebugGroup
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglPushDebugGroup fgl
+    = askGL >>= \fgl -> (liftIO $ rglPushDebugGroup fgl
 
     a0
     a1
     a2
     a3
     )
-glPopDebugGroup :: (MonadIO m, MonadReader FlextGL m) =>
+glPopDebugGroup :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     m ( () )
 glPopDebugGroup
-    = ask >>= \fgl -> (liftIO $ rglPopDebugGroup fgl
+    = askGL >>= \fgl -> (liftIO $ rglPopDebugGroup fgl
 
     )
-glObjectLabel :: (MonadIO m, MonadReader FlextGL m) =>
+glObjectLabel :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     GLsizei ->
@@ -6159,14 +6170,14 @@ glObjectLabel
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglObjectLabel fgl
+    = askGL >>= \fgl -> (liftIO $ rglObjectLabel fgl
 
     a0
     a1
     a2
     a3
     )
-glGetObjectLabel :: (MonadIO m, MonadReader FlextGL m) =>
+glGetObjectLabel :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     GLsizei ->
@@ -6179,7 +6190,7 @@ glGetObjectLabel
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetObjectLabel fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetObjectLabel fgl
 
     a0
     a1
@@ -6187,7 +6198,7 @@ glGetObjectLabel
     a3
     a4
     )
-glObjectPtrLabel :: (MonadIO m, MonadReader FlextGL m) =>
+glObjectPtrLabel :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     Ptr () ->
     GLsizei ->
     Ptr (GLchar) ->
@@ -6196,13 +6207,13 @@ glObjectPtrLabel
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglObjectPtrLabel fgl
+    = askGL >>= \fgl -> (liftIO $ rglObjectPtrLabel fgl
 
     a0
     a1
     a2
     )
-glGetObjectPtrLabel :: (MonadIO m, MonadReader FlextGL m) =>
+glGetObjectPtrLabel :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     Ptr () ->
     GLsizei ->
     Ptr (GLsizei) ->
@@ -6213,26 +6224,26 @@ glGetObjectPtrLabel
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetObjectPtrLabel fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetObjectPtrLabel fgl
 
     a0
     a1
     a2
     a3
     )
-glGetPointerv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetPointerv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (Ptr ()) ->
     m ( () )
 glGetPointerv
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetPointerv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetPointerv fgl
 
     a0
     a1
     )
-glDebugMessageControlKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glDebugMessageControlKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -6247,7 +6258,7 @@ glDebugMessageControlKHR
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglDebugMessageControlKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglDebugMessageControlKHR fgl
 
     a0
     a1
@@ -6256,7 +6267,7 @@ glDebugMessageControlKHR
     a4
     a5
     )
-glDebugMessageInsertKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glDebugMessageInsertKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLuint ->
@@ -6271,7 +6282,7 @@ glDebugMessageInsertKHR
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglDebugMessageInsertKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglDebugMessageInsertKHR fgl
 
     a0
     a1
@@ -6280,19 +6291,19 @@ glDebugMessageInsertKHR
     a4
     a5
     )
-glDebugMessageCallbackKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glDebugMessageCallbackKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLDEBUGPROCKHR ->
     Ptr () ->
     m ( () )
 glDebugMessageCallbackKHR
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDebugMessageCallbackKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglDebugMessageCallbackKHR fgl
 
     a0
     a1
     )
-glGetDebugMessageLogKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glGetDebugMessageLogKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (GLenum) ->
@@ -6311,7 +6322,7 @@ glGetDebugMessageLogKHR
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglGetDebugMessageLogKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetDebugMessageLogKHR fgl
 
     a0
     a1
@@ -6322,7 +6333,7 @@ glGetDebugMessageLogKHR
     a6
     a7
     )
-glPushDebugGroupKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glPushDebugGroupKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     GLsizei ->
@@ -6333,20 +6344,20 @@ glPushDebugGroupKHR
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglPushDebugGroupKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglPushDebugGroupKHR fgl
 
     a0
     a1
     a2
     a3
     )
-glPopDebugGroupKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glPopDebugGroupKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     m ( () )
 glPopDebugGroupKHR
-    = ask >>= \fgl -> (liftIO $ rglPopDebugGroupKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglPopDebugGroupKHR fgl
 
     )
-glObjectLabelKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glObjectLabelKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     GLsizei ->
@@ -6357,14 +6368,14 @@ glObjectLabelKHR
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglObjectLabelKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglObjectLabelKHR fgl
 
     a0
     a1
     a2
     a3
     )
-glGetObjectLabelKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glGetObjectLabelKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     GLsizei ->
@@ -6377,7 +6388,7 @@ glGetObjectLabelKHR
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetObjectLabelKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetObjectLabelKHR fgl
 
     a0
     a1
@@ -6385,7 +6396,7 @@ glGetObjectLabelKHR
     a3
     a4
     )
-glObjectPtrLabelKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glObjectPtrLabelKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     Ptr () ->
     GLsizei ->
     Ptr (GLchar) ->
@@ -6394,13 +6405,13 @@ glObjectPtrLabelKHR
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglObjectPtrLabelKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglObjectPtrLabelKHR fgl
 
     a0
     a1
     a2
     )
-glGetObjectPtrLabelKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glGetObjectPtrLabelKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     Ptr () ->
     GLsizei ->
     Ptr (GLsizei) ->
@@ -6411,83 +6422,83 @@ glGetObjectPtrLabelKHR
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetObjectPtrLabelKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetObjectPtrLabelKHR fgl
 
     a0
     a1
     a2
     a3
     )
-glGetPointervKHR :: (MonadIO m, MonadReader FlextGL m) =>
+glGetPointervKHR :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (Ptr ()) ->
     m ( () )
 glGetPointervKHR
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGetPointervKHR fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetPointervKHR fgl
 
     a0
     a1
     )
-glMatrixLoadfEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixLoadfEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLfloat) ->
     m ( () )
 glMatrixLoadfEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglMatrixLoadfEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixLoadfEXT fgl
 
     a0
     a1
     )
-glMatrixLoaddEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixLoaddEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLdouble) ->
     m ( () )
 glMatrixLoaddEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglMatrixLoaddEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixLoaddEXT fgl
 
     a0
     a1
     )
-glMatrixMultfEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixMultfEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLfloat) ->
     m ( () )
 glMatrixMultfEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglMatrixMultfEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixMultfEXT fgl
 
     a0
     a1
     )
-glMatrixMultdEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixMultdEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLdouble) ->
     m ( () )
 glMatrixMultdEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglMatrixMultdEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixMultdEXT fgl
 
     a0
     a1
     )
-glMatrixLoadIdentityEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixLoadIdentityEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glMatrixLoadIdentityEXT
     a0
-    = ask >>= \fgl -> (liftIO $ rglMatrixLoadIdentityEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixLoadIdentityEXT fgl
 
     a0
     )
-glMatrixRotatefEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixRotatefEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLfloat ->
     GLfloat ->
@@ -6500,7 +6511,7 @@ glMatrixRotatefEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglMatrixRotatefEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixRotatefEXT fgl
 
     a0
     a1
@@ -6508,7 +6519,7 @@ glMatrixRotatefEXT
     a3
     a4
     )
-glMatrixRotatedEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixRotatedEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLdouble ->
     GLdouble ->
@@ -6521,7 +6532,7 @@ glMatrixRotatedEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglMatrixRotatedEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixRotatedEXT fgl
 
     a0
     a1
@@ -6529,7 +6540,7 @@ glMatrixRotatedEXT
     a3
     a4
     )
-glMatrixScalefEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixScalefEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLfloat ->
     GLfloat ->
@@ -6540,14 +6551,14 @@ glMatrixScalefEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMatrixScalefEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixScalefEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMatrixScaledEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixScaledEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLdouble ->
     GLdouble ->
@@ -6558,14 +6569,14 @@ glMatrixScaledEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMatrixScaledEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixScaledEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMatrixTranslatefEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixTranslatefEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLfloat ->
     GLfloat ->
@@ -6576,14 +6587,14 @@ glMatrixTranslatefEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMatrixTranslatefEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixTranslatefEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMatrixTranslatedEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixTranslatedEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLdouble ->
     GLdouble ->
@@ -6594,14 +6605,14 @@ glMatrixTranslatedEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMatrixTranslatedEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixTranslatedEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMatrixFrustumEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixFrustumEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLdouble ->
     GLdouble ->
@@ -6618,7 +6629,7 @@ glMatrixFrustumEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglMatrixFrustumEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixFrustumEXT fgl
 
     a0
     a1
@@ -6628,7 +6639,7 @@ glMatrixFrustumEXT
     a5
     a6
     )
-glMatrixOrthoEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixOrthoEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLdouble ->
     GLdouble ->
@@ -6645,7 +6656,7 @@ glMatrixOrthoEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglMatrixOrthoEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixOrthoEXT fgl
 
     a0
     a1
@@ -6655,43 +6666,43 @@ glMatrixOrthoEXT
     a5
     a6
     )
-glMatrixPopEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixPopEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glMatrixPopEXT
     a0
-    = ask >>= \fgl -> (liftIO $ rglMatrixPopEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixPopEXT fgl
 
     a0
     )
-glMatrixPushEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixPushEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     m ( () )
 glMatrixPushEXT
     a0
-    = ask >>= \fgl -> (liftIO $ rglMatrixPushEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixPushEXT fgl
 
     a0
     )
-glClientAttribDefaultEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glClientAttribDefaultEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLbitfield ->
     m ( () )
 glClientAttribDefaultEXT
     a0
-    = ask >>= \fgl -> (liftIO $ rglClientAttribDefaultEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglClientAttribDefaultEXT fgl
 
     a0
     )
-glPushClientAttribDefaultEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glPushClientAttribDefaultEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLbitfield ->
     m ( () )
 glPushClientAttribDefaultEXT
     a0
-    = ask >>= \fgl -> (liftIO $ rglPushClientAttribDefaultEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglPushClientAttribDefaultEXT fgl
 
     a0
     )
-glTextureParameterfEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureParameterfEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -6702,14 +6713,14 @@ glTextureParameterfEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglTextureParameterfEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureParameterfEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glTextureParameterfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureParameterfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -6720,14 +6731,14 @@ glTextureParameterfvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglTextureParameterfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureParameterfvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glTextureParameteriEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureParameteriEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -6738,14 +6749,14 @@ glTextureParameteriEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglTextureParameteriEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureParameteriEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glTextureParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -6756,14 +6767,14 @@ glTextureParameterivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglTextureParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureParameterivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glTextureImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -6784,7 +6795,7 @@ glTextureImage1DEXT
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglTextureImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureImage1DEXT fgl
 
     a0
     a1
@@ -6796,7 +6807,7 @@ glTextureImage1DEXT
     a7
     a8
     )
-glTextureImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -6819,7 +6830,7 @@ glTextureImage2DEXT
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglTextureImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureImage2DEXT fgl
 
     a0
     a1
@@ -6832,7 +6843,7 @@ glTextureImage2DEXT
     a8
     a9
     )
-glTextureSubImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureSubImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -6851,7 +6862,7 @@ glTextureSubImage1DEXT
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglTextureSubImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureSubImage1DEXT fgl
 
     a0
     a1
@@ -6862,7 +6873,7 @@ glTextureSubImage1DEXT
     a6
     a7
     )
-glTextureSubImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureSubImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -6885,7 +6896,7 @@ glTextureSubImage2DEXT
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglTextureSubImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureSubImage2DEXT fgl
 
     a0
     a1
@@ -6898,7 +6909,7 @@ glTextureSubImage2DEXT
     a8
     a9
     )
-glCopyTextureImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyTextureImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -6917,7 +6928,7 @@ glCopyTextureImage1DEXT
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglCopyTextureImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyTextureImage1DEXT fgl
 
     a0
     a1
@@ -6928,7 +6939,7 @@ glCopyTextureImage1DEXT
     a6
     a7
     )
-glCopyTextureImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyTextureImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -6949,7 +6960,7 @@ glCopyTextureImage2DEXT
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglCopyTextureImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyTextureImage2DEXT fgl
 
     a0
     a1
@@ -6961,7 +6972,7 @@ glCopyTextureImage2DEXT
     a7
     a8
     )
-glCopyTextureSubImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyTextureSubImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -6978,7 +6989,7 @@ glCopyTextureSubImage1DEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglCopyTextureSubImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyTextureSubImage1DEXT fgl
 
     a0
     a1
@@ -6988,7 +6999,7 @@ glCopyTextureSubImage1DEXT
     a5
     a6
     )
-glCopyTextureSubImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyTextureSubImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -7009,7 +7020,7 @@ glCopyTextureSubImage2DEXT
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglCopyTextureSubImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyTextureSubImage2DEXT fgl
 
     a0
     a1
@@ -7021,7 +7032,7 @@ glCopyTextureSubImage2DEXT
     a7
     a8
     )
-glGetTextureImageEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTextureImageEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -7036,7 +7047,7 @@ glGetTextureImageEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglGetTextureImageEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTextureImageEXT fgl
 
     a0
     a1
@@ -7045,7 +7056,7 @@ glGetTextureImageEXT
     a4
     a5
     )
-glGetTextureParameterfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTextureParameterfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -7056,14 +7067,14 @@ glGetTextureParameterfvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetTextureParameterfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTextureParameterfvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetTextureParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTextureParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -7074,14 +7085,14 @@ glGetTextureParameterivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetTextureParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTextureParameterivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetTextureLevelParameterfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTextureLevelParameterfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -7094,7 +7105,7 @@ glGetTextureLevelParameterfvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetTextureLevelParameterfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTextureLevelParameterfvEXT fgl
 
     a0
     a1
@@ -7102,7 +7113,7 @@ glGetTextureLevelParameterfvEXT
     a3
     a4
     )
-glGetTextureLevelParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTextureLevelParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -7115,7 +7126,7 @@ glGetTextureLevelParameterivEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetTextureLevelParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTextureLevelParameterivEXT fgl
 
     a0
     a1
@@ -7123,7 +7134,7 @@ glGetTextureLevelParameterivEXT
     a3
     a4
     )
-glTextureImage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureImage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -7148,7 +7159,7 @@ glTextureImage3DEXT
     a8
     a9
     a10
-    = ask >>= \fgl -> (liftIO $ rglTextureImage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureImage3DEXT fgl
 
     a0
     a1
@@ -7162,7 +7173,7 @@ glTextureImage3DEXT
     a9
     a10
     )
-glTextureSubImage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureSubImage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -7189,7 +7200,7 @@ glTextureSubImage3DEXT
     a9
     a10
     a11
-    = ask >>= \fgl -> (liftIO $ rglTextureSubImage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureSubImage3DEXT fgl
 
     a0
     a1
@@ -7204,7 +7215,7 @@ glTextureSubImage3DEXT
     a10
     a11
     )
-glCopyTextureSubImage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyTextureSubImage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -7227,7 +7238,7 @@ glCopyTextureSubImage3DEXT
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglCopyTextureSubImage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyTextureSubImage3DEXT fgl
 
     a0
     a1
@@ -7240,7 +7251,7 @@ glCopyTextureSubImage3DEXT
     a8
     a9
     )
-glBindMultiTextureEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glBindMultiTextureEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLuint ->
@@ -7249,13 +7260,13 @@ glBindMultiTextureEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglBindMultiTextureEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindMultiTextureEXT fgl
 
     a0
     a1
     a2
     )
-glMultiTexCoordPointerEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexCoordPointerEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLint ->
     GLenum ->
@@ -7268,7 +7279,7 @@ glMultiTexCoordPointerEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglMultiTexCoordPointerEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexCoordPointerEXT fgl
 
     a0
     a1
@@ -7276,7 +7287,7 @@ glMultiTexCoordPointerEXT
     a3
     a4
     )
-glMultiTexEnvfEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexEnvfEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7287,14 +7298,14 @@ glMultiTexEnvfEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexEnvfEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexEnvfEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexEnvfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexEnvfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7305,14 +7316,14 @@ glMultiTexEnvfvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexEnvfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexEnvfvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexEnviEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexEnviEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7323,14 +7334,14 @@ glMultiTexEnviEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexEnviEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexEnviEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexEnvivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexEnvivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7341,14 +7352,14 @@ glMultiTexEnvivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexEnvivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexEnvivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexGendEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexGendEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7359,14 +7370,14 @@ glMultiTexGendEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexGendEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexGendEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexGendvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexGendvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7377,14 +7388,14 @@ glMultiTexGendvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexGendvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexGendvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexGenfEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexGenfEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7395,14 +7406,14 @@ glMultiTexGenfEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexGenfEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexGenfEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexGenfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexGenfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7413,14 +7424,14 @@ glMultiTexGenfvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexGenfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexGenfvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexGeniEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexGeniEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7431,14 +7442,14 @@ glMultiTexGeniEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexGeniEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexGeniEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexGenivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexGenivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7449,14 +7460,14 @@ glMultiTexGenivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexGenivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexGenivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetMultiTexEnvfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexEnvfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7467,14 +7478,14 @@ glGetMultiTexEnvfvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexEnvfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexEnvfvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetMultiTexEnvivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexEnvivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7485,14 +7496,14 @@ glGetMultiTexEnvivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexEnvivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexEnvivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetMultiTexGendvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexGendvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7503,14 +7514,14 @@ glGetMultiTexGendvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexGendvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexGendvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetMultiTexGenfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexGenfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7521,14 +7532,14 @@ glGetMultiTexGenfvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexGenfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexGenfvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetMultiTexGenivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexGenivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7539,14 +7550,14 @@ glGetMultiTexGenivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexGenivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexGenivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexParameteriEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexParameteriEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7557,14 +7568,14 @@ glMultiTexParameteriEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexParameteriEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexParameteriEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7575,14 +7586,14 @@ glMultiTexParameterivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexParameterivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexParameterfEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexParameterfEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7593,14 +7604,14 @@ glMultiTexParameterfEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexParameterfEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexParameterfEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexParameterfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexParameterfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7611,14 +7622,14 @@ glMultiTexParameterfvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexParameterfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexParameterfvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7639,7 +7650,7 @@ glMultiTexImage1DEXT
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglMultiTexImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexImage1DEXT fgl
 
     a0
     a1
@@ -7651,7 +7662,7 @@ glMultiTexImage1DEXT
     a7
     a8
     )
-glMultiTexImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7674,7 +7685,7 @@ glMultiTexImage2DEXT
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglMultiTexImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexImage2DEXT fgl
 
     a0
     a1
@@ -7687,7 +7698,7 @@ glMultiTexImage2DEXT
     a8
     a9
     )
-glMultiTexSubImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexSubImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7706,7 +7717,7 @@ glMultiTexSubImage1DEXT
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglMultiTexSubImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexSubImage1DEXT fgl
 
     a0
     a1
@@ -7717,7 +7728,7 @@ glMultiTexSubImage1DEXT
     a6
     a7
     )
-glMultiTexSubImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexSubImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7740,7 +7751,7 @@ glMultiTexSubImage2DEXT
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglMultiTexSubImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexSubImage2DEXT fgl
 
     a0
     a1
@@ -7753,7 +7764,7 @@ glMultiTexSubImage2DEXT
     a8
     a9
     )
-glCopyMultiTexImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyMultiTexImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7772,7 +7783,7 @@ glCopyMultiTexImage1DEXT
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglCopyMultiTexImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyMultiTexImage1DEXT fgl
 
     a0
     a1
@@ -7783,7 +7794,7 @@ glCopyMultiTexImage1DEXT
     a6
     a7
     )
-glCopyMultiTexImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyMultiTexImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7804,7 +7815,7 @@ glCopyMultiTexImage2DEXT
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglCopyMultiTexImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyMultiTexImage2DEXT fgl
 
     a0
     a1
@@ -7816,7 +7827,7 @@ glCopyMultiTexImage2DEXT
     a7
     a8
     )
-glCopyMultiTexSubImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyMultiTexSubImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7833,7 +7844,7 @@ glCopyMultiTexSubImage1DEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglCopyMultiTexSubImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyMultiTexSubImage1DEXT fgl
 
     a0
     a1
@@ -7843,7 +7854,7 @@ glCopyMultiTexSubImage1DEXT
     a5
     a6
     )
-glCopyMultiTexSubImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyMultiTexSubImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7864,7 +7875,7 @@ glCopyMultiTexSubImage2DEXT
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglCopyMultiTexSubImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyMultiTexSubImage2DEXT fgl
 
     a0
     a1
@@ -7876,7 +7887,7 @@ glCopyMultiTexSubImage2DEXT
     a7
     a8
     )
-glGetMultiTexImageEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexImageEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7891,7 +7902,7 @@ glGetMultiTexImageEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexImageEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexImageEXT fgl
 
     a0
     a1
@@ -7900,7 +7911,7 @@ glGetMultiTexImageEXT
     a4
     a5
     )
-glGetMultiTexParameterfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexParameterfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7911,14 +7922,14 @@ glGetMultiTexParameterfvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexParameterfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexParameterfvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetMultiTexParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -7929,14 +7940,14 @@ glGetMultiTexParameterivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexParameterivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetMultiTexLevelParameterfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexLevelParameterfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7949,7 +7960,7 @@ glGetMultiTexLevelParameterfvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexLevelParameterfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexLevelParameterfvEXT fgl
 
     a0
     a1
@@ -7957,7 +7968,7 @@ glGetMultiTexLevelParameterfvEXT
     a3
     a4
     )
-glGetMultiTexLevelParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexLevelParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -7970,7 +7981,7 @@ glGetMultiTexLevelParameterivEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexLevelParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexLevelParameterivEXT fgl
 
     a0
     a1
@@ -7978,7 +7989,7 @@ glGetMultiTexLevelParameterivEXT
     a3
     a4
     )
-glMultiTexImage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexImage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -8003,7 +8014,7 @@ glMultiTexImage3DEXT
     a8
     a9
     a10
-    = ask >>= \fgl -> (liftIO $ rglMultiTexImage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexImage3DEXT fgl
 
     a0
     a1
@@ -8017,7 +8028,7 @@ glMultiTexImage3DEXT
     a9
     a10
     )
-glMultiTexSubImage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexSubImage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -8044,7 +8055,7 @@ glMultiTexSubImage3DEXT
     a9
     a10
     a11
-    = ask >>= \fgl -> (liftIO $ rglMultiTexSubImage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexSubImage3DEXT fgl
 
     a0
     a1
@@ -8059,7 +8070,7 @@ glMultiTexSubImage3DEXT
     a10
     a11
     )
-glCopyMultiTexSubImage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCopyMultiTexSubImage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -8082,7 +8093,7 @@ glCopyMultiTexSubImage3DEXT
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglCopyMultiTexSubImage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCopyMultiTexSubImage3DEXT fgl
 
     a0
     a1
@@ -8095,31 +8106,31 @@ glCopyMultiTexSubImage3DEXT
     a8
     a9
     )
-glEnableClientStateIndexedEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glEnableClientStateIndexedEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glEnableClientStateIndexedEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglEnableClientStateIndexedEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglEnableClientStateIndexedEXT fgl
 
     a0
     a1
     )
-glDisableClientStateIndexedEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glDisableClientStateIndexedEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glDisableClientStateIndexedEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDisableClientStateIndexedEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglDisableClientStateIndexedEXT fgl
 
     a0
     a1
     )
-glGetFloatIndexedvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetFloatIndexedvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (GLfloat) ->
@@ -8128,13 +8139,13 @@ glGetFloatIndexedvEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetFloatIndexedvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetFloatIndexedvEXT fgl
 
     a0
     a1
     a2
     )
-glGetDoubleIndexedvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetDoubleIndexedvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (GLdouble) ->
@@ -8143,13 +8154,13 @@ glGetDoubleIndexedvEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetDoubleIndexedvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetDoubleIndexedvEXT fgl
 
     a0
     a1
     a2
     )
-glGetPointerIndexedvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetPointerIndexedvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (Ptr ()) ->
@@ -8158,49 +8169,49 @@ glGetPointerIndexedvEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetPointerIndexedvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetPointerIndexedvEXT fgl
 
     a0
     a1
     a2
     )
-glEnableIndexedEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glEnableIndexedEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glEnableIndexedEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglEnableIndexedEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglEnableIndexedEXT fgl
 
     a0
     a1
     )
-glDisableIndexedEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glDisableIndexedEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glDisableIndexedEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDisableIndexedEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglDisableIndexedEXT fgl
 
     a0
     a1
     )
-glIsEnabledIndexedEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glIsEnabledIndexedEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( GLboolean )
 glIsEnabledIndexedEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglIsEnabledIndexedEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsEnabledIndexedEXT fgl
 
     a0
     a1
     )
-glGetIntegerIndexedvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetIntegerIndexedvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (GLint) ->
@@ -8209,13 +8220,13 @@ glGetIntegerIndexedvEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetIntegerIndexedvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetIntegerIndexedvEXT fgl
 
     a0
     a1
     a2
     )
-glGetBooleanIndexedvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetBooleanIndexedvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (GLboolean) ->
@@ -8224,13 +8235,13 @@ glGetBooleanIndexedvEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetBooleanIndexedvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetBooleanIndexedvEXT fgl
 
     a0
     a1
     a2
     )
-glCompressedTextureImage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTextureImage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -8253,7 +8264,7 @@ glCompressedTextureImage3DEXT
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglCompressedTextureImage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTextureImage3DEXT fgl
 
     a0
     a1
@@ -8266,7 +8277,7 @@ glCompressedTextureImage3DEXT
     a8
     a9
     )
-glCompressedTextureImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTextureImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -8287,7 +8298,7 @@ glCompressedTextureImage2DEXT
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglCompressedTextureImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTextureImage2DEXT fgl
 
     a0
     a1
@@ -8299,7 +8310,7 @@ glCompressedTextureImage2DEXT
     a7
     a8
     )
-glCompressedTextureImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTextureImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -8318,7 +8329,7 @@ glCompressedTextureImage1DEXT
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglCompressedTextureImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTextureImage1DEXT fgl
 
     a0
     a1
@@ -8329,7 +8340,7 @@ glCompressedTextureImage1DEXT
     a6
     a7
     )
-glCompressedTextureSubImage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTextureSubImage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -8356,7 +8367,7 @@ glCompressedTextureSubImage3DEXT
     a9
     a10
     a11
-    = ask >>= \fgl -> (liftIO $ rglCompressedTextureSubImage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTextureSubImage3DEXT fgl
 
     a0
     a1
@@ -8371,7 +8382,7 @@ glCompressedTextureSubImage3DEXT
     a10
     a11
     )
-glCompressedTextureSubImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTextureSubImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -8394,7 +8405,7 @@ glCompressedTextureSubImage2DEXT
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglCompressedTextureSubImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTextureSubImage2DEXT fgl
 
     a0
     a1
@@ -8407,7 +8418,7 @@ glCompressedTextureSubImage2DEXT
     a8
     a9
     )
-glCompressedTextureSubImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedTextureSubImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -8426,7 +8437,7 @@ glCompressedTextureSubImage1DEXT
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglCompressedTextureSubImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedTextureSubImage1DEXT fgl
 
     a0
     a1
@@ -8437,7 +8448,7 @@ glCompressedTextureSubImage1DEXT
     a6
     a7
     )
-glGetCompressedTextureImageEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetCompressedTextureImageEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -8448,14 +8459,14 @@ glGetCompressedTextureImageEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetCompressedTextureImageEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetCompressedTextureImageEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glCompressedMultiTexImage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedMultiTexImage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -8478,7 +8489,7 @@ glCompressedMultiTexImage3DEXT
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglCompressedMultiTexImage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedMultiTexImage3DEXT fgl
 
     a0
     a1
@@ -8491,7 +8502,7 @@ glCompressedMultiTexImage3DEXT
     a8
     a9
     )
-glCompressedMultiTexImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedMultiTexImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -8512,7 +8523,7 @@ glCompressedMultiTexImage2DEXT
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglCompressedMultiTexImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedMultiTexImage2DEXT fgl
 
     a0
     a1
@@ -8524,7 +8535,7 @@ glCompressedMultiTexImage2DEXT
     a7
     a8
     )
-glCompressedMultiTexImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedMultiTexImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -8543,7 +8554,7 @@ glCompressedMultiTexImage1DEXT
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglCompressedMultiTexImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedMultiTexImage1DEXT fgl
 
     a0
     a1
@@ -8554,7 +8565,7 @@ glCompressedMultiTexImage1DEXT
     a6
     a7
     )
-glCompressedMultiTexSubImage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedMultiTexSubImage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -8581,7 +8592,7 @@ glCompressedMultiTexSubImage3DEXT
     a9
     a10
     a11
-    = ask >>= \fgl -> (liftIO $ rglCompressedMultiTexSubImage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedMultiTexSubImage3DEXT fgl
 
     a0
     a1
@@ -8596,7 +8607,7 @@ glCompressedMultiTexSubImage3DEXT
     a10
     a11
     )
-glCompressedMultiTexSubImage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedMultiTexSubImage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -8619,7 +8630,7 @@ glCompressedMultiTexSubImage2DEXT
     a7
     a8
     a9
-    = ask >>= \fgl -> (liftIO $ rglCompressedMultiTexSubImage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedMultiTexSubImage2DEXT fgl
 
     a0
     a1
@@ -8632,7 +8643,7 @@ glCompressedMultiTexSubImage2DEXT
     a8
     a9
     )
-glCompressedMultiTexSubImage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCompressedMultiTexSubImage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -8651,7 +8662,7 @@ glCompressedMultiTexSubImage1DEXT
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglCompressedMultiTexSubImage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCompressedMultiTexSubImage1DEXT fgl
 
     a0
     a1
@@ -8662,7 +8673,7 @@ glCompressedMultiTexSubImage1DEXT
     a6
     a7
     )
-glGetCompressedMultiTexImageEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetCompressedMultiTexImageEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLint ->
@@ -8673,62 +8684,62 @@ glGetCompressedMultiTexImageEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetCompressedMultiTexImageEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetCompressedMultiTexImageEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMatrixLoadTransposefEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixLoadTransposefEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLfloat) ->
     m ( () )
 glMatrixLoadTransposefEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglMatrixLoadTransposefEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixLoadTransposefEXT fgl
 
     a0
     a1
     )
-glMatrixLoadTransposedEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixLoadTransposedEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLdouble) ->
     m ( () )
 glMatrixLoadTransposedEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglMatrixLoadTransposedEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixLoadTransposedEXT fgl
 
     a0
     a1
     )
-glMatrixMultTransposefEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixMultTransposefEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLfloat) ->
     m ( () )
 glMatrixMultTransposefEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglMatrixMultTransposefEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixMultTransposefEXT fgl
 
     a0
     a1
     )
-glMatrixMultTransposedEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMatrixMultTransposedEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     Ptr (GLdouble) ->
     m ( () )
 glMatrixMultTransposedEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglMatrixMultTransposedEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMatrixMultTransposedEXT fgl
 
     a0
     a1
     )
-glNamedBufferDataEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedBufferDataEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizeiptr ->
     Ptr () ->
@@ -8739,14 +8750,14 @@ glNamedBufferDataEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglNamedBufferDataEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedBufferDataEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glNamedBufferSubDataEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedBufferSubDataEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLintptr ->
     GLsizeiptr ->
@@ -8757,35 +8768,35 @@ glNamedBufferSubDataEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglNamedBufferSubDataEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedBufferSubDataEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMapNamedBufferEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMapNamedBufferEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     m ( Ptr () )
 glMapNamedBufferEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglMapNamedBufferEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMapNamedBufferEXT fgl
 
     a0
     a1
     )
-glUnmapNamedBufferEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glUnmapNamedBufferEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glUnmapNamedBufferEXT
     a0
-    = ask >>= \fgl -> (liftIO $ rglUnmapNamedBufferEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglUnmapNamedBufferEXT fgl
 
     a0
     )
-glGetNamedBufferParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedBufferParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -8794,13 +8805,13 @@ glGetNamedBufferParameterivEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetNamedBufferParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedBufferParameterivEXT fgl
 
     a0
     a1
     a2
     )
-glGetNamedBufferPointervEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedBufferPointervEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (Ptr ()) ->
@@ -8809,13 +8820,13 @@ glGetNamedBufferPointervEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetNamedBufferPointervEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedBufferPointervEXT fgl
 
     a0
     a1
     a2
     )
-glGetNamedBufferSubDataEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedBufferSubDataEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLintptr ->
     GLsizeiptr ->
@@ -8826,14 +8837,14 @@ glGetNamedBufferSubDataEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetNamedBufferSubDataEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedBufferSubDataEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform1fEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1fEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLfloat ->
@@ -8842,13 +8853,13 @@ glProgramUniform1fEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1fEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1fEXT fgl
 
     a0
     a1
     a2
     )
-glProgramUniform2fEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2fEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLfloat ->
@@ -8859,14 +8870,14 @@ glProgramUniform2fEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2fEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2fEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3fEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3fEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLfloat ->
@@ -8879,7 +8890,7 @@ glProgramUniform3fEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3fEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3fEXT fgl
 
     a0
     a1
@@ -8887,7 +8898,7 @@ glProgramUniform3fEXT
     a3
     a4
     )
-glProgramUniform4fEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4fEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLfloat ->
@@ -8902,7 +8913,7 @@ glProgramUniform4fEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4fEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4fEXT fgl
 
     a0
     a1
@@ -8911,7 +8922,7 @@ glProgramUniform4fEXT
     a4
     a5
     )
-glProgramUniform1iEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1iEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -8920,13 +8931,13 @@ glProgramUniform1iEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1iEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1iEXT fgl
 
     a0
     a1
     a2
     )
-glProgramUniform2iEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2iEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -8937,14 +8948,14 @@ glProgramUniform2iEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2iEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2iEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3iEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3iEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -8957,7 +8968,7 @@ glProgramUniform3iEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3iEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3iEXT fgl
 
     a0
     a1
@@ -8965,7 +8976,7 @@ glProgramUniform3iEXT
     a3
     a4
     )
-glProgramUniform4iEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4iEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -8980,7 +8991,7 @@ glProgramUniform4iEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4iEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4iEXT fgl
 
     a0
     a1
@@ -8989,7 +9000,7 @@ glProgramUniform4iEXT
     a4
     a5
     )
-glProgramUniform1fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9000,14 +9011,14 @@ glProgramUniform1fvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1fvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9018,14 +9029,14 @@ glProgramUniform2fvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2fvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9036,14 +9047,14 @@ glProgramUniform3fvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3fvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform4fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9054,14 +9065,14 @@ glProgramUniform4fvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4fvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform1ivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1ivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9072,14 +9083,14 @@ glProgramUniform1ivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1ivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1ivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2ivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2ivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9090,14 +9101,14 @@ glProgramUniform2ivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2ivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2ivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3ivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3ivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9108,14 +9119,14 @@ glProgramUniform3ivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3ivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3ivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform4ivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4ivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9126,14 +9137,14 @@ glProgramUniform4ivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4ivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4ivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniformMatrix2fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9146,7 +9157,7 @@ glProgramUniformMatrix2fvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2fvEXT fgl
 
     a0
     a1
@@ -9154,7 +9165,7 @@ glProgramUniformMatrix2fvEXT
     a3
     a4
     )
-glProgramUniformMatrix3fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9167,7 +9178,7 @@ glProgramUniformMatrix3fvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3fvEXT fgl
 
     a0
     a1
@@ -9175,7 +9186,7 @@ glProgramUniformMatrix3fvEXT
     a3
     a4
     )
-glProgramUniformMatrix4fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9188,7 +9199,7 @@ glProgramUniformMatrix4fvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4fvEXT fgl
 
     a0
     a1
@@ -9196,7 +9207,7 @@ glProgramUniformMatrix4fvEXT
     a3
     a4
     )
-glProgramUniformMatrix2x3fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2x3fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9209,7 +9220,7 @@ glProgramUniformMatrix2x3fvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x3fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x3fvEXT fgl
 
     a0
     a1
@@ -9217,7 +9228,7 @@ glProgramUniformMatrix2x3fvEXT
     a3
     a4
     )
-glProgramUniformMatrix3x2fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3x2fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9230,7 +9241,7 @@ glProgramUniformMatrix3x2fvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x2fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x2fvEXT fgl
 
     a0
     a1
@@ -9238,7 +9249,7 @@ glProgramUniformMatrix3x2fvEXT
     a3
     a4
     )
-glProgramUniformMatrix2x4fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2x4fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9251,7 +9262,7 @@ glProgramUniformMatrix2x4fvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x4fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x4fvEXT fgl
 
     a0
     a1
@@ -9259,7 +9270,7 @@ glProgramUniformMatrix2x4fvEXT
     a3
     a4
     )
-glProgramUniformMatrix4x2fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4x2fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9272,7 +9283,7 @@ glProgramUniformMatrix4x2fvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x2fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x2fvEXT fgl
 
     a0
     a1
@@ -9280,7 +9291,7 @@ glProgramUniformMatrix4x2fvEXT
     a3
     a4
     )
-glProgramUniformMatrix3x4fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3x4fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9293,7 +9304,7 @@ glProgramUniformMatrix3x4fvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x4fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x4fvEXT fgl
 
     a0
     a1
@@ -9301,7 +9312,7 @@ glProgramUniformMatrix3x4fvEXT
     a3
     a4
     )
-glProgramUniformMatrix4x3fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4x3fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9314,7 +9325,7 @@ glProgramUniformMatrix4x3fvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x3fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x3fvEXT fgl
 
     a0
     a1
@@ -9322,7 +9333,7 @@ glProgramUniformMatrix4x3fvEXT
     a3
     a4
     )
-glTextureBufferEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureBufferEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -9333,14 +9344,14 @@ glTextureBufferEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglTextureBufferEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureBufferEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexBufferEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexBufferEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -9351,14 +9362,14 @@ glMultiTexBufferEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexBufferEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexBufferEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glTextureParameterIivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureParameterIivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -9369,14 +9380,14 @@ glTextureParameterIivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglTextureParameterIivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureParameterIivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glTextureParameterIuivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureParameterIuivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -9387,14 +9398,14 @@ glTextureParameterIuivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglTextureParameterIuivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureParameterIuivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetTextureParameterIivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTextureParameterIivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -9405,14 +9416,14 @@ glGetTextureParameterIivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetTextureParameterIivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTextureParameterIivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetTextureParameterIuivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetTextureParameterIuivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -9423,14 +9434,14 @@ glGetTextureParameterIuivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetTextureParameterIuivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetTextureParameterIuivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexParameterIivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexParameterIivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -9441,14 +9452,14 @@ glMultiTexParameterIivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexParameterIivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexParameterIivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMultiTexParameterIuivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexParameterIuivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -9459,14 +9470,14 @@ glMultiTexParameterIuivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMultiTexParameterIuivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexParameterIuivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetMultiTexParameterIivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexParameterIivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -9477,14 +9488,14 @@ glGetMultiTexParameterIivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexParameterIivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexParameterIivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetMultiTexParameterIuivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetMultiTexParameterIuivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLenum ->
@@ -9495,14 +9506,14 @@ glGetMultiTexParameterIuivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetMultiTexParameterIuivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetMultiTexParameterIuivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform1uiEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1uiEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLuint ->
@@ -9511,13 +9522,13 @@ glProgramUniform1uiEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1uiEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1uiEXT fgl
 
     a0
     a1
     a2
     )
-glProgramUniform2uiEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2uiEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLuint ->
@@ -9528,14 +9539,14 @@ glProgramUniform2uiEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2uiEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2uiEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3uiEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3uiEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLuint ->
@@ -9548,7 +9559,7 @@ glProgramUniform3uiEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3uiEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3uiEXT fgl
 
     a0
     a1
@@ -9556,7 +9567,7 @@ glProgramUniform3uiEXT
     a3
     a4
     )
-glProgramUniform4uiEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4uiEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLuint ->
@@ -9571,7 +9582,7 @@ glProgramUniform4uiEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4uiEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4uiEXT fgl
 
     a0
     a1
@@ -9580,7 +9591,7 @@ glProgramUniform4uiEXT
     a4
     a5
     )
-glProgramUniform1uivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1uivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9591,14 +9602,14 @@ glProgramUniform1uivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1uivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1uivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2uivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2uivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9609,14 +9620,14 @@ glProgramUniform2uivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2uivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2uivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3uivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3uivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9627,14 +9638,14 @@ glProgramUniform3uivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3uivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3uivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform4uivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4uivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -9645,14 +9656,14 @@ glProgramUniform4uivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4uivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4uivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glNamedProgramLocalParameters4fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParameters4fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9665,7 +9676,7 @@ glNamedProgramLocalParameters4fvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParameters4fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParameters4fvEXT fgl
 
     a0
     a1
@@ -9673,7 +9684,7 @@ glNamedProgramLocalParameters4fvEXT
     a3
     a4
     )
-glNamedProgramLocalParameterI4iEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParameterI4iEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9690,7 +9701,7 @@ glNamedProgramLocalParameterI4iEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParameterI4iEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParameterI4iEXT fgl
 
     a0
     a1
@@ -9700,7 +9711,7 @@ glNamedProgramLocalParameterI4iEXT
     a5
     a6
     )
-glNamedProgramLocalParameterI4ivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParameterI4ivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9711,14 +9722,14 @@ glNamedProgramLocalParameterI4ivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParameterI4ivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParameterI4ivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glNamedProgramLocalParametersI4ivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParametersI4ivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9731,7 +9742,7 @@ glNamedProgramLocalParametersI4ivEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParametersI4ivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParametersI4ivEXT fgl
 
     a0
     a1
@@ -9739,7 +9750,7 @@ glNamedProgramLocalParametersI4ivEXT
     a3
     a4
     )
-glNamedProgramLocalParameterI4uiEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParameterI4uiEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9756,7 +9767,7 @@ glNamedProgramLocalParameterI4uiEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParameterI4uiEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParameterI4uiEXT fgl
 
     a0
     a1
@@ -9766,7 +9777,7 @@ glNamedProgramLocalParameterI4uiEXT
     a5
     a6
     )
-glNamedProgramLocalParameterI4uivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParameterI4uivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9777,14 +9788,14 @@ glNamedProgramLocalParameterI4uivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParameterI4uivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParameterI4uivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glNamedProgramLocalParametersI4uivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParametersI4uivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9797,7 +9808,7 @@ glNamedProgramLocalParametersI4uivEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParametersI4uivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParametersI4uivEXT fgl
 
     a0
     a1
@@ -9805,7 +9816,7 @@ glNamedProgramLocalParametersI4uivEXT
     a3
     a4
     )
-glGetNamedProgramLocalParameterIivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedProgramLocalParameterIivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9816,14 +9827,14 @@ glGetNamedProgramLocalParameterIivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetNamedProgramLocalParameterIivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedProgramLocalParameterIivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetNamedProgramLocalParameterIuivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedProgramLocalParameterIuivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9834,38 +9845,38 @@ glGetNamedProgramLocalParameterIuivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetNamedProgramLocalParameterIuivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedProgramLocalParameterIuivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glEnableClientStateiEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glEnableClientStateiEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glEnableClientStateiEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglEnableClientStateiEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglEnableClientStateiEXT fgl
 
     a0
     a1
     )
-glDisableClientStateiEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glDisableClientStateiEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     m ( () )
 glDisableClientStateiEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDisableClientStateiEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglDisableClientStateiEXT fgl
 
     a0
     a1
     )
-glGetFloati_vEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetFloati_vEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (GLfloat) ->
@@ -9874,13 +9885,13 @@ glGetFloati_vEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetFloati_vEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetFloati_vEXT fgl
 
     a0
     a1
     a2
     )
-glGetDoublei_vEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetDoublei_vEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (GLdouble) ->
@@ -9889,13 +9900,13 @@ glGetDoublei_vEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetDoublei_vEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetDoublei_vEXT fgl
 
     a0
     a1
     a2
     )
-glGetPointeri_vEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetPointeri_vEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLuint ->
     Ptr (Ptr ()) ->
@@ -9904,13 +9915,13 @@ glGetPointeri_vEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetPointeri_vEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetPointeri_vEXT fgl
 
     a0
     a1
     a2
     )
-glNamedProgramStringEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramStringEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -9923,7 +9934,7 @@ glNamedProgramStringEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramStringEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramStringEXT fgl
 
     a0
     a1
@@ -9931,7 +9942,7 @@ glNamedProgramStringEXT
     a3
     a4
     )
-glNamedProgramLocalParameter4dEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParameter4dEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9948,7 +9959,7 @@ glNamedProgramLocalParameter4dEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParameter4dEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParameter4dEXT fgl
 
     a0
     a1
@@ -9958,7 +9969,7 @@ glNamedProgramLocalParameter4dEXT
     a5
     a6
     )
-glNamedProgramLocalParameter4dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParameter4dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9969,14 +9980,14 @@ glNamedProgramLocalParameter4dvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParameter4dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParameter4dvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glNamedProgramLocalParameter4fEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParameter4fEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -9993,7 +10004,7 @@ glNamedProgramLocalParameter4fEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParameter4fEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParameter4fEXT fgl
 
     a0
     a1
@@ -10003,7 +10014,7 @@ glNamedProgramLocalParameter4fEXT
     a5
     a6
     )
-glNamedProgramLocalParameter4fvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedProgramLocalParameter4fvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -10014,14 +10025,14 @@ glNamedProgramLocalParameter4fvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglNamedProgramLocalParameter4fvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedProgramLocalParameter4fvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetNamedProgramLocalParameterdvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedProgramLocalParameterdvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -10032,14 +10043,14 @@ glGetNamedProgramLocalParameterdvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetNamedProgramLocalParameterdvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedProgramLocalParameterdvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetNamedProgramLocalParameterfvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedProgramLocalParameterfvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -10050,14 +10061,14 @@ glGetNamedProgramLocalParameterfvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetNamedProgramLocalParameterfvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedProgramLocalParameterfvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetNamedProgramivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedProgramivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -10068,14 +10079,14 @@ glGetNamedProgramivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetNamedProgramivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedProgramivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetNamedProgramStringEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedProgramStringEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -10086,14 +10097,14 @@ glGetNamedProgramStringEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetNamedProgramStringEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedProgramStringEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glNamedRenderbufferStorageEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedRenderbufferStorageEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLsizei ->
@@ -10104,14 +10115,14 @@ glNamedRenderbufferStorageEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglNamedRenderbufferStorageEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedRenderbufferStorageEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetNamedRenderbufferParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedRenderbufferParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -10120,13 +10131,13 @@ glGetNamedRenderbufferParameterivEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetNamedRenderbufferParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedRenderbufferParameterivEXT fgl
 
     a0
     a1
     a2
     )
-glNamedRenderbufferStorageMultisampleEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedRenderbufferStorageMultisampleEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     GLenum ->
@@ -10139,7 +10150,7 @@ glNamedRenderbufferStorageMultisampleEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglNamedRenderbufferStorageMultisampleEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedRenderbufferStorageMultisampleEXT fgl
 
     a0
     a1
@@ -10147,7 +10158,7 @@ glNamedRenderbufferStorageMultisampleEXT
     a3
     a4
     )
-glNamedRenderbufferStorageMultisampleCoverageEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedRenderbufferStorageMultisampleCoverageEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     GLsizei ->
@@ -10162,7 +10173,7 @@ glNamedRenderbufferStorageMultisampleCoverageEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglNamedRenderbufferStorageMultisampleCoverageEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedRenderbufferStorageMultisampleCoverageEXT fgl
 
     a0
     a1
@@ -10171,19 +10182,19 @@ glNamedRenderbufferStorageMultisampleCoverageEXT
     a4
     a5
     )
-glCheckNamedFramebufferStatusEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glCheckNamedFramebufferStatusEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     m ( GLenum )
 glCheckNamedFramebufferStatusEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglCheckNamedFramebufferStatusEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglCheckNamedFramebufferStatusEXT fgl
 
     a0
     a1
     )
-glNamedFramebufferTexture1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedFramebufferTexture1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -10196,7 +10207,7 @@ glNamedFramebufferTexture1DEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglNamedFramebufferTexture1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedFramebufferTexture1DEXT fgl
 
     a0
     a1
@@ -10204,7 +10215,7 @@ glNamedFramebufferTexture1DEXT
     a3
     a4
     )
-glNamedFramebufferTexture2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedFramebufferTexture2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -10217,7 +10228,7 @@ glNamedFramebufferTexture2DEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglNamedFramebufferTexture2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedFramebufferTexture2DEXT fgl
 
     a0
     a1
@@ -10225,7 +10236,7 @@ glNamedFramebufferTexture2DEXT
     a3
     a4
     )
-glNamedFramebufferTexture3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedFramebufferTexture3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -10240,7 +10251,7 @@ glNamedFramebufferTexture3DEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglNamedFramebufferTexture3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedFramebufferTexture3DEXT fgl
 
     a0
     a1
@@ -10249,7 +10260,7 @@ glNamedFramebufferTexture3DEXT
     a4
     a5
     )
-glNamedFramebufferRenderbufferEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedFramebufferRenderbufferEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -10260,14 +10271,14 @@ glNamedFramebufferRenderbufferEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglNamedFramebufferRenderbufferEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedFramebufferRenderbufferEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetNamedFramebufferAttachmentParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedFramebufferAttachmentParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -10278,50 +10289,50 @@ glGetNamedFramebufferAttachmentParameterivEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetNamedFramebufferAttachmentParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedFramebufferAttachmentParameterivEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGenerateTextureMipmapEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGenerateTextureMipmapEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     m ( () )
 glGenerateTextureMipmapEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGenerateTextureMipmapEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenerateTextureMipmapEXT fgl
 
     a0
     a1
     )
-glGenerateMultiTexMipmapEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGenerateMultiTexMipmapEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     m ( () )
 glGenerateMultiTexMipmapEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGenerateMultiTexMipmapEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenerateMultiTexMipmapEXT fgl
 
     a0
     a1
     )
-glFramebufferDrawBufferEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glFramebufferDrawBufferEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     m ( () )
 glFramebufferDrawBufferEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglFramebufferDrawBufferEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglFramebufferDrawBufferEXT fgl
 
     a0
     a1
     )
-glFramebufferDrawBuffersEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glFramebufferDrawBuffersEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (GLenum) ->
@@ -10330,25 +10341,25 @@ glFramebufferDrawBuffersEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglFramebufferDrawBuffersEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglFramebufferDrawBuffersEXT fgl
 
     a0
     a1
     a2
     )
-glFramebufferReadBufferEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glFramebufferReadBufferEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     m ( () )
 glFramebufferReadBufferEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglFramebufferReadBufferEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglFramebufferReadBufferEXT fgl
 
     a0
     a1
     )
-glGetFramebufferParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetFramebufferParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -10357,13 +10368,13 @@ glGetFramebufferParameterivEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetFramebufferParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetFramebufferParameterivEXT fgl
 
     a0
     a1
     a2
     )
-glNamedCopyBufferSubDataEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedCopyBufferSubDataEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLintptr ->
@@ -10376,7 +10387,7 @@ glNamedCopyBufferSubDataEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglNamedCopyBufferSubDataEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedCopyBufferSubDataEXT fgl
 
     a0
     a1
@@ -10384,7 +10395,7 @@ glNamedCopyBufferSubDataEXT
     a3
     a4
     )
-glNamedFramebufferTextureEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedFramebufferTextureEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -10395,14 +10406,14 @@ glNamedFramebufferTextureEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglNamedFramebufferTextureEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedFramebufferTextureEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glNamedFramebufferTextureLayerEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedFramebufferTextureLayerEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -10415,7 +10426,7 @@ glNamedFramebufferTextureLayerEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglNamedFramebufferTextureLayerEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedFramebufferTextureLayerEXT fgl
 
     a0
     a1
@@ -10423,7 +10434,7 @@ glNamedFramebufferTextureLayerEXT
     a3
     a4
     )
-glNamedFramebufferTextureFaceEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedFramebufferTextureFaceEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -10436,7 +10447,7 @@ glNamedFramebufferTextureFaceEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglNamedFramebufferTextureFaceEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedFramebufferTextureFaceEXT fgl
 
     a0
     a1
@@ -10444,7 +10455,7 @@ glNamedFramebufferTextureFaceEXT
     a3
     a4
     )
-glTextureRenderbufferEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureRenderbufferEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLuint ->
@@ -10453,13 +10464,13 @@ glTextureRenderbufferEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglTextureRenderbufferEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureRenderbufferEXT fgl
 
     a0
     a1
     a2
     )
-glMultiTexRenderbufferEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMultiTexRenderbufferEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLenum ->
     GLuint ->
@@ -10468,13 +10479,13 @@ glMultiTexRenderbufferEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglMultiTexRenderbufferEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMultiTexRenderbufferEXT fgl
 
     a0
     a1
     a2
     )
-glVertexArrayVertexOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayVertexOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLint ->
@@ -10489,7 +10500,7 @@ glVertexArrayVertexOffsetEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayVertexOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayVertexOffsetEXT fgl
 
     a0
     a1
@@ -10498,7 +10509,7 @@ glVertexArrayVertexOffsetEXT
     a4
     a5
     )
-glVertexArrayColorOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayColorOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLint ->
@@ -10513,7 +10524,7 @@ glVertexArrayColorOffsetEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayColorOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayColorOffsetEXT fgl
 
     a0
     a1
@@ -10522,7 +10533,7 @@ glVertexArrayColorOffsetEXT
     a4
     a5
     )
-glVertexArrayEdgeFlagOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayEdgeFlagOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLsizei ->
@@ -10533,14 +10544,14 @@ glVertexArrayEdgeFlagOffsetEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayEdgeFlagOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayEdgeFlagOffsetEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glVertexArrayIndexOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayIndexOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLenum ->
@@ -10553,7 +10564,7 @@ glVertexArrayIndexOffsetEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayIndexOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayIndexOffsetEXT fgl
 
     a0
     a1
@@ -10561,7 +10572,7 @@ glVertexArrayIndexOffsetEXT
     a3
     a4
     )
-glVertexArrayNormalOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayNormalOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLenum ->
@@ -10574,7 +10585,7 @@ glVertexArrayNormalOffsetEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayNormalOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayNormalOffsetEXT fgl
 
     a0
     a1
@@ -10582,7 +10593,7 @@ glVertexArrayNormalOffsetEXT
     a3
     a4
     )
-glVertexArrayTexCoordOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayTexCoordOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLint ->
@@ -10597,7 +10608,7 @@ glVertexArrayTexCoordOffsetEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayTexCoordOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayTexCoordOffsetEXT fgl
 
     a0
     a1
@@ -10606,7 +10617,7 @@ glVertexArrayTexCoordOffsetEXT
     a4
     a5
     )
-glVertexArrayMultiTexCoordOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayMultiTexCoordOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLenum ->
@@ -10623,7 +10634,7 @@ glVertexArrayMultiTexCoordOffsetEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayMultiTexCoordOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayMultiTexCoordOffsetEXT fgl
 
     a0
     a1
@@ -10633,7 +10644,7 @@ glVertexArrayMultiTexCoordOffsetEXT
     a5
     a6
     )
-glVertexArrayFogCoordOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayFogCoordOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLenum ->
@@ -10646,7 +10657,7 @@ glVertexArrayFogCoordOffsetEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayFogCoordOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayFogCoordOffsetEXT fgl
 
     a0
     a1
@@ -10654,7 +10665,7 @@ glVertexArrayFogCoordOffsetEXT
     a3
     a4
     )
-glVertexArraySecondaryColorOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArraySecondaryColorOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLint ->
@@ -10669,7 +10680,7 @@ glVertexArraySecondaryColorOffsetEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglVertexArraySecondaryColorOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArraySecondaryColorOffsetEXT fgl
 
     a0
     a1
@@ -10678,7 +10689,7 @@ glVertexArraySecondaryColorOffsetEXT
     a4
     a5
     )
-glVertexArrayVertexAttribOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayVertexAttribOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -10697,7 +10708,7 @@ glVertexArrayVertexAttribOffsetEXT
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribOffsetEXT fgl
 
     a0
     a1
@@ -10708,7 +10719,7 @@ glVertexArrayVertexAttribOffsetEXT
     a6
     a7
     )
-glVertexArrayVertexAttribIOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayVertexAttribIOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -10725,7 +10736,7 @@ glVertexArrayVertexAttribIOffsetEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribIOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribIOffsetEXT fgl
 
     a0
     a1
@@ -10735,55 +10746,55 @@ glVertexArrayVertexAttribIOffsetEXT
     a5
     a6
     )
-glEnableVertexArrayEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glEnableVertexArrayEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     m ( () )
 glEnableVertexArrayEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglEnableVertexArrayEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglEnableVertexArrayEXT fgl
 
     a0
     a1
     )
-glDisableVertexArrayEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glDisableVertexArrayEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     m ( () )
 glDisableVertexArrayEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDisableVertexArrayEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglDisableVertexArrayEXT fgl
 
     a0
     a1
     )
-glEnableVertexArrayAttribEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glEnableVertexArrayAttribEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     m ( () )
 glEnableVertexArrayAttribEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglEnableVertexArrayAttribEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglEnableVertexArrayAttribEXT fgl
 
     a0
     a1
     )
-glDisableVertexArrayAttribEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glDisableVertexArrayAttribEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     m ( () )
 glDisableVertexArrayAttribEXT
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDisableVertexArrayAttribEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglDisableVertexArrayAttribEXT fgl
 
     a0
     a1
     )
-glGetVertexArrayIntegervEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetVertexArrayIntegervEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -10792,13 +10803,13 @@ glGetVertexArrayIntegervEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetVertexArrayIntegervEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetVertexArrayIntegervEXT fgl
 
     a0
     a1
     a2
     )
-glGetVertexArrayPointervEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetVertexArrayPointervEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (Ptr ()) ->
@@ -10807,13 +10818,13 @@ glGetVertexArrayPointervEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetVertexArrayPointervEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetVertexArrayPointervEXT fgl
 
     a0
     a1
     a2
     )
-glGetVertexArrayIntegeri_vEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetVertexArrayIntegeri_vEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLenum ->
@@ -10824,14 +10835,14 @@ glGetVertexArrayIntegeri_vEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetVertexArrayIntegeri_vEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetVertexArrayIntegeri_vEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glGetVertexArrayPointeri_vEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetVertexArrayPointeri_vEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLenum ->
@@ -10842,14 +10853,14 @@ glGetVertexArrayPointeri_vEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetVertexArrayPointeri_vEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetVertexArrayPointeri_vEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glMapNamedBufferRangeEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glMapNamedBufferRangeEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLintptr ->
     GLsizeiptr ->
@@ -10860,14 +10871,14 @@ glMapNamedBufferRangeEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglMapNamedBufferRangeEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglMapNamedBufferRangeEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glFlushMappedNamedBufferRangeEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glFlushMappedNamedBufferRangeEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLintptr ->
     GLsizeiptr ->
@@ -10876,13 +10887,13 @@ glFlushMappedNamedBufferRangeEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglFlushMappedNamedBufferRangeEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglFlushMappedNamedBufferRangeEXT fgl
 
     a0
     a1
     a2
     )
-glNamedBufferStorageEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedBufferStorageEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizeiptr ->
     Ptr () ->
@@ -10893,14 +10904,14 @@ glNamedBufferStorageEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglNamedBufferStorageEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedBufferStorageEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glClearNamedBufferDataEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glClearNamedBufferDataEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -10913,7 +10924,7 @@ glClearNamedBufferDataEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglClearNamedBufferDataEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglClearNamedBufferDataEXT fgl
 
     a0
     a1
@@ -10921,7 +10932,7 @@ glClearNamedBufferDataEXT
     a3
     a4
     )
-glClearNamedBufferSubDataEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glClearNamedBufferSubDataEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLsizeiptr ->
@@ -10938,7 +10949,7 @@ glClearNamedBufferSubDataEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglClearNamedBufferSubDataEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglClearNamedBufferSubDataEXT fgl
 
     a0
     a1
@@ -10948,7 +10959,7 @@ glClearNamedBufferSubDataEXT
     a5
     a6
     )
-glNamedFramebufferParameteriEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glNamedFramebufferParameteriEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLint ->
@@ -10957,13 +10968,13 @@ glNamedFramebufferParameteriEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglNamedFramebufferParameteriEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglNamedFramebufferParameteriEXT fgl
 
     a0
     a1
     a2
     )
-glGetNamedFramebufferParameterivEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glGetNamedFramebufferParameterivEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -10972,13 +10983,13 @@ glGetNamedFramebufferParameterivEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetNamedFramebufferParameterivEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetNamedFramebufferParameterivEXT fgl
 
     a0
     a1
     a2
     )
-glProgramUniform1dEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1dEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLdouble ->
@@ -10987,13 +10998,13 @@ glProgramUniform1dEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1dEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1dEXT fgl
 
     a0
     a1
     a2
     )
-glProgramUniform2dEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2dEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLdouble ->
@@ -11004,14 +11015,14 @@ glProgramUniform2dEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2dEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2dEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3dEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3dEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLdouble ->
@@ -11024,7 +11035,7 @@ glProgramUniform3dEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3dEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3dEXT fgl
 
     a0
     a1
@@ -11032,7 +11043,7 @@ glProgramUniform3dEXT
     a3
     a4
     )
-glProgramUniform4dEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4dEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLdouble ->
@@ -11047,7 +11058,7 @@ glProgramUniform4dEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4dEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4dEXT fgl
 
     a0
     a1
@@ -11056,7 +11067,7 @@ glProgramUniform4dEXT
     a4
     a5
     )
-glProgramUniform1dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11067,14 +11078,14 @@ glProgramUniform1dvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1dvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11085,14 +11096,14 @@ glProgramUniform2dvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2dvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11103,14 +11114,14 @@ glProgramUniform3dvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3dvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform4dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11121,14 +11132,14 @@ glProgramUniform4dvEXT
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4dvEXT fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniformMatrix2dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11141,7 +11152,7 @@ glProgramUniformMatrix2dvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2dvEXT fgl
 
     a0
     a1
@@ -11149,7 +11160,7 @@ glProgramUniformMatrix2dvEXT
     a3
     a4
     )
-glProgramUniformMatrix3dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11162,7 +11173,7 @@ glProgramUniformMatrix3dvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3dvEXT fgl
 
     a0
     a1
@@ -11170,7 +11181,7 @@ glProgramUniformMatrix3dvEXT
     a3
     a4
     )
-glProgramUniformMatrix4dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11183,7 +11194,7 @@ glProgramUniformMatrix4dvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4dvEXT fgl
 
     a0
     a1
@@ -11191,7 +11202,7 @@ glProgramUniformMatrix4dvEXT
     a3
     a4
     )
-glProgramUniformMatrix2x3dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2x3dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11204,7 +11215,7 @@ glProgramUniformMatrix2x3dvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x3dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x3dvEXT fgl
 
     a0
     a1
@@ -11212,7 +11223,7 @@ glProgramUniformMatrix2x3dvEXT
     a3
     a4
     )
-glProgramUniformMatrix2x4dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2x4dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11225,7 +11236,7 @@ glProgramUniformMatrix2x4dvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x4dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x4dvEXT fgl
 
     a0
     a1
@@ -11233,7 +11244,7 @@ glProgramUniformMatrix2x4dvEXT
     a3
     a4
     )
-glProgramUniformMatrix3x2dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3x2dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11246,7 +11257,7 @@ glProgramUniformMatrix3x2dvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x2dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x2dvEXT fgl
 
     a0
     a1
@@ -11254,7 +11265,7 @@ glProgramUniformMatrix3x2dvEXT
     a3
     a4
     )
-glProgramUniformMatrix3x4dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3x4dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11267,7 +11278,7 @@ glProgramUniformMatrix3x4dvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x4dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x4dvEXT fgl
 
     a0
     a1
@@ -11275,7 +11286,7 @@ glProgramUniformMatrix3x4dvEXT
     a3
     a4
     )
-glProgramUniformMatrix4x2dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4x2dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11288,7 +11299,7 @@ glProgramUniformMatrix4x2dvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x2dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x2dvEXT fgl
 
     a0
     a1
@@ -11296,7 +11307,7 @@ glProgramUniformMatrix4x2dvEXT
     a3
     a4
     )
-glProgramUniformMatrix4x3dvEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4x3dvEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11309,7 +11320,7 @@ glProgramUniformMatrix4x3dvEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x3dvEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x3dvEXT fgl
 
     a0
     a1
@@ -11317,7 +11328,7 @@ glProgramUniformMatrix4x3dvEXT
     a3
     a4
     )
-glTextureBufferRangeEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureBufferRangeEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLenum ->
@@ -11332,7 +11343,7 @@ glTextureBufferRangeEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglTextureBufferRangeEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureBufferRangeEXT fgl
 
     a0
     a1
@@ -11341,7 +11352,7 @@ glTextureBufferRangeEXT
     a4
     a5
     )
-glTextureStorage1DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureStorage1DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLsizei ->
@@ -11354,7 +11365,7 @@ glTextureStorage1DEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglTextureStorage1DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureStorage1DEXT fgl
 
     a0
     a1
@@ -11362,7 +11373,7 @@ glTextureStorage1DEXT
     a3
     a4
     )
-glTextureStorage2DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureStorage2DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLsizei ->
@@ -11377,7 +11388,7 @@ glTextureStorage2DEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglTextureStorage2DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureStorage2DEXT fgl
 
     a0
     a1
@@ -11386,7 +11397,7 @@ glTextureStorage2DEXT
     a4
     a5
     )
-glTextureStorage3DEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureStorage3DEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLsizei ->
@@ -11403,7 +11414,7 @@ glTextureStorage3DEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglTextureStorage3DEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureStorage3DEXT fgl
 
     a0
     a1
@@ -11413,7 +11424,7 @@ glTextureStorage3DEXT
     a5
     a6
     )
-glTextureStorage2DMultisampleEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureStorage2DMultisampleEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLsizei ->
@@ -11430,7 +11441,7 @@ glTextureStorage2DMultisampleEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglTextureStorage2DMultisampleEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureStorage2DMultisampleEXT fgl
 
     a0
     a1
@@ -11440,7 +11451,7 @@ glTextureStorage2DMultisampleEXT
     a5
     a6
     )
-glTextureStorage3DMultisampleEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTextureStorage3DMultisampleEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     GLsizei ->
@@ -11459,7 +11470,7 @@ glTextureStorage3DMultisampleEXT
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglTextureStorage3DMultisampleEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTextureStorage3DMultisampleEXT fgl
 
     a0
     a1
@@ -11470,7 +11481,7 @@ glTextureStorage3DMultisampleEXT
     a6
     a7
     )
-glVertexArrayBindVertexBufferEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayBindVertexBufferEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -11483,7 +11494,7 @@ glVertexArrayBindVertexBufferEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayBindVertexBufferEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayBindVertexBufferEXT fgl
 
     a0
     a1
@@ -11491,7 +11502,7 @@ glVertexArrayBindVertexBufferEXT
     a3
     a4
     )
-glVertexArrayVertexAttribFormatEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayVertexAttribFormatEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLint ->
@@ -11506,7 +11517,7 @@ glVertexArrayVertexAttribFormatEXT
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribFormatEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribFormatEXT fgl
 
     a0
     a1
@@ -11515,7 +11526,7 @@ glVertexArrayVertexAttribFormatEXT
     a4
     a5
     )
-glVertexArrayVertexAttribIFormatEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayVertexAttribIFormatEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLint ->
@@ -11528,7 +11539,7 @@ glVertexArrayVertexAttribIFormatEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribIFormatEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribIFormatEXT fgl
 
     a0
     a1
@@ -11536,7 +11547,7 @@ glVertexArrayVertexAttribIFormatEXT
     a3
     a4
     )
-glVertexArrayVertexAttribLFormatEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayVertexAttribLFormatEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLint ->
@@ -11549,7 +11560,7 @@ glVertexArrayVertexAttribLFormatEXT
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribLFormatEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribLFormatEXT fgl
 
     a0
     a1
@@ -11557,7 +11568,7 @@ glVertexArrayVertexAttribLFormatEXT
     a3
     a4
     )
-glVertexArrayVertexAttribBindingEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayVertexAttribBindingEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -11566,13 +11577,13 @@ glVertexArrayVertexAttribBindingEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribBindingEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribBindingEXT fgl
 
     a0
     a1
     a2
     )
-glVertexArrayVertexBindingDivisorEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayVertexBindingDivisorEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -11581,13 +11592,13 @@ glVertexArrayVertexBindingDivisorEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayVertexBindingDivisorEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayVertexBindingDivisorEXT fgl
 
     a0
     a1
     a2
     )
-glVertexArrayVertexAttribLOffsetEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayVertexAttribLOffsetEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -11604,7 +11615,7 @@ glVertexArrayVertexAttribLOffsetEXT
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribLOffsetEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribLOffsetEXT fgl
 
     a0
     a1
@@ -11614,7 +11625,7 @@ glVertexArrayVertexAttribLOffsetEXT
     a5
     a6
     )
-glTexturePageCommitmentEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glTexturePageCommitmentEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -11635,7 +11646,7 @@ glTexturePageCommitmentEXT
     a6
     a7
     a8
-    = ask >>= \fgl -> (liftIO $ rglTexturePageCommitmentEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglTexturePageCommitmentEXT fgl
 
     a0
     a1
@@ -11647,7 +11658,7 @@ glTexturePageCommitmentEXT
     a7
     a8
     )
-glVertexArrayVertexAttribDivisorEXT :: (MonadIO m, MonadReader FlextGL m) =>
+glVertexArrayVertexAttribDivisorEXT :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     GLuint ->
@@ -11656,13 +11667,13 @@ glVertexArrayVertexAttribDivisorEXT
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribDivisorEXT fgl
+    = askGL >>= \fgl -> (liftIO $ rglVertexArrayVertexAttribDivisorEXT fgl
 
     a0
     a1
     a2
     )
-glBufferStorage :: (MonadIO m, MonadReader FlextGL m) =>
+glBufferStorage :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizeiptr ->
     Ptr () ->
@@ -11673,14 +11684,14 @@ glBufferStorage
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglBufferStorage fgl
+    = askGL >>= \fgl -> (liftIO $ rglBufferStorage fgl
 
     a0
     a1
     a2
     a3
     )
-glUseProgramStages :: (MonadIO m, MonadReader FlextGL m) =>
+glUseProgramStages :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLbitfield ->
     GLuint ->
@@ -11689,25 +11700,25 @@ glUseProgramStages
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglUseProgramStages fgl
+    = askGL >>= \fgl -> (liftIO $ rglUseProgramStages fgl
 
     a0
     a1
     a2
     )
-glActiveShaderProgram :: (MonadIO m, MonadReader FlextGL m) =>
+glActiveShaderProgram :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLuint ->
     m ( () )
 glActiveShaderProgram
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglActiveShaderProgram fgl
+    = askGL >>= \fgl -> (liftIO $ rglActiveShaderProgram fgl
 
     a0
     a1
     )
-glCreateShaderProgramv :: (MonadIO m, MonadReader FlextGL m) =>
+glCreateShaderProgramv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     Ptr (Ptr (GLchar)) ->
@@ -11716,55 +11727,55 @@ glCreateShaderProgramv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglCreateShaderProgramv fgl
+    = askGL >>= \fgl -> (liftIO $ rglCreateShaderProgramv fgl
 
     a0
     a1
     a2
     )
-glBindProgramPipeline :: (MonadIO m, MonadReader FlextGL m) =>
+glBindProgramPipeline :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glBindProgramPipeline
     a0
-    = ask >>= \fgl -> (liftIO $ rglBindProgramPipeline fgl
+    = askGL >>= \fgl -> (liftIO $ rglBindProgramPipeline fgl
 
     a0
     )
-glDeleteProgramPipelines :: (MonadIO m, MonadReader FlextGL m) =>
+glDeleteProgramPipelines :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glDeleteProgramPipelines
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglDeleteProgramPipelines fgl
+    = askGL >>= \fgl -> (liftIO $ rglDeleteProgramPipelines fgl
 
     a0
     a1
     )
-glGenProgramPipelines :: (MonadIO m, MonadReader FlextGL m) =>
+glGenProgramPipelines :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLsizei ->
     Ptr (GLuint) ->
     m ( () )
 glGenProgramPipelines
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglGenProgramPipelines fgl
+    = askGL >>= \fgl -> (liftIO $ rglGenProgramPipelines fgl
 
     a0
     a1
     )
-glIsProgramPipeline :: (MonadIO m, MonadReader FlextGL m) =>
+glIsProgramPipeline :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( GLboolean )
 glIsProgramPipeline
     a0
-    = ask >>= \fgl -> (liftIO $ rglIsProgramPipeline fgl
+    = askGL >>= \fgl -> (liftIO $ rglIsProgramPipeline fgl
 
     a0
     )
-glGetProgramPipelineiv :: (MonadIO m, MonadReader FlextGL m) =>
+glGetProgramPipelineiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLenum ->
     Ptr (GLint) ->
@@ -11773,13 +11784,13 @@ glGetProgramPipelineiv
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglGetProgramPipelineiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetProgramPipelineiv fgl
 
     a0
     a1
     a2
     )
-glProgramUniform1i :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -11788,13 +11799,13 @@ glProgramUniform1i
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1i fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1i fgl
 
     a0
     a1
     a2
     )
-glProgramUniform1iv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11805,14 +11816,14 @@ glProgramUniform1iv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1iv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform1f :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLfloat ->
@@ -11821,13 +11832,13 @@ glProgramUniform1f
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1f fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1f fgl
 
     a0
     a1
     a2
     )
-glProgramUniform1fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11838,14 +11849,14 @@ glProgramUniform1fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1fv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform1d :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1d :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLdouble ->
@@ -11854,13 +11865,13 @@ glProgramUniform1d
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1d fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1d fgl
 
     a0
     a1
     a2
     )
-glProgramUniform1dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11871,14 +11882,14 @@ glProgramUniform1dv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1dv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform1ui :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLuint ->
@@ -11887,13 +11898,13 @@ glProgramUniform1ui
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1ui fgl
 
     a0
     a1
     a2
     )
-glProgramUniform1uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform1uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11904,14 +11915,14 @@ glProgramUniform1uiv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform1uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform1uiv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2i :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -11922,14 +11933,14 @@ glProgramUniform2i
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2i fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2i fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2iv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11940,14 +11951,14 @@ glProgramUniform2iv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2iv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2f :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLfloat ->
@@ -11958,14 +11969,14 @@ glProgramUniform2f
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2f fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2f fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -11976,14 +11987,14 @@ glProgramUniform2fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2fv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2d :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2d :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLdouble ->
@@ -11994,14 +12005,14 @@ glProgramUniform2d
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2d fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2d fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12012,14 +12023,14 @@ glProgramUniform2dv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2dv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2ui :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLuint ->
@@ -12030,14 +12041,14 @@ glProgramUniform2ui
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2ui fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform2uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform2uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12048,14 +12059,14 @@ glProgramUniform2uiv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform2uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform2uiv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3i :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -12068,7 +12079,7 @@ glProgramUniform3i
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3i fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3i fgl
 
     a0
     a1
@@ -12076,7 +12087,7 @@ glProgramUniform3i
     a3
     a4
     )
-glProgramUniform3iv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12087,14 +12098,14 @@ glProgramUniform3iv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3iv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3f :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLfloat ->
@@ -12107,7 +12118,7 @@ glProgramUniform3f
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3f fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3f fgl
 
     a0
     a1
@@ -12115,7 +12126,7 @@ glProgramUniform3f
     a3
     a4
     )
-glProgramUniform3fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12126,14 +12137,14 @@ glProgramUniform3fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3fv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3d :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3d :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLdouble ->
@@ -12146,7 +12157,7 @@ glProgramUniform3d
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3d fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3d fgl
 
     a0
     a1
@@ -12154,7 +12165,7 @@ glProgramUniform3d
     a3
     a4
     )
-glProgramUniform3dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12165,14 +12176,14 @@ glProgramUniform3dv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3dv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform3ui :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLuint ->
@@ -12185,7 +12196,7 @@ glProgramUniform3ui
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3ui fgl
 
     a0
     a1
@@ -12193,7 +12204,7 @@ glProgramUniform3ui
     a3
     a4
     )
-glProgramUniform3uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform3uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12204,14 +12215,14 @@ glProgramUniform3uiv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform3uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform3uiv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform4i :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4i :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -12226,7 +12237,7 @@ glProgramUniform4i
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4i fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4i fgl
 
     a0
     a1
@@ -12235,7 +12246,7 @@ glProgramUniform4i
     a4
     a5
     )
-glProgramUniform4iv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4iv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12246,14 +12257,14 @@ glProgramUniform4iv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4iv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4iv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform4f :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4f :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLfloat ->
@@ -12268,7 +12279,7 @@ glProgramUniform4f
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4f fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4f fgl
 
     a0
     a1
@@ -12277,7 +12288,7 @@ glProgramUniform4f
     a4
     a5
     )
-glProgramUniform4fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12288,14 +12299,14 @@ glProgramUniform4fv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4fv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform4d :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4d :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLdouble ->
@@ -12310,7 +12321,7 @@ glProgramUniform4d
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4d fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4d fgl
 
     a0
     a1
@@ -12319,7 +12330,7 @@ glProgramUniform4d
     a4
     a5
     )
-glProgramUniform4dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12330,14 +12341,14 @@ glProgramUniform4dv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4dv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniform4ui :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4ui :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLuint ->
@@ -12352,7 +12363,7 @@ glProgramUniform4ui
     a3
     a4
     a5
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4ui fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4ui fgl
 
     a0
     a1
@@ -12361,7 +12372,7 @@ glProgramUniform4ui
     a4
     a5
     )
-glProgramUniform4uiv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniform4uiv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12372,14 +12383,14 @@ glProgramUniform4uiv
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglProgramUniform4uiv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniform4uiv fgl
 
     a0
     a1
     a2
     a3
     )
-glProgramUniformMatrix2fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12392,7 +12403,7 @@ glProgramUniformMatrix2fv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2fv fgl
 
     a0
     a1
@@ -12400,7 +12411,7 @@ glProgramUniformMatrix2fv
     a3
     a4
     )
-glProgramUniformMatrix3fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12413,7 +12424,7 @@ glProgramUniformMatrix3fv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3fv fgl
 
     a0
     a1
@@ -12421,7 +12432,7 @@ glProgramUniformMatrix3fv
     a3
     a4
     )
-glProgramUniformMatrix4fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12434,7 +12445,7 @@ glProgramUniformMatrix4fv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4fv fgl
 
     a0
     a1
@@ -12442,7 +12453,7 @@ glProgramUniformMatrix4fv
     a3
     a4
     )
-glProgramUniformMatrix2dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12455,7 +12466,7 @@ glProgramUniformMatrix2dv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2dv fgl
 
     a0
     a1
@@ -12463,7 +12474,7 @@ glProgramUniformMatrix2dv
     a3
     a4
     )
-glProgramUniformMatrix3dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12476,7 +12487,7 @@ glProgramUniformMatrix3dv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3dv fgl
 
     a0
     a1
@@ -12484,7 +12495,7 @@ glProgramUniformMatrix3dv
     a3
     a4
     )
-glProgramUniformMatrix4dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12497,7 +12508,7 @@ glProgramUniformMatrix4dv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4dv fgl
 
     a0
     a1
@@ -12505,7 +12516,7 @@ glProgramUniformMatrix4dv
     a3
     a4
     )
-glProgramUniformMatrix2x3fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2x3fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12518,7 +12529,7 @@ glProgramUniformMatrix2x3fv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x3fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x3fv fgl
 
     a0
     a1
@@ -12526,7 +12537,7 @@ glProgramUniformMatrix2x3fv
     a3
     a4
     )
-glProgramUniformMatrix3x2fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3x2fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12539,7 +12550,7 @@ glProgramUniformMatrix3x2fv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x2fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x2fv fgl
 
     a0
     a1
@@ -12547,7 +12558,7 @@ glProgramUniformMatrix3x2fv
     a3
     a4
     )
-glProgramUniformMatrix2x4fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2x4fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12560,7 +12571,7 @@ glProgramUniformMatrix2x4fv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x4fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x4fv fgl
 
     a0
     a1
@@ -12568,7 +12579,7 @@ glProgramUniformMatrix2x4fv
     a3
     a4
     )
-glProgramUniformMatrix4x2fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4x2fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12581,7 +12592,7 @@ glProgramUniformMatrix4x2fv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x2fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x2fv fgl
 
     a0
     a1
@@ -12589,7 +12600,7 @@ glProgramUniformMatrix4x2fv
     a3
     a4
     )
-glProgramUniformMatrix3x4fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3x4fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12602,7 +12613,7 @@ glProgramUniformMatrix3x4fv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x4fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x4fv fgl
 
     a0
     a1
@@ -12610,7 +12621,7 @@ glProgramUniformMatrix3x4fv
     a3
     a4
     )
-glProgramUniformMatrix4x3fv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4x3fv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12623,7 +12634,7 @@ glProgramUniformMatrix4x3fv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x3fv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x3fv fgl
 
     a0
     a1
@@ -12631,7 +12642,7 @@ glProgramUniformMatrix4x3fv
     a3
     a4
     )
-glProgramUniformMatrix2x3dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2x3dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12644,7 +12655,7 @@ glProgramUniformMatrix2x3dv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x3dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x3dv fgl
 
     a0
     a1
@@ -12652,7 +12663,7 @@ glProgramUniformMatrix2x3dv
     a3
     a4
     )
-glProgramUniformMatrix3x2dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3x2dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12665,7 +12676,7 @@ glProgramUniformMatrix3x2dv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x2dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x2dv fgl
 
     a0
     a1
@@ -12673,7 +12684,7 @@ glProgramUniformMatrix3x2dv
     a3
     a4
     )
-glProgramUniformMatrix2x4dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix2x4dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12686,7 +12697,7 @@ glProgramUniformMatrix2x4dv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x4dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix2x4dv fgl
 
     a0
     a1
@@ -12694,7 +12705,7 @@ glProgramUniformMatrix2x4dv
     a3
     a4
     )
-glProgramUniformMatrix4x2dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4x2dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12707,7 +12718,7 @@ glProgramUniformMatrix4x2dv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x2dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x2dv fgl
 
     a0
     a1
@@ -12715,7 +12726,7 @@ glProgramUniformMatrix4x2dv
     a3
     a4
     )
-glProgramUniformMatrix3x4dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix3x4dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12728,7 +12739,7 @@ glProgramUniformMatrix3x4dv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x4dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix3x4dv fgl
 
     a0
     a1
@@ -12736,7 +12747,7 @@ glProgramUniformMatrix3x4dv
     a3
     a4
     )
-glProgramUniformMatrix4x3dv :: (MonadIO m, MonadReader FlextGL m) =>
+glProgramUniformMatrix4x3dv :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLsizei ->
@@ -12749,7 +12760,7 @@ glProgramUniformMatrix4x3dv
     a2
     a3
     a4
-    = ask >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x3dv fgl
+    = askGL >>= \fgl -> (liftIO $ rglProgramUniformMatrix4x3dv fgl
 
     a0
     a1
@@ -12757,16 +12768,16 @@ glProgramUniformMatrix4x3dv
     a3
     a4
     )
-glValidateProgramPipeline :: (MonadIO m, MonadReader FlextGL m) =>
+glValidateProgramPipeline :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glValidateProgramPipeline
     a0
-    = ask >>= \fgl -> (liftIO $ rglValidateProgramPipeline fgl
+    = askGL >>= \fgl -> (liftIO $ rglValidateProgramPipeline fgl
 
     a0
     )
-glGetProgramPipelineInfoLog :: (MonadIO m, MonadReader FlextGL m) =>
+glGetProgramPipelineInfoLog :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLsizei ->
     Ptr (GLsizei) ->
@@ -12777,14 +12788,14 @@ glGetProgramPipelineInfoLog
     a1
     a2
     a3
-    = ask >>= \fgl -> (liftIO $ rglGetProgramPipelineInfoLog fgl
+    = askGL >>= \fgl -> (liftIO $ rglGetProgramPipelineInfoLog fgl
 
     a0
     a1
     a2
     a3
     )
-glInvalidateTexSubImage :: (MonadIO m, MonadReader FlextGL m) =>
+glInvalidateTexSubImage :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     GLint ->
@@ -12803,7 +12814,7 @@ glInvalidateTexSubImage
     a5
     a6
     a7
-    = ask >>= \fgl -> (liftIO $ rglInvalidateTexSubImage fgl
+    = askGL >>= \fgl -> (liftIO $ rglInvalidateTexSubImage fgl
 
     a0
     a1
@@ -12814,19 +12825,19 @@ glInvalidateTexSubImage
     a6
     a7
     )
-glInvalidateTexImage :: (MonadIO m, MonadReader FlextGL m) =>
+glInvalidateTexImage :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLint ->
     m ( () )
 glInvalidateTexImage
     a0
     a1
-    = ask >>= \fgl -> (liftIO $ rglInvalidateTexImage fgl
+    = askGL >>= \fgl -> (liftIO $ rglInvalidateTexImage fgl
 
     a0
     a1
     )
-glInvalidateBufferSubData :: (MonadIO m, MonadReader FlextGL m) =>
+glInvalidateBufferSubData :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     GLintptr ->
     GLsizeiptr ->
@@ -12835,22 +12846,22 @@ glInvalidateBufferSubData
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglInvalidateBufferSubData fgl
+    = askGL >>= \fgl -> (liftIO $ rglInvalidateBufferSubData fgl
 
     a0
     a1
     a2
     )
-glInvalidateBufferData :: (MonadIO m, MonadReader FlextGL m) =>
+glInvalidateBufferData :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLuint ->
     m ( () )
 glInvalidateBufferData
     a0
-    = ask >>= \fgl -> (liftIO $ rglInvalidateBufferData fgl
+    = askGL >>= \fgl -> (liftIO $ rglInvalidateBufferData fgl
 
     a0
     )
-glInvalidateFramebuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glInvalidateFramebuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     Ptr (GLenum) ->
@@ -12859,13 +12870,13 @@ glInvalidateFramebuffer
     a0
     a1
     a2
-    = ask >>= \fgl -> (liftIO $ rglInvalidateFramebuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglInvalidateFramebuffer fgl
 
     a0
     a1
     a2
     )
-glInvalidateSubFramebuffer :: (MonadIO m, MonadReader FlextGL m) =>
+glInvalidateSubFramebuffer :: (MonadIO m, MonadReader e m, HasFlextGL e, Functor m) =>
     GLenum ->
     GLsizei ->
     Ptr (GLenum) ->
@@ -12882,7 +12893,7 @@ glInvalidateSubFramebuffer
     a4
     a5
     a6
-    = ask >>= \fgl -> (liftIO $ rglInvalidateSubFramebuffer fgl
+    = askGL >>= \fgl -> (liftIO $ rglInvalidateSubFramebuffer fgl
 
     a0
     a1

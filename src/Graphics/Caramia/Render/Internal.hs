@@ -2,12 +2,10 @@
 
 module Graphics.Caramia.Render.Internal where
 
-import Graphics.Caramia.Prelude
-
-import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
-import Graphics.Caramia.Context.Internal
 import Control.Monad.Catch
+import Graphics.Caramia.Context.Internal
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude
 
 -- | A comparison function. Incoming value is compared with this function to
 -- the existing value.

@@ -25,25 +25,25 @@ module Graphics.Caramia.Texture
     -- * Mipmapping
     , generateMipmaps
     -- * Texture parameters
-    , setWrapping
-    , getWrapping
-    , setMinFilter
-    , setMagFilter
-    , getMinFilter
-    , getMagFilter
     , setAnisotropy
     , getAnisotropy
-    , setCompareMode
     , getCompareMode
+    , setCompareMode
+    , getMinFilter
+    , setMinFilter
+    , getMagFilter
+    , setMagFilter
+    , setWrapping
+    , getWrapping
+    , CompareMode(..)
     , MinFilter(..)
     , MagFilter(..)
     , Wrapping(..)
-    , CompareMode(..)
     -- * Views
-    , viewSpecification
     , viewWidth
     , viewHeight
     , viewDepth
+    , viewSpecification
     , viewMipmapLevels
     -- * Utilities
     , maxMipmapLevels )
@@ -54,7 +54,6 @@ import Graphics.Caramia.Prelude
 import Graphics.Caramia.Texture.Internal
 import Graphics.Caramia.Internal.TexStorage
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats.Internal

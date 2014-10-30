@@ -15,7 +15,6 @@ module Graphics.Caramia.Internal.TexStorage
 
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 import Graphics.Caramia.Texture.Internal
 import Control.Monad.Catch
 import Foreign.Ptr

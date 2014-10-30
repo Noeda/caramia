@@ -56,7 +56,6 @@ import Graphics.Caramia.Context
 import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Graphics.Caramia.Math
 

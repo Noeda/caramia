@@ -6,13 +6,11 @@ import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Graphics.Caramia.Context.Internal
 import qualified Graphics.Caramia.Texture.Internal as Tex
 import Control.Monad.Catch
 import Control.Monad.Reader
-import Control.Monad.IO.Class
 import Foreign
 
 data Framebuffer s =

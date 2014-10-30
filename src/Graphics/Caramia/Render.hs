@@ -52,7 +52,6 @@ import Graphics.Caramia.Texture.Internal ( withTextureBinding )
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Buffer.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 import Control.Monad.IO.Class
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans

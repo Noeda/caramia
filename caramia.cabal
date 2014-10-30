@@ -119,6 +119,8 @@ library
                        Graphics.Caramia.Internal.FlextGLReader
                        Graphics.Caramia.Internal.FlextGLFlipped
                        Graphics.Caramia.Internal.FlextGLTypes
+                       Graphics.Caramia.Internal.FlextGLFuntypes
+                       Graphics.Caramia.Internal.FlextGLEnums
                        Graphics.Caramia.Context.Internal
                        Graphics.Caramia.Render.Internal
                        Graphics.Caramia.Framebuffer.Internal

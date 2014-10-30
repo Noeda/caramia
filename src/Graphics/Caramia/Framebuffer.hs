@@ -34,29 +34,28 @@ module Graphics.Caramia.Framebuffer
     , viewTargets )
     where
 
-import Graphics.Caramia.Prelude
-import Graphics.Caramia.Context.Internal
-import Graphics.Caramia.Color
-import Graphics.Caramia.Resource
-import Graphics.Caramia.Texture
-import Graphics.Caramia.Framebuffer.Internal
-import qualified Graphics.Caramia.Texture.Internal as Tex
-import Graphics.Caramia.ImageFormats
-import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
-import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Data.List ( nub )
 import Data.Bits
-import System.IO.Unsafe
-import Foreign.Storable
+import qualified Data.IntSet as IS
+import Data.List ( nub )
+import Foreign.C.Types
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
-import Foreign.C.Types
+import Foreign.Storable
 import GHC.Float
-import qualified Data.IntSet as IS
+import Graphics.Caramia.Color
+import Graphics.Caramia.Context.Internal
+import Graphics.Caramia.Framebuffer.Internal
+import Graphics.Caramia.ImageFormats
+import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Resource
+import Graphics.Caramia.Texture
+import qualified Graphics.Caramia.Texture.Internal as Tex
+import System.IO.Unsafe
 
 -- | Returns the screen framebuffer.
 --

@@ -6,7 +6,6 @@ module Graphics.Caramia.Blend.Internal where
 import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Color

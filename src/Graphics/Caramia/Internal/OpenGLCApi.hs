@@ -16,7 +16,6 @@ module Graphics.Caramia.Internal.OpenGLCApi
     , FlextGLM()
     , OpenGLLike
     , runFlextGLM
-    , askGL
     , fgl
     , branchExt
 
@@ -69,7 +68,8 @@ module Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Internal.FlextGLReentrant as Ex
-import Graphics.Caramia.Internal.FlextGLReader
+import Graphics.Caramia.Internal.FlextGLReader as Ex
+import Graphics.Caramia.Internal.FlextGLEnums as Ex
 import Graphics.Caramia.Internal.FlextGLTypes as Ex
 import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Control.Monad.IO.Class
@@ -99,10 +99,6 @@ runFlextGLM gl (FlextGLM r) = runReaderT r gl
 fgl :: OpenGLLike m => (FlextGL -> IO a) -> m a
 fgl fun = ask >>= liftIO . fun
 {-# INLINE fgl #-}
-
-askGL :: FlextGLM FlextGL
-askGL = FlextGLM ask
-{-# INLINE askGL #-}
 
 -- | Executes the first action if the given function evaluates to true,
 -- otherwise the second one.

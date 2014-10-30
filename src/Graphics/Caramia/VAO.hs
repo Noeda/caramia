@@ -28,7 +28,6 @@ import Graphics.Caramia.VAO.Internal
 import Graphics.Caramia.Resource
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Control.Monad.Catch

@@ -36,8 +36,6 @@ import Graphics.Caramia.Prelude
 import Graphics.Caramia.Internal.ContextLocalData
 import Graphics.Caramia.Internal.OpenGLDebug
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReentrant
-import Graphics.Caramia.Internal.FlextGLReader
 import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Graphics.Caramia.Context.Internal
 

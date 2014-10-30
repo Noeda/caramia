@@ -7,7 +7,6 @@ import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Internal.FlextGLReader
 import Graphics.Caramia.Context.Internal
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats
