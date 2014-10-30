@@ -3,18 +3,25 @@
 
 module Graphics.Caramia.Internal.ContextLocalData where
 
-import Graphics.Caramia.Prelude
-import Graphics.Caramia.Context.Internal
+import Control.Concurrent
+import Control.Monad.Catch
+import Control.Monad.IO.Class
+import Data.Dynamic
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Map.Strict as M
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Context.Internal
 import System.IO.Unsafe
-import Data.Dynamic
-import Control.Monad.IO.Class
-import Control.Concurrent
 
 -- | The type of a Caramia context ID.
 newtype ContextID = ContextID { unContextID :: Int }
                     deriving ( Eq, Ord, Show, Typeable )
+
+-- | Thrown when an invalid `ContextID` is used somewhere.
+data InvalidContext = InvalidContext !ContextID
+                      deriving ( Eq, Ord, Show, Typeable )
+
+instance Exception InvalidContext
 
 -- currently running contexts, map from thread IDs to context IDs
 runningContexts :: IORef (M.Map ThreadId ContextID)

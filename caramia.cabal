@@ -136,6 +136,7 @@ library
                       ,transformers  >=0.4 && <1.0
                       ,mtl           >=2.2 && <3.0
                       ,semigroups    >=0.15 && <1.0
+                      ,unagi-chan    >=0.2.0.1 && <0.3
                       ,OpenGLRaw     >=1.5 && <2.0
 
   if !os(windows)

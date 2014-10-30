@@ -7,18 +7,20 @@
 module Graphics.Caramia.Context.Internal
     ( Context(..)
     , ContextState()
+    , coerceContext
     , askFlextGL
     , liftFlextGLM
     , contextState
     , unsafeResumeContext )
     where
 
-import Graphics.Caramia.Prelude
-import Graphics.Caramia.Internal.OpenGLCApi
 import Control.Monad.Catch
 import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Monad.Reader
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude
+import Unsafe.Coerce
 
 -- | Most Caramia operations need to happen in a `Context`.
 --
@@ -84,4 +86,8 @@ unsafeResumeContext (ContextState fgl) (Context action) =
 liftFlextGLM :: FlextGLM a -> Context s a
 liftFlextGLM = Context
 
+-- | Coerces a `Context` value to another. Safe and useful to work around
+-- problematic type system quirks.
+coerceContext :: Context s1 a -> Context s2 a
+coerceContext = unsafeCoerce
 

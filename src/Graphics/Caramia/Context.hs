@@ -10,7 +10,9 @@
 
 {-# LANGUAGE NoImplicitPrelude, ScopedTypeVariables, DeriveDataTypeable #-}
 {-# LANGUAGE CPP, LambdaCase, GeneralizedNewtypeDeriving, RankNTypes #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns, ImpredicativeTypes, ExistentialQuantification #-}
+{-# LANGUAGE GADTs #-}
+-- this is a lot of extensions...
 
 module Graphics.Caramia.Context
     (
@@ -23,6 +25,10 @@ module Graphics.Caramia.Context
     , currentContextID
     , currentContextID'
     , ContextID()
+    -- * Concurrency
+    , runWorkMachine
+    , runInContext
+    , runInContextAsync
     -- * Finalization
     , runPendingFinalizers
     , scheduleFinalizer
@@ -31,28 +37,30 @@ module Graphics.Caramia.Context
     , unsafeResumeContext
     , ContextState()
     -- * Exceptions
-    , TooOldOpenGL(..) )
+    , TooOldOpenGL(..)
+    , InvalidContext(..)
+    , StopRunPendingWork(..) )
     where
 
-import Graphics.Caramia.Prelude
+import qualified Data.Map.Strict as M
+import qualified Data.IntMap.Strict as IM
+import Foreign.Marshal.Alloc
+import Foreign.Ptr
+import Foreign.Storable
 import Graphics.Caramia.Internal.ContextLocalData
-import Graphics.Caramia.Internal.OpenGLDebug
 import Graphics.Caramia.Internal.OpenGLCApi
-import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
+import Graphics.Caramia.Internal.OpenGLDebug
 import Graphics.Caramia.Context.Internal
-
-import Control.Concurrent
+import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
+import Graphics.Caramia.Prelude
+import Graphics.Rendering.OpenGL.Raw.GetProcAddress
+import Control.Concurrent hiding ( newChan, writeChan )
+import Control.Concurrent.Chan.Unagi
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import System.IO.Unsafe
 import System.Environment
-import Graphics.Rendering.OpenGL.Raw.GetProcAddress
-import Foreign.Ptr
-import Foreign.Storable
-import Foreign.Marshal.Alloc
-
-import qualified Data.Map.Strict as M
-import qualified Data.IntMap.Strict as IM
+import Unsafe.Coerce
 
 -- | An exception that is thrown when the OpenGL version is too old for this
 -- library.
@@ -104,8 +112,10 @@ giveContext action = mask $ \restore -> do
     cid <- atomicModifyIORef' nextContextID $ \old ->
                ( old+1, ContextID old )
     tid <- myThreadId
-    atomicModifyIORef' runningContexts $ \old_map ->
-        ( M.insert tid cid old_map, () )
+    atomicModifyIORef_' runningContexts $ M.insert tid cid
+    chans <- ContextWorkQueue <$> newContextWorkQueue
+    atomicModifyIORef_' workMachineQueues $ IM.insert (unContextID cid) chans
+
     finally (restore $ insides flextGL) scrapContext
   where
     Context startup = do
@@ -166,12 +176,10 @@ scrapContext = mask_ $ do
     case maybe_cid of
         Nothing -> return ()
         Just (unContextID -> cid) -> do
-            atomicModifyIORef' runningContexts $ \old_map ->
-                ( M.delete tid old_map, () )
-            atomicModifyIORef' pendingFinalizers $ \old_map ->
-                ( IM.delete cid old_map, () )
-            atomicModifyIORef' contextLocalData $ \old_map ->
-                ( IM.delete cid old_map, () )
+            atomicModifyIORef_' workMachineQueues $ IM.delete cid
+            atomicModifyIORef_' runningContexts $ M.delete tid
+            atomicModifyIORef_' pendingFinalizers $ IM.delete cid
+            atomicModifyIORef_' contextLocalData $ IM.delete cid
 
 -- | Run any pending finalizers in the current Caramia context.
 --
@@ -202,6 +210,104 @@ runPendingFinalizers = mask_ $ do
             Left exc -> scrapContext >> throwM (exc :: SomeException)
             Right () -> return ()
     flushDebugMessages
+
+data Work s where
+    Work :: !(Context s a) -> !(MVar (Either SomeException a)) -> Work s
+    -- maybe change that MVar to an IO action if needed
+
+newtype ContextWorkQueue s = ContextWorkQueue
+    { unQueue :: (InChan (Work s), OutChan (Work s)) }
+    deriving ( Typeable )
+
+-- | See `runWorkMachine`. This exception can be used to interrupt that call.
+data StopRunPendingWork = StopRunPendingWork
+                          deriving ( Eq, Ord, Show, Read, Typeable )
+
+instance Exception StopRunPendingWork
+
+workMachineQueues :: IORef (IM.IntMap (ContextWorkQueue ()))
+workMachineQueues = unsafePerformIO $ newIORef IM.empty
+{-# NOINLINE workMachineQueues #-}
+
+newContextWorkQueue :: IO (InChan (Work ()), OutChan (Work ()))
+newContextWorkQueue = newChan
+
+-- | Runs some work in a `Context`.
+--
+-- This can be used from any thread that is not the context thread. It works by
+-- scheduling the given `Context` action to be run in the thread where
+-- `giveContext` was invoked. The action is only run in `runWorkMachine` call.
+--
+-- If the context is not active, throws `InvalidContext`.
+runInContext :: MonadIO m => ContextID -> Context s a -> m a
+runInContext cid (coerceContext -> action) = liftIO $ do
+    IM.lookup (unContextID cid) <$> readIORef workMachineQueues >>= \case
+        Nothing -> throwM $ InvalidContext cid
+        Just (ContextWorkQueue (chan, _)) -> do
+            mvar <- newEmptyMVar
+            writeChan chan (Work action mvar)
+            takeMVar mvar >>= \case
+                Left exc -> throwM exc
+                Right x -> return x
+
+-- | Same as `runInContext` but returns immediately.
+--
+-- Exceptions thrown in the given `Context` action are lost.
+runInContextAsync :: MonadIO m => ContextID -> Context s () -> m ()
+runInContextAsync cid (coerceContext -> action) = liftIO $ do
+    IM.lookup (unContextID cid) <$> readIORef workMachineQueues >>= \case
+        Nothing -> throwM $ InvalidContext cid
+        Just (ContextWorkQueue (chan, _)) -> do
+            mvar <- newEmptyMVar
+            writeChan chan (Work action mvar)
+            return ()
+
+-- | Runs work scheduled with `runInContext` or `runInContextAsync`. If there
+-- is no work, it blocks and waits.
+--
+-- This represents an alternative way to use this library; you run a work
+-- machine and have separate threads doing the actual work.
+--
+-- Because we cannot distinguish between asynchronous and synchronous
+-- exceptions in work, it is not safe to interrupt this with an exception (the
+-- exception could be sent out to the thread that scheduled work).
+--
+-- As a work-around, a special exception type `StopRunPendingWork` is handled
+-- specially by this function and `runPendingWork` will return. You still need
+-- to catch `StopRunPendingWork` if you don't want the exception to propagate.
+-- `StopRunPendingWork` is also sent back to the thread who scheduled work.
+--
+-- Will not return until interrupted with `StopRunPendingWork`.
+runWorkMachine :: Context s ()
+runWorkMachine = coerceContext $ mask $ \restore -> do
+    cid <- currentContextID
+    chan <- unQueue . fromJust . IM.lookup (unContextID cid) <$>
+            liftIO (readIORef workMachineQueues)
+    recursiveBegin restore (fst chan) (snd chan)
+  where
+    recursiveBegin restore inchan outchan = recursive where
+        recursive :: Context () ()
+        recursive = do
+            work <- liftIO $ readChanOnException outchan (\el -> do
+                x <- el
+                writeChan inchan x)
+            doWork work
+
+        doWork :: Work () -> Context () ()
+        doWork work = case work of
+            Work action result_mvar -> do
+                report_action <- try $ restore (action >>= \x -> return $ liftIO $ putMVar result_mvar $ Right x)
+                liftIO $ case report_action of
+                    Left exc | fromException exc == Just StopRunPendingWork
+                            -> do putMVar result_mvar
+                                          (Left $
+                                           toException StopRunPendingWork)
+                                  throwM StopRunPendingWork
+                    Left exc -> putMVar result_mvar (Left exc)
+                    Right x -> x
+
+    coerceContext :: Context s1 a -> Context s2 a
+    coerceContext = unsafeCoerce
 
 -- | Schedules a finalizer to be run in a Caramia context.
 --
