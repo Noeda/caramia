@@ -20,7 +20,7 @@ import Control.Monad.Catch
 import Foreign.Ptr
 
 -- | glTextureStorage1D
-fakeTextureStorage1D :: (OpenGLLike m, MonadMask m)
+fakeTextureStorage1D :: (OpenGLLike e m, MonadMask m)
                      => GLuint
                      -> GLenum
                      -> GLsizei
@@ -65,7 +65,7 @@ fakeTextureStorage1D texture target levels internalformat width = mask_ $ do
         glBindTexture target old_tex
 
 -- | glTextureStorage2D
-fakeTextureStorage2D :: (OpenGLLike m, MonadMask m)
+fakeTextureStorage2D :: (OpenGLLike e m, MonadMask m)
                      => GLuint
                      -> GLenum
                      -> GLsizei
@@ -147,7 +147,7 @@ cubeSides = [gl_TEXTURE_CUBE_MAP_POSITIVE_X
             ,gl_TEXTURE_CUBE_MAP_NEGATIVE_Z]
 
 -- | glTextureStorage3D
-fakeTextureStorage3D :: (MonadMask m, OpenGLLike m)
+fakeTextureStorage3D :: (MonadMask m, OpenGLLike e m)
                      => GLuint
                      -> GLenum
                      -> GLsizei

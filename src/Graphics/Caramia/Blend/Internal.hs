@@ -80,7 +80,7 @@ data BlendSpec = BlendSpec
     , blendColor    :: !Color }
     deriving ( Eq, Ord, Show, Read, Typeable )
 
-setBlendings :: OpenGLLike m => BlendSpec -> m ()
+setBlendings :: OpenGLLike e m => BlendSpec -> m ()
 setBlendings (BlendSpec{..}) = do
     glBlendFuncSeparate (toConstantBF srcColorFunc)
                         (toConstantBF dstColorFunc)
