@@ -89,41 +89,41 @@ source-repository head
 
 library
   exposed-modules:     Graphics.Caramia
-                       Graphics.Caramia.Resource
-                       Graphics.Caramia.Context
-                       Graphics.Caramia.Buffer
-                       Graphics.Caramia.VAO
-                       Graphics.Caramia.Shader
-                       Graphics.Caramia.Math
-                       Graphics.Caramia.ImageFormats
-                       Graphics.Caramia.Render
-                       Graphics.Caramia.Texture
-                       Graphics.Caramia.Memory
-                       Graphics.Caramia.Framebuffer
-                       Graphics.Caramia.Color
                        Graphics.Caramia.Blend
+                       Graphics.Caramia.Blend.Internal
+                       Graphics.Caramia.Buffer
+                       Graphics.Caramia.Buffer.Internal
+                       Graphics.Caramia.Color
+                       Graphics.Caramia.Context
+                       Graphics.Caramia.Context.Internal
+                       Graphics.Caramia.Framebuffer
+                       Graphics.Caramia.Framebuffer.Internal
+                       Graphics.Caramia.ImageFormats
+                       Graphics.Caramia.ImageFormats.Internal
+                       Graphics.Caramia.Math
+                       Graphics.Caramia.Memory
                        Graphics.Caramia.Prelude
+                       Graphics.Caramia.Render
+                       Graphics.Caramia.Render.Internal
+                       Graphics.Caramia.Resource
+                       Graphics.Caramia.Shader
+                       Graphics.Caramia.Shader.Internal
                        Graphics.Caramia.Sync
+                       Graphics.Caramia.Texture
+                       Graphics.Caramia.Texture.Internal
+                       Graphics.Caramia.VAO
+                       Graphics.Caramia.VAO.Internal
                        Graphics.Caramia.Internal.ContextLocalData
-                       Graphics.Caramia.Internal.TexStorage
-                       Graphics.Caramia.Internal.OpenGLDebug
                        Graphics.Caramia.Internal.OpenGLCApi
+                       Graphics.Caramia.Internal.OpenGLDebug
                        Graphics.Caramia.Internal.Lens
+                       Graphics.Caramia.Internal.TexStorage
+                       Graphics.Caramia.Internal.FlextGLEnums
+                       Graphics.Caramia.Internal.FlextGLFlipped
+                       Graphics.Caramia.Internal.FlextGLFuntypes
                        Graphics.Caramia.Internal.FlextGLReentrant
                        Graphics.Caramia.Internal.FlextGLReader
-                       Graphics.Caramia.Internal.FlextGLFlipped
                        Graphics.Caramia.Internal.FlextGLTypes
-                       Graphics.Caramia.Internal.FlextGLFuntypes
-                       Graphics.Caramia.Internal.FlextGLEnums
-                       Graphics.Caramia.Context.Internal
-                       Graphics.Caramia.Render.Internal
-                       Graphics.Caramia.Framebuffer.Internal
-                       Graphics.Caramia.Texture.Internal
-                       Graphics.Caramia.ImageFormats.Internal
-                       Graphics.Caramia.Shader.Internal
-                       Graphics.Caramia.Buffer.Internal
-                       Graphics.Caramia.Blend.Internal
-                       Graphics.Caramia.VAO.Internal
 
   ghc-options:         -Wall -fno-warn-name-shadowing
 
