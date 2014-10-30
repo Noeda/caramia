@@ -25,9 +25,6 @@ module Graphics.Caramia.Context
     -- * Finalization
     , runPendingFinalizers
     , scheduleFinalizer
-    -- * Context local data
-    , storeContextLocalData
-    , retrieveContextLocalData
     -- * Exceptions
     , TooOldOpenGL(..) )
     where
@@ -86,7 +83,7 @@ instance Exception TooOldOpenGL
 --
 -- Throws `TooOldOpenGL` if the code detects a context that does not provide
 -- OpenGL 3.3.
-giveContext :: forall a. (forall s. Typeable s => Context s a) -> IO a
+giveContext :: forall a. (forall s. Context s a) -> IO a
 giveContext action = mask $ \restore -> do
     is_bound_thread <- isCurrentThreadBound
     unless is_bound_thread $

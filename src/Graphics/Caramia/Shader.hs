@@ -48,29 +48,27 @@ module Graphics.Caramia.Shader
     )
     where
 
-import Graphics.Caramia.Prelude
-
-import Graphics.Caramia.Shader.Internal
-
-import Graphics.Caramia.Context
-import Graphics.Caramia.Context.Internal
-import Graphics.Caramia.Resource
-import Graphics.Caramia.Internal.OpenGLCApi
-import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
-import Graphics.Caramia.Math
-
-import GHC.Float ( double2Float )
-
 import Control.Monad.Catch
 import Control.Monad.Reader
-import Foreign
-import Foreign.C.Types
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Unsafe as B
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Foreign as T
+import Foreign
+import Foreign.C.Types
+import Graphics.Caramia.Context
+import Graphics.Caramia.Context.Internal
+import Graphics.Caramia.Internal.ContextLocalData
+import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Math
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Resource
+import Graphics.Caramia.Shader.Internal
+import GHC.Float ( double2Float )
+import Unsafe.Coerce
 
 type UniformLocation = Int
 
@@ -608,10 +606,11 @@ newtype CLNopPipeline s = CLNopPipeline { unwrapCLNop :: Pipeline s }
 -- | Returns a pipeline that does not do anything.
 --
 -- Within the same context, this returns the same pipeline for each invocation.
-nopPipeline :: Typeable s => Context s (Pipeline s)
-nopPipeline =
-    unwrapCLNop <$> retrieveContextLocalData (CLNopPipeline <$> cr)
+nopPipeline :: forall s. Context s (Pipeline s)
+nopPipeline = unsafeCoerce (thing :: Context () (Pipeline ()))
   where
+    thing = unwrapCLNop <$> retrieveContextLocalData (CLNopPipeline <$> cr)
+
     cr = do
         vsh <- newShader vsh_src Vertex
         fsh <- newShader fsh_src Fragment

@@ -90,6 +90,8 @@ newtype FlextGLM a = FlextGLM (ReaderT FlextGL IO a)
                               , MonadMask, MonadCatch, MonadThrow, MonadIO
                               , MonadFix, MonadReader FlextGL )
 
+-- | A constraint in which you can invoke raw OpenGL functions (see
+-- `Graphics.Caramia.Internal.FlextGLReader`).
 type OpenGLLike e m = (MonadReader e m, MonadIO m, Applicative m, HasFlextGL e)
 
 runFlextGLM :: FlextGL -> FlextGLM a -> IO a
