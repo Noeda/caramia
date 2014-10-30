@@ -10,6 +10,7 @@
 
 {-# LANGUAGE NoImplicitPrelude, ScopedTypeVariables, DeriveDataTypeable #-}
 {-# LANGUAGE CPP, LambdaCase, GeneralizedNewtypeDeriving, RankNTypes #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Graphics.Caramia.Context
     (
@@ -21,7 +22,7 @@ module Graphics.Caramia.Context
     -- * Context IDs
     , currentContextID
     , currentContextID'
-    , ContextID
+    , ContextID()
     -- * Finalization
     , runPendingFinalizers
     , scheduleFinalizer
@@ -100,7 +101,8 @@ giveContext action = mask $ \restore -> do
 
     checkOpenGLVersion33 flextGL
 
-    cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
+    cid <- atomicModifyIORef' nextContextID $ \old ->
+               ( old+1, ContextID old )
     tid <- myThreadId
     atomicModifyIORef' runningContexts $ \old_map ->
         ( M.insert tid cid old_map, () )
@@ -163,7 +165,7 @@ scrapContext = mask_ $ do
     tid <- myThreadId
     case maybe_cid of
         Nothing -> return ()
-        Just cid -> do
+        Just (unContextID -> cid) -> do
             atomicModifyIORef' runningContexts $ \old_map ->
                 ( M.delete tid old_map, () )
             atomicModifyIORef' pendingFinalizers $ \old_map ->
@@ -185,7 +187,7 @@ scrapContext = mask_ $ do
 -- A good place to call this is right after or before swapping buffers.
 runPendingFinalizers :: Context s ()
 runPendingFinalizers = mask_ $ do
-    cid <- currentContextID
+    cid <- unContextID <$> currentContextID
     liftIO $ do
         finalizers <- atomicModifyIORef' pendingFinalizers $
             IM.delete cid &&&
@@ -211,7 +213,7 @@ runPendingFinalizers = mask_ $ do
 --
 -- Can be called from any thread.
 scheduleFinalizer :: MonadIO m => ContextID -> IO () -> m ()
-scheduleFinalizer cid finalizer =
+scheduleFinalizer (unContextID -> cid) finalizer =
     liftIO $ atomicModifyIORef' pendingFinalizers $ \old ->
         ( IM.insertWith
             (flip (>>))

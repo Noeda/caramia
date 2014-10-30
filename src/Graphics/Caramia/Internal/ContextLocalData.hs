@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Graphics.Caramia.Internal.ContextLocalData where
 
@@ -12,7 +13,8 @@ import Control.Monad.IO.Class
 import Control.Concurrent
 
 -- | The type of a Caramia context ID.
-type ContextID = Int
+newtype ContextID = ContextID { unContextID :: Int }
+                    deriving ( Eq, Ord, Show, Typeable )
 
 -- currently running contexts, map from thread IDs to context IDs
 runningContexts :: IORef (M.Map ThreadId ContextID)
@@ -20,7 +22,7 @@ runningContexts = unsafePerformIO $ newIORef M.empty
 {-# NOINLINE runningContexts #-}
 
 -- used to give out new unique context IDs
-nextContextID :: IORef ContextID
+nextContextID :: IORef Int
 nextContextID = unsafePerformIO $ newIORef 0
 {-# NOINLINE nextContextID #-}
 
@@ -73,7 +75,7 @@ storeContextLocalData value = do
                                  (toDyn value))
                                  (M.insert (typeOf value)
                                              (toDyn value)))
-                    cid
+                    (unContextID cid)
                     old
         , () )
 
@@ -87,7 +89,7 @@ retrieveContextLocalData :: forall s a. Typeable a
                             -- stored.
                          -> Context s a
 retrieveContextLocalData defvalue = do
-    cid <- currentContextID
+    cid <- unContextID <$> currentContextID
     -- No need to care about IORef race conditions because all
     -- functions operating on a certain context ID will be
     -- run in the same thread, sequentially.
