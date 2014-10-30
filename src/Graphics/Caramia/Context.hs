@@ -25,6 +25,10 @@ module Graphics.Caramia.Context
     -- * Finalization
     , runPendingFinalizers
     , scheduleFinalizer
+    -- * Unsafe escape hatches
+    , contextState
+    , unsafeResumeContext
+    , ContextState()
     -- * Exceptions
     , TooOldOpenGL(..) )
     where
