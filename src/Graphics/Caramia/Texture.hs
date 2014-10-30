@@ -46,7 +46,10 @@ module Graphics.Caramia.Texture
     , viewSpecification
     , viewMipmapLevels
     -- * Utilities
-    , maxMipmapLevels )
+    , maxMipmapLevels
+    -- * Escape hatches
+    , newTextureRaw
+    , viewTextureRaw )
     where
 
 import Graphics.Caramia.Prelude
@@ -126,6 +129,36 @@ isMultisamplingTopology :: Topology s -> Bool
 isMultisamplingTopology (Tex2DMultisample {..}) = True
 isMultisamplingTopology (Tex2DMultisampleArray {..}) = True
 isMultisamplingTopology _ = False
+
+-- | Returns the underlying OpenGL texture name.
+--
+-- Be aware that the name will only be valid as long as a reference to the
+-- `Texture` exists because garbage collection might delete the name.
+viewTextureRaw :: Texture s -> Context s GLuint
+viewTextureRaw tex =
+    withResource (resource tex) $ \(Texture_ texname) -> return texname
+
+-- | Creates a new texture from an OpenGL name.
+newTextureRaw :: GLuint    -- ^ The raw texture name.
+              -> Bool      -- ^ Attach a finalizer to the texture?
+                           --   If `False`, you become responsible for freeing
+                           --   the texture.
+              -> TextureSpecification s
+                           -- ^ Texture specification. This argument is not
+                           --   checked for any validity. It will be the source
+                           --   of information for all the view functions.
+              -> Context s (Texture s)
+newTextureRaw name attach_finalizer spec = do
+    gl <- askFlextGL
+    res <- newResource (return $ Texture_ name)
+                       (\_ -> if attach_finalizer
+                         then with name $ \ptr -> F.glDeleteTextures 1 ptr gl
+                         else return ())
+                       (return ())
+    index <- liftIO $ atomicModifyIORef' ordIndices $ \old -> ( old+1, old )
+    return Texture { resource = res
+                   , ordIndex = index
+                   , viewSpecification =  spec }
 
 -- | Creates a new texture.
 --
