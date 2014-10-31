@@ -155,11 +155,11 @@ newBuffer creation
     | size creation <= 0 =
         error "newBuffer: size must be positive."
     | otherwise = mask_ $ do
-        gl <- ask
+        gl <- scope <$> ask
         resource <-
             newResource createBuffer
                         (\(Buffer_ bufname) ->
-                            runFlextGLM gl $ mglDeleteBuffer bufname)
+                            runReaderT (mglDeleteBuffer bufname) gl)
                         (return ())
         initial_status <- liftIO $ newIORef BufferStatus { mapped = False }
         oi <- liftIO $ atomicModifyIORef' bufferOrdIndex $ \old -> ( old+1, old )
@@ -411,8 +411,8 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
 -- See <https://www.opengl.org/wiki/Buffer_Object#Invalidation>.
 invalidateBuffer :: Buffer s -> Context s ()
 invalidateBuffer buf = do
-    gl <- ask
-    when (has_GL_ARB_invalidate_subdata gl) $
-        withResource (resource buf) $ \(Buffer_ name) ->
-            glInvalidateBufferData name
+    branchExt gl_ARB_invalidate_subdata
+        (withResource (resource buf) $ \(Buffer_ name) ->
+             glInvalidateBufferData name)
+        (return ())
 

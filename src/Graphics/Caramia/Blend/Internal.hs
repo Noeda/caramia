@@ -6,10 +6,10 @@ module Graphics.Caramia.Blend.Internal where
 import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Internal.OpenGLCApi
-import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Color
 import Control.Monad.Catch
+import Control.Monad.Reader
 import Foreign
 import Foreign.C.Types
 
@@ -98,25 +98,27 @@ withBlendings :: BlendSpec
               -> Context s a
 withBlendings spec@(BlendSpec {..}) action = do
     st <- contextState
+    gl <- scope <$> ask
     old_be_color <- gi gl_BLEND_EQUATION_RGB
     old_be_alpha <- gi gl_BLEND_EQUATION_ALPHA
     old_src_color <- gi gl_BLEND_SRC_RGB
     old_src_alpha <- gi gl_BLEND_SRC_ALPHA
     old_dst_color <- gi gl_BLEND_DST_RGB
     old_dst_alpha <- gi gl_BLEND_DST_ALPHA
-    fgl $ \gl -> allocaArray 4 $ \color_ptr -> do
-        F.glGetFloatv gl_BLEND_COLOR color_ptr gl
+    liftIO $ allocaArray 4 $ \color_ptr -> do
+        runReaderT (glGetFloatv gl_BLEND_COLOR color_ptr) gl
         r <- peekElemOff color_ptr 0
         g <- peekElemOff color_ptr 1
         b <- peekElemOff color_ptr 2
         a <- peekElemOff color_ptr 3
-        finally (unsafeResumeContext st $ setBlendings spec >> action) $ do
-            F.glBlendColor r g b a gl
-            F.glBlendFuncSeparate old_src_color
-                                  old_dst_color
-                                  old_src_alpha
-                                  old_dst_alpha gl
-            F.glBlendEquationSeparate old_be_color
-                                      old_be_alpha gl
+        finally (unsafeResumeContext st $ setBlendings spec >> action) $
+            flip runReaderT gl $ do
+                glBlendColor r g b a
+                glBlendFuncSeparate old_src_color
+                                    old_dst_color
+                                    old_src_alpha
+                                    old_dst_alpha
+                glBlendEquationSeparate old_be_color
+                                        old_be_alpha
 
 

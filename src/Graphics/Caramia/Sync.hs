@@ -34,10 +34,10 @@ newtype Fence s = Fence (Resource s GLsync)
 -- | Create a fence.
 fence :: Context s (Fence s)
 fence = mask_ $ do
-    gl <- ask
+    gl <- scope <$> ask
     resource <-
         newResource createFence
-                    (rglDeleteSync gl)
+                    (\x -> runReaderT (glDeleteSync x) gl)
                     (return ())
     return $ Fence resource
   where

@@ -1,0 +1,107 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Profile.Standard14 (
+	-- * Graphics.OpenGL.Profile.Standard14
+	  module Graphics.OpenGL.Profile.Standard13
+	, glBlendColor
+	, glBlendEquation
+	, glBlendFuncSeparate
+	, glFogCoordPointer
+	, glFogCoordd
+	, glFogCoorddv
+	, glFogCoordf
+	, glFogCoordfv
+	, glMultiDrawArrays
+	, glMultiDrawElements
+	, glPointParameterf
+	, glPointParameterfv
+	, glPointParameteri
+	, glPointParameteriv
+	, glSecondaryColor3b
+	, glSecondaryColor3bv
+	, glSecondaryColor3d
+	, glSecondaryColor3dv
+	, glSecondaryColor3f
+	, glSecondaryColor3fv
+	, glSecondaryColor3i
+	, glSecondaryColor3iv
+	, glSecondaryColor3s
+	, glSecondaryColor3sv
+	, glSecondaryColor3ub
+	, glSecondaryColor3ubv
+	, glSecondaryColor3ui
+	, glSecondaryColor3uiv
+	, glSecondaryColor3us
+	, glSecondaryColor3usv
+	, glSecondaryColorPointer
+	, glWindowPos2d
+	, glWindowPos2dv
+	, glWindowPos2f
+	, glWindowPos2fv
+	, glWindowPos2i
+	, glWindowPos2iv
+	, glWindowPos2s
+	, glWindowPos2sv
+	, glWindowPos3d
+	, glWindowPos3dv
+	, glWindowPos3f
+	, glWindowPos3fv
+	, glWindowPos3i
+	, glWindowPos3iv
+	, glWindowPos3s
+	, glWindowPos3sv
+	, gl_BLEND_DST_ALPHA
+	, gl_BLEND_DST_RGB
+	, gl_BLEND_SRC_ALPHA
+	, gl_BLEND_SRC_RGB
+	, gl_COLOR_SUM
+	, gl_COMPARE_R_TO_TEXTURE
+	, gl_CONSTANT_ALPHA
+	, gl_CONSTANT_COLOR
+	, gl_CURRENT_FOG_COORDINATE
+	, gl_CURRENT_SECONDARY_COLOR
+	, gl_DECR_WRAP
+	, gl_DEPTH_COMPONENT16
+	, gl_DEPTH_COMPONENT24
+	, gl_DEPTH_COMPONENT32
+	, gl_DEPTH_TEXTURE_MODE
+	, gl_FOG_COORDINATE
+	, gl_FOG_COORDINATE_ARRAY
+	, gl_FOG_COORDINATE_ARRAY_POINTER
+	, gl_FOG_COORDINATE_ARRAY_STRIDE
+	, gl_FOG_COORDINATE_ARRAY_TYPE
+	, gl_FOG_COORDINATE_SOURCE
+	, gl_FRAGMENT_DEPTH
+	, gl_FUNC_ADD
+	, gl_FUNC_REVERSE_SUBTRACT
+	, gl_FUNC_SUBTRACT
+	, gl_GENERATE_MIPMAP
+	, gl_GENERATE_MIPMAP_HINT
+	, gl_INCR_WRAP
+	, gl_MAX
+	, gl_MAX_TEXTURE_LOD_BIAS
+	, gl_MIN
+	, gl_MIRRORED_REPEAT
+	, gl_ONE_MINUS_CONSTANT_ALPHA
+	, gl_ONE_MINUS_CONSTANT_COLOR
+	, gl_POINT_DISTANCE_ATTENUATION
+	, gl_POINT_FADE_THRESHOLD_SIZE
+	, gl_POINT_SIZE_MAX
+	, gl_POINT_SIZE_MIN
+	, gl_SECONDARY_COLOR_ARRAY
+	, gl_SECONDARY_COLOR_ARRAY_POINTER
+	, gl_SECONDARY_COLOR_ARRAY_SIZE
+	, gl_SECONDARY_COLOR_ARRAY_STRIDE
+	, gl_SECONDARY_COLOR_ARRAY_TYPE
+	, gl_TEXTURE_COMPARE_FUNC
+	, gl_TEXTURE_COMPARE_MODE
+	, gl_TEXTURE_DEPTH_SIZE
+	, gl_TEXTURE_FILTER_CONTROL
+	, gl_TEXTURE_LOD_BIAS
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+import Graphics.OpenGL.Internal.Shared
+
+import Graphics.OpenGL.Profile.Standard13

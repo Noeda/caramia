@@ -1,0 +1,41 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Extension.ARB.TextureCubeMapArray (
+	-- * Extension Support
+	  gl_ARB_texture_cube_map_array
+
+	-- * GL_ARB_texture_cube_map_array
+	, gl_INT_SAMPLER_CUBE_MAP_ARRAY_ARB
+	, gl_PROXY_TEXTURE_CUBE_MAP_ARRAY_ARB
+	, gl_SAMPLER_CUBE_MAP_ARRAY_ARB
+	, gl_SAMPLER_CUBE_MAP_ARRAY_SHADOW_ARB
+	, gl_TEXTURE_BINDING_CUBE_MAP_ARRAY_ARB
+	, gl_TEXTURE_CUBE_MAP_ARRAY_ARB
+	, gl_UNSIGNED_INT_SAMPLER_CUBE_MAP_ARRAY_ARB
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+gl_ARB_texture_cube_map_array :: (Monad m, MonadReader e m, HasScope e) => m Bool
+gl_ARB_texture_cube_map_array = extGL 183
+
+gl_INT_SAMPLER_CUBE_MAP_ARRAY_ARB :: GLenum
+gl_INT_SAMPLER_CUBE_MAP_ARRAY_ARB = 0x900E
+
+gl_PROXY_TEXTURE_CUBE_MAP_ARRAY_ARB :: GLenum
+gl_PROXY_TEXTURE_CUBE_MAP_ARRAY_ARB = 0x900B
+
+gl_SAMPLER_CUBE_MAP_ARRAY_ARB :: GLenum
+gl_SAMPLER_CUBE_MAP_ARRAY_ARB = 0x900C
+
+gl_SAMPLER_CUBE_MAP_ARRAY_SHADOW_ARB :: GLenum
+gl_SAMPLER_CUBE_MAP_ARRAY_SHADOW_ARB = 0x900D
+
+gl_TEXTURE_BINDING_CUBE_MAP_ARRAY_ARB :: GLenum
+gl_TEXTURE_BINDING_CUBE_MAP_ARRAY_ARB = 0x900A
+
+gl_TEXTURE_CUBE_MAP_ARRAY_ARB :: GLenum
+gl_TEXTURE_CUBE_MAP_ARRAY_ARB = 0x9009
+
+gl_UNSIGNED_INT_SAMPLER_CUBE_MAP_ARRAY_ARB :: GLenum
+gl_UNSIGNED_INT_SAMPLER_CUBE_MAP_ARRAY_ARB = 0x900F

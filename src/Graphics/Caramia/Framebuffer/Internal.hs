@@ -6,7 +6,6 @@ import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Internal.OpenGLCApi
-import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Graphics.Caramia.Context.Internal
 import qualified Graphics.Caramia.Texture.Internal as Tex
 import Control.Monad.Catch
@@ -58,9 +57,9 @@ setBinding fbuf = setter fbuf
 withBinding :: Framebuffer s -> Context s a -> Context s a
 withBinding ScreenFramebuffer action = do
     st <- contextState
-    gl <- askFlextGL
+    gl <- scope <$> ask
     liftIO $ allocaArray 4 $ \viewport_ptr -> do
-        F.glGetIntegerv gl_VIEWPORT viewport_ptr gl
+        runReaderT (glGetIntegerv gl_VIEWPORT viewport_ptr) gl
         ox <- peekElemOff viewport_ptr 0
         oy <- peekElemOff viewport_ptr 1
         ow <- peekElemOff viewport_ptr 2
@@ -82,9 +81,9 @@ withBinding fbuf action = binder fbuf action
 -- This is an `IO` action because it can change for the screen framebuffer.
 getDimensions :: Framebuffer s -> Context s (Int, Int)
 getDimensions ScreenFramebuffer = do
-    gl <- ask
+    gl <- scope <$> ask
     liftIO $ allocaArray 4 $ \vptr -> do
-        F.glGetIntegerv gl_VIEWPORT vptr gl
+        runReaderT (glGetIntegerv gl_VIEWPORT vptr) gl
         w <- peekElemOff vptr 2
         h <- peekElemOff vptr 3
         return (fromIntegral w, fromIntegral h)

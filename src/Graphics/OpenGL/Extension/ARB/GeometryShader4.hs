@@ -1,0 +1,105 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Extension.ARB.GeometryShader4 (
+	-- * Extension Support
+	  gl_ARB_geometry_shader4
+
+	-- * GL_ARB_geometry_shader4
+	, glFramebufferTextureARB
+	, glFramebufferTextureFaceARB
+	, glFramebufferTextureLayerARB
+	, glProgramParameteriARB
+	, gl_FRAMEBUFFER_ATTACHMENT_LAYERED_ARB
+	, gl_FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER
+	, gl_FRAMEBUFFER_INCOMPLETE_LAYER_COUNT_ARB
+	, gl_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_ARB
+	, gl_GEOMETRY_INPUT_TYPE_ARB
+	, gl_GEOMETRY_OUTPUT_TYPE_ARB
+	, gl_GEOMETRY_SHADER_ARB
+	, gl_GEOMETRY_VERTICES_OUT_ARB
+	, gl_LINES_ADJACENCY_ARB
+	, gl_LINE_STRIP_ADJACENCY_ARB
+	, gl_MAX_GEOMETRY_OUTPUT_VERTICES_ARB
+	, gl_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS_ARB
+	, gl_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS_ARB
+	, gl_MAX_GEOMETRY_UNIFORM_COMPONENTS_ARB
+	, gl_MAX_GEOMETRY_VARYING_COMPONENTS_ARB
+	, gl_MAX_VARYING_COMPONENTS
+	, gl_MAX_VERTEX_VARYING_COMPONENTS_ARB
+	, gl_PROGRAM_POINT_SIZE_ARB
+	, gl_TRIANGLES_ADJACENCY_ARB
+	, gl_TRIANGLE_STRIP_ADJACENCY_ARB
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+import Graphics.OpenGL.Internal.Shared
+
+gl_ARB_geometry_shader4 :: (Monad m, MonadReader e m, HasScope e) => m Bool
+gl_ARB_geometry_shader4 = extGL 113
+
+glFramebufferTextureARB :: (MonadIO m, MonadReader e m, HasScope e) => GLenum -> GLenum -> GLuint -> GLint -> m ()
+glFramebufferTextureARB v0 v1 v2 v3 = funGL 311 >>= \f -> liftIO $ f v0 v1 v2 v3
+
+glFramebufferTextureFaceARB :: (MonadIO m, MonadReader e m, HasScope e) => GLenum -> GLenum -> GLuint -> GLint -> GLenum -> m ()
+glFramebufferTextureFaceARB v0 v1 v2 v3 v4 = funGL 312 >>= \f -> liftIO $ f v0 v1 v2 v3 v4
+
+glFramebufferTextureLayerARB :: (MonadIO m, MonadReader e m, HasScope e) => GLenum -> GLenum -> GLuint -> GLint -> GLint -> m ()
+glFramebufferTextureLayerARB v0 v1 v2 v3 v4 = funGL 313 >>= \f -> liftIO $ f v0 v1 v2 v3 v4
+
+glProgramParameteriARB :: (MonadIO m, MonadReader e m, HasScope e) => GLuint -> GLenum -> GLint -> m ()
+glProgramParameteriARB v0 v1 v2 = funGL 314 >>= \f -> liftIO $ f v0 v1 v2
+
+gl_FRAMEBUFFER_ATTACHMENT_LAYERED_ARB :: GLenum
+gl_FRAMEBUFFER_ATTACHMENT_LAYERED_ARB = 0x8DA7
+
+gl_FRAMEBUFFER_INCOMPLETE_LAYER_COUNT_ARB :: GLenum
+gl_FRAMEBUFFER_INCOMPLETE_LAYER_COUNT_ARB = 0x8DA9
+
+gl_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_ARB :: GLenum
+gl_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_ARB = 0x8DA8
+
+gl_GEOMETRY_INPUT_TYPE_ARB :: GLenum
+gl_GEOMETRY_INPUT_TYPE_ARB = 0x8DDB
+
+gl_GEOMETRY_OUTPUT_TYPE_ARB :: GLenum
+gl_GEOMETRY_OUTPUT_TYPE_ARB = 0x8DDC
+
+gl_GEOMETRY_SHADER_ARB :: GLenum
+gl_GEOMETRY_SHADER_ARB = 0x8DD9
+
+gl_GEOMETRY_VERTICES_OUT_ARB :: GLenum
+gl_GEOMETRY_VERTICES_OUT_ARB = 0x8DDA
+
+gl_LINES_ADJACENCY_ARB :: GLenum
+gl_LINES_ADJACENCY_ARB = 0x000A
+
+gl_LINE_STRIP_ADJACENCY_ARB :: GLenum
+gl_LINE_STRIP_ADJACENCY_ARB = 0x000B
+
+gl_MAX_GEOMETRY_OUTPUT_VERTICES_ARB :: GLenum
+gl_MAX_GEOMETRY_OUTPUT_VERTICES_ARB = 0x8DE0
+
+gl_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS_ARB :: GLenum
+gl_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS_ARB = 0x8C29
+
+gl_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS_ARB :: GLenum
+gl_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS_ARB = 0x8DE1
+
+gl_MAX_GEOMETRY_UNIFORM_COMPONENTS_ARB :: GLenum
+gl_MAX_GEOMETRY_UNIFORM_COMPONENTS_ARB = 0x8DDF
+
+gl_MAX_GEOMETRY_VARYING_COMPONENTS_ARB :: GLenum
+gl_MAX_GEOMETRY_VARYING_COMPONENTS_ARB = 0x8DDD
+
+gl_MAX_VERTEX_VARYING_COMPONENTS_ARB :: GLenum
+gl_MAX_VERTEX_VARYING_COMPONENTS_ARB = 0x8DDE
+
+gl_PROGRAM_POINT_SIZE_ARB :: GLenum
+gl_PROGRAM_POINT_SIZE_ARB = 0x8642
+
+gl_TRIANGLES_ADJACENCY_ARB :: GLenum
+gl_TRIANGLES_ADJACENCY_ARB = 0x000C
+
+gl_TRIANGLE_STRIP_ADJACENCY_ARB :: GLenum
+gl_TRIANGLE_STRIP_ADJACENCY_ARB = 0x000D

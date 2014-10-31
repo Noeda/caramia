@@ -1,0 +1,81 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Profile.Standard15 (
+	-- * Graphics.OpenGL.Profile.Standard15
+	  module Graphics.OpenGL.Profile.Standard14
+	, glBeginQuery
+	, glBindBuffer
+	, glBufferData
+	, glBufferSubData
+	, glDeleteBuffers
+	, glDeleteQueries
+	, glEndQuery
+	, glGenBuffers
+	, glGenQueries
+	, glGetBufferParameteriv
+	, glGetBufferPointerv
+	, glGetBufferSubData
+	, glGetQueryObjectiv
+	, glGetQueryObjectuiv
+	, glGetQueryiv
+	, glIsBuffer
+	, glIsQuery
+	, glMapBuffer
+	, glUnmapBuffer
+	, gl_ARRAY_BUFFER
+	, gl_ARRAY_BUFFER_BINDING
+	, gl_BUFFER_ACCESS
+	, gl_BUFFER_MAPPED
+	, gl_BUFFER_MAP_POINTER
+	, gl_BUFFER_SIZE
+	, gl_BUFFER_USAGE
+	, gl_COLOR_ARRAY_BUFFER_BINDING
+	, gl_CURRENT_FOG_COORD
+	, gl_CURRENT_QUERY
+	, gl_DYNAMIC_COPY
+	, gl_DYNAMIC_DRAW
+	, gl_DYNAMIC_READ
+	, gl_EDGE_FLAG_ARRAY_BUFFER_BINDING
+	, gl_ELEMENT_ARRAY_BUFFER
+	, gl_ELEMENT_ARRAY_BUFFER_BINDING
+	, gl_FOG_COORD
+	, gl_FOG_COORDINATE_ARRAY_BUFFER_BINDING
+	, gl_FOG_COORD_ARRAY
+	, gl_FOG_COORD_ARRAY_BUFFER_BINDING
+	, gl_FOG_COORD_ARRAY_POINTER
+	, gl_FOG_COORD_ARRAY_STRIDE
+	, gl_FOG_COORD_ARRAY_TYPE
+	, gl_FOG_COORD_SRC
+	, gl_INDEX_ARRAY_BUFFER_BINDING
+	, gl_NORMAL_ARRAY_BUFFER_BINDING
+	, gl_QUERY_COUNTER_BITS
+	, gl_QUERY_RESULT
+	, gl_QUERY_RESULT_AVAILABLE
+	, gl_READ_ONLY
+	, gl_READ_WRITE
+	, gl_SAMPLES_PASSED
+	, gl_SECONDARY_COLOR_ARRAY_BUFFER_BINDING
+	, gl_SRC0_ALPHA
+	, gl_SRC0_RGB
+	, gl_SRC1_ALPHA
+	, gl_SRC1_RGB
+	, gl_SRC2_ALPHA
+	, gl_SRC2_RGB
+	, gl_STATIC_COPY
+	, gl_STATIC_DRAW
+	, gl_STATIC_READ
+	, gl_STREAM_COPY
+	, gl_STREAM_DRAW
+	, gl_STREAM_READ
+	, gl_TEXTURE_COORD_ARRAY_BUFFER_BINDING
+	, gl_VERTEX_ARRAY_BUFFER_BINDING
+	, gl_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING
+	, gl_WEIGHT_ARRAY_BUFFER_BINDING
+	, gl_WRITE_ONLY
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+import Graphics.OpenGL.Internal.Shared
+
+import Graphics.OpenGL.Profile.Standard14

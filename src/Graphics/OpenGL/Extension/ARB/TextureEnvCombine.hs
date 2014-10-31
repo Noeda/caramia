@@ -1,0 +1,101 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Extension.ARB.TextureEnvCombine (
+	-- * Extension Support
+	  gl_ARB_texture_env_combine
+
+	-- * GL_ARB_texture_env_combine
+	, gl_ADD_SIGNED_ARB
+	, gl_COMBINE_ALPHA_ARB
+	, gl_COMBINE_ARB
+	, gl_COMBINE_RGB_ARB
+	, gl_CONSTANT_ARB
+	, gl_INTERPOLATE_ARB
+	, gl_OPERAND0_ALPHA_ARB
+	, gl_OPERAND0_RGB_ARB
+	, gl_OPERAND1_ALPHA_ARB
+	, gl_OPERAND1_RGB_ARB
+	, gl_OPERAND2_ALPHA_ARB
+	, gl_OPERAND2_RGB_ARB
+	, gl_PREVIOUS_ARB
+	, gl_PRIMARY_COLOR_ARB
+	, gl_RGB_SCALE_ARB
+	, gl_SOURCE0_ALPHA_ARB
+	, gl_SOURCE0_RGB_ARB
+	, gl_SOURCE1_ALPHA_ARB
+	, gl_SOURCE1_RGB_ARB
+	, gl_SOURCE2_ALPHA_ARB
+	, gl_SOURCE2_RGB_ARB
+	, gl_SUBTRACT_ARB
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+gl_ARB_texture_env_combine :: (Monad m, MonadReader e m, HasScope e) => m Bool
+gl_ARB_texture_env_combine = extGL 185
+
+gl_ADD_SIGNED_ARB :: GLenum
+gl_ADD_SIGNED_ARB = 0x8574
+
+gl_COMBINE_ALPHA_ARB :: GLenum
+gl_COMBINE_ALPHA_ARB = 0x8572
+
+gl_COMBINE_ARB :: GLenum
+gl_COMBINE_ARB = 0x8570
+
+gl_COMBINE_RGB_ARB :: GLenum
+gl_COMBINE_RGB_ARB = 0x8571
+
+gl_CONSTANT_ARB :: GLenum
+gl_CONSTANT_ARB = 0x8576
+
+gl_INTERPOLATE_ARB :: GLenum
+gl_INTERPOLATE_ARB = 0x8575
+
+gl_OPERAND0_ALPHA_ARB :: GLenum
+gl_OPERAND0_ALPHA_ARB = 0x8598
+
+gl_OPERAND0_RGB_ARB :: GLenum
+gl_OPERAND0_RGB_ARB = 0x8590
+
+gl_OPERAND1_ALPHA_ARB :: GLenum
+gl_OPERAND1_ALPHA_ARB = 0x8599
+
+gl_OPERAND1_RGB_ARB :: GLenum
+gl_OPERAND1_RGB_ARB = 0x8591
+
+gl_OPERAND2_ALPHA_ARB :: GLenum
+gl_OPERAND2_ALPHA_ARB = 0x859A
+
+gl_OPERAND2_RGB_ARB :: GLenum
+gl_OPERAND2_RGB_ARB = 0x8592
+
+gl_PREVIOUS_ARB :: GLenum
+gl_PREVIOUS_ARB = 0x8578
+
+gl_PRIMARY_COLOR_ARB :: GLenum
+gl_PRIMARY_COLOR_ARB = 0x8577
+
+gl_RGB_SCALE_ARB :: GLenum
+gl_RGB_SCALE_ARB = 0x8573
+
+gl_SOURCE0_ALPHA_ARB :: GLenum
+gl_SOURCE0_ALPHA_ARB = 0x8588
+
+gl_SOURCE0_RGB_ARB :: GLenum
+gl_SOURCE0_RGB_ARB = 0x8580
+
+gl_SOURCE1_ALPHA_ARB :: GLenum
+gl_SOURCE1_ALPHA_ARB = 0x8589
+
+gl_SOURCE1_RGB_ARB :: GLenum
+gl_SOURCE1_RGB_ARB = 0x8581
+
+gl_SOURCE2_ALPHA_ARB :: GLenum
+gl_SOURCE2_ALPHA_ARB = 0x858A
+
+gl_SOURCE2_RGB_ARB :: GLenum
+gl_SOURCE2_RGB_ARB = 0x8582
+
+gl_SUBTRACT_ARB :: GLenum
+gl_SUBTRACT_ARB = 0x84E7

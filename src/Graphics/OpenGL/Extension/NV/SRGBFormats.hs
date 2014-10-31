@@ -1,0 +1,53 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Extension.NV.SRGBFormats (
+	-- * Extension Support
+	  gl_NV_sRGB_formats
+
+	-- * GL_NV_sRGB_formats
+	, gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_NV
+	, gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_NV
+	, gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_NV
+	, gl_COMPRESSED_SRGB_S3TC_DXT1_NV
+	, gl_ETC1_SRGB8_NV
+	, gl_SLUMINANCE8_ALPHA8_NV
+	, gl_SLUMINANCE8_NV
+	, gl_SLUMINANCE_ALPHA_NV
+	, gl_SLUMINANCE_NV
+	, gl_SRGB8_NV
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+gl_NV_sRGB_formats :: (Monad m, MonadReader e m, HasScope e) => m Bool
+gl_NV_sRGB_formats = extGL 498
+
+gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_NV :: GLenum
+gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_NV = 0x8C4D
+
+gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_NV :: GLenum
+gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_NV = 0x8C4E
+
+gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_NV :: GLenum
+gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_NV = 0x8C4F
+
+gl_COMPRESSED_SRGB_S3TC_DXT1_NV :: GLenum
+gl_COMPRESSED_SRGB_S3TC_DXT1_NV = 0x8C4C
+
+gl_ETC1_SRGB8_NV :: GLenum
+gl_ETC1_SRGB8_NV = 0x88EE
+
+gl_SLUMINANCE8_ALPHA8_NV :: GLenum
+gl_SLUMINANCE8_ALPHA8_NV = 0x8C45
+
+gl_SLUMINANCE8_NV :: GLenum
+gl_SLUMINANCE8_NV = 0x8C47
+
+gl_SLUMINANCE_ALPHA_NV :: GLenum
+gl_SLUMINANCE_ALPHA_NV = 0x8C44
+
+gl_SLUMINANCE_NV :: GLenum
+gl_SLUMINANCE_NV = 0x8C46
+
+gl_SRGB8_NV :: GLenum
+gl_SRGB8_NV = 0x8C41

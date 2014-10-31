@@ -1,0 +1,61 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Extension.ATI.TextureFloat (
+	-- * Extension Support
+	  gl_ATI_texture_float
+
+	-- * GL_ATI_texture_float
+	, gl_ALPHA_FLOAT16_ATI
+	, gl_ALPHA_FLOAT32_ATI
+	, gl_INTENSITY_FLOAT16_ATI
+	, gl_INTENSITY_FLOAT32_ATI
+	, gl_LUMINANCE_ALPHA_FLOAT16_ATI
+	, gl_LUMINANCE_ALPHA_FLOAT32_ATI
+	, gl_LUMINANCE_FLOAT16_ATI
+	, gl_LUMINANCE_FLOAT32_ATI
+	, gl_RGBA_FLOAT16_ATI
+	, gl_RGBA_FLOAT32_ATI
+	, gl_RGB_FLOAT16_ATI
+	, gl_RGB_FLOAT32_ATI
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+gl_ATI_texture_float :: (Monad m, MonadReader e m, HasScope e) => m Bool
+gl_ATI_texture_float = extGL 239
+
+gl_ALPHA_FLOAT16_ATI :: GLenum
+gl_ALPHA_FLOAT16_ATI = 0x881C
+
+gl_ALPHA_FLOAT32_ATI :: GLenum
+gl_ALPHA_FLOAT32_ATI = 0x8816
+
+gl_INTENSITY_FLOAT16_ATI :: GLenum
+gl_INTENSITY_FLOAT16_ATI = 0x881D
+
+gl_INTENSITY_FLOAT32_ATI :: GLenum
+gl_INTENSITY_FLOAT32_ATI = 0x8817
+
+gl_LUMINANCE_ALPHA_FLOAT16_ATI :: GLenum
+gl_LUMINANCE_ALPHA_FLOAT16_ATI = 0x881F
+
+gl_LUMINANCE_ALPHA_FLOAT32_ATI :: GLenum
+gl_LUMINANCE_ALPHA_FLOAT32_ATI = 0x8819
+
+gl_LUMINANCE_FLOAT16_ATI :: GLenum
+gl_LUMINANCE_FLOAT16_ATI = 0x881E
+
+gl_LUMINANCE_FLOAT32_ATI :: GLenum
+gl_LUMINANCE_FLOAT32_ATI = 0x8818
+
+gl_RGBA_FLOAT16_ATI :: GLenum
+gl_RGBA_FLOAT16_ATI = 0x881A
+
+gl_RGBA_FLOAT32_ATI :: GLenum
+gl_RGBA_FLOAT32_ATI = 0x8814
+
+gl_RGB_FLOAT16_ATI :: GLenum
+gl_RGB_FLOAT16_ATI = 0x881B
+
+gl_RGB_FLOAT32_ATI :: GLenum
+gl_RGB_FLOAT32_ATI = 0x8815

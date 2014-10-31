@@ -57,7 +57,6 @@ import Graphics.Caramia.Prelude
 import Graphics.Caramia.Texture.Internal
 import Graphics.Caramia.Internal.TexStorage
 import Graphics.Caramia.Internal.OpenGLCApi
-import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats.Internal
 import Graphics.Caramia.Resource
@@ -149,10 +148,11 @@ newTextureRaw :: GLuint    -- ^ The raw texture name.
                            --   of information for all the view functions.
               -> Context s (Texture s)
 newTextureRaw name attach_finalizer spec = do
-    gl <- askFlextGL
+    gl <- scope <$> ask
     res <- newResource (return $ Texture_ name)
                        (\_ -> if attach_finalizer
-                         then with name $ \ptr -> F.glDeleteTextures 1 ptr gl
+                         then with name $ \ptr ->
+                                  runReaderT (glDeleteTextures 1 ptr) gl
                          else return ())
                        (return ())
     index <- liftIO $ atomicModifyIORef' ordIndices $ \old -> ( old+1, old )
@@ -173,7 +173,7 @@ newTexture spec = mask_ $ do
           mipmapLevels spec < 1) $
         error "newTexture: mipmapLevels is not positive."
 
-    gl <- askFlextGL
+    gl <- scope <$> ask
     res <- newResource creator
                        (deleter gl)
                        (return ())
@@ -230,36 +230,36 @@ newTexture spec = mask_ $ do
         error $ "newTexture: bad number of mipmap levels: " <> show num_mipmaps
 
     deleter gl (Texture_ name) =
-        with name $ \ptr -> F.glDeleteTextures 1 ptr gl
+        with name $ \ptr -> runReaderT (glDeleteTextures 1 ptr) gl
 
     creator = do
-        gl <- ask
+        gl <- scope <$> ask
         name <- bracketOnError
             (liftIO $ alloca $ \name_ptr ->
-                F.glGenTextures 1 name_ptr gl *> peek name_ptr)
+                runReaderT (glGenTextures 1 name_ptr) gl *> peek name_ptr)
             (liftIO . deleter gl . Texture_)
             (\name -> do
-                if has_GL_ARB_texture_storage gl
-                  then createByTopologyTexStorage name (topology spec)
-                  else createByTopologyFakeTextureStorage name (topology spec)
+                branchExt gl_ARB_texture_storage
+                    (createByTopologyTexStorage name (topology spec))
+                    (createByTopologyFakeTextureStorage name (topology spec))
                 return name)
         return (Texture_ name)
 
     createByTopologyFakeTextureStorage :: GLuint -> Topology s -> Context s ()
-    createByTopologyFakeTextureStorage name (Tex1D {..}) = liftFlextGLM $
+    createByTopologyFakeTextureStorage name (Tex1D {..}) =
         fakeTextureStorage1D name
                              gl_TEXTURE_1D
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width1D)
-    createByTopologyFakeTextureStorage name (Tex2D {..}) = liftFlextGLM $
+    createByTopologyFakeTextureStorage name (Tex2D {..}) =
         fakeTextureStorage2D name
                              gl_TEXTURE_2D
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width2D)
                              (safeFromIntegral height2D)
-    createByTopologyFakeTextureStorage name (Tex3D {..}) = liftFlextGLM $
+    createByTopologyFakeTextureStorage name (Tex3D {..}) =
         fakeTextureStorage3D name
                              gl_TEXTURE_3D
                              (safeFromIntegral num_mipmaps)
@@ -267,14 +267,14 @@ newTexture spec = mask_ $ do
                              (safeFromIntegral width3D)
                              (safeFromIntegral height3D)
                              (safeFromIntegral depth3D)
-    createByTopologyFakeTextureStorage name (Tex1DArray {..}) = liftFlextGLM $
+    createByTopologyFakeTextureStorage name (Tex1DArray {..}) =
         fakeTextureStorage2D name
                              gl_TEXTURE_1D_ARRAY
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width1DArray)
                              (safeFromIntegral layers1D)
-    createByTopologyFakeTextureStorage name (Tex2DArray {..}) = liftFlextGLM $
+    createByTopologyFakeTextureStorage name (Tex2DArray {..}) =
         fakeTextureStorage3D name
                              gl_TEXTURE_2D_ARRAY
                              (safeFromIntegral num_mipmaps)
@@ -286,7 +286,7 @@ newTexture spec = mask_ $ do
         createByTopologyTexStorage name tex
     createByTopologyFakeTextureStorage name tex@(Tex2DMultisampleArray {..}) =
         createByTopologyTexStorage name tex
-    createByTopologyFakeTextureStorage name (TexCube {..}) = liftFlextGLM $
+    createByTopologyFakeTextureStorage name (TexCube {..}) =
         fakeTextureStorage2D name
                              gl_TEXTURE_CUBE_MAP
                              (safeFromIntegral num_mipmaps)
@@ -559,7 +559,7 @@ uploadToTexture :: Uploading s
 uploadToTexture uploading tex = mask_ $ do
     st <- contextState
     withResource (Buf.resource (fromBuffer uploading)) $ \(Buf.Buffer_ buf) ->
-     liftFlextGLM $ withBoundPixelUnpackBuffer buf $ liftIO $ unsafeResumeContext st $ do
+     withBoundPixelUnpackBuffer buf $ liftIO $ unsafeResumeContext st $ do
         old_num_cols  <- fromIntegral <$> gi gl_UNPACK_ROW_LENGTH
         old_num_rows  <- fromIntegral <$> gi gl_UNPACK_IMAGE_HEIGHT
         old_alignment <- fromIntegral <$> gi gl_UNPACK_ALIGNMENT
@@ -758,9 +758,9 @@ setTexParam param tex = withBindingByTopology tex $ \target ->
 
 getTexParam :: forall s a. TexParam a => Texture s -> Context s a
 getTexParam tex = withBindingByTopology tex $ \target ->
-    ask >>= \gl -> liftIO $ alloca $ \result_ptr -> do
-        F.glGetTexParameteriv target (tpEnum (undefined :: a)) result_ptr gl
-        tpFromConstant . fromIntegral <$> peek result_ptr
+    allocaG $ \result_ptr -> do
+        glGetTexParameteriv target (tpEnum (undefined :: a)) result_ptr
+        tpFromConstant . fromIntegral <$> liftIO (peek result_ptr)
 
 setWrapping :: Wrapping -> Texture s -> Context s ()
 setWrapping wrapping tex = withBindingByTopology tex $ \target -> do
@@ -778,9 +778,9 @@ setCompareMode cmp_mode tex = withBindingByTopology tex $ \target ->
 
 getCompareMode :: Texture s -> Context s CompareMode
 getCompareMode tex = withBindingByTopology tex $ \target ->
-    ask >>= \gl -> liftIO $ alloca $ \result_ptr -> do
-        F.glGetTexParameteriv target gl_TEXTURE_COMPARE_MODE result_ptr gl
-        result <- fromIntegral <$> peek result_ptr
+    allocaG $ \result_ptr -> do
+        glGetTexParameteriv target gl_TEXTURE_COMPARE_MODE result_ptr
+        result <- fromIntegral <$> liftIO (peek result_ptr)
         return $ if
             | result == gl_NONE -> NoCompare
             | result == gl_COMPARE_REF_TO_TEXTURE -> CompareRefToTexture
@@ -788,9 +788,9 @@ getCompareMode tex = withBindingByTopology tex $ \target ->
 
 getWrapping :: Texture s -> Context s Wrapping
 getWrapping tex = withBindingByTopology tex $ \target -> do
-    ask >>= \gl -> liftIO $ alloca $ \result_ptr -> do
-        F.glGetTexParameteriv target gl_TEXTURE_WRAP_S result_ptr gl
-        result <- fromIntegral <$> peek result_ptr
+    allocaG $ \result_ptr -> do
+        glGetTexParameteriv target gl_TEXTURE_WRAP_S result_ptr
+        result <- fromIntegral <$> liftIO (peek result_ptr)
         return $ if
             | result == gl_CLAMP_TO_EDGE -> Clamp
             | result == gl_REPEAT -> Repeat
@@ -802,12 +802,9 @@ setAnisotropy ani tex = withBindingByTopology tex $ \target ->
 
 getAnisotropy :: Texture s -> Context s Float
 getAnisotropy tex = withBindingByTopology tex $ \target -> do
-    gl <- ask
-    liftIO $ alloca $ \ani_ptr -> do
-        F.glGetTexParameterfv target gl_TEXTURE_MAX_ANISOTROPY_EXT ani_ptr gl
-        unwrap <$> peek ani_ptr
-  where
-    unwrap (CFloat f) = f
+    allocaG $ \ani_ptr -> do
+        glGetTexParameterfv target gl_TEXTURE_MAX_ANISOTROPY_EXT (castPtr ani_ptr)
+        liftIO (peek ani_ptr)
 
 {-
 nextMipmapLevel :: Int -> Int

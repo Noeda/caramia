@@ -8,8 +8,6 @@ module Graphics.Caramia.Context.Internal
     ( Context(..)
     , ContextState()
     , coerceContext
-    , askFlextGL
-    , liftFlextGLM
     , contextState
     , unsafeResumeContext )
     where
@@ -38,7 +36,7 @@ import Unsafe.Coerce
 -- Look at the internal FlextGL modules for raw OpenGL functions that work
 -- directly in `Context` monad (e.g.
 -- @Graphics.Caramia.Internal.FlextGLReader@).
-newtype Context s a = Context (FlextGLM a)
+newtype Context s a = Context (OpenGL a)
                       deriving ( Functor
                                , Applicative
                                , Monad
@@ -50,18 +48,15 @@ newtype Context s a = Context (FlextGLM a)
                                , Typeable )
 
 -- | This allows you to use an escape hatch and run any OpenGL function.
-deriving instance MonadReader FlextGL (Context s)
+deriving instance MonadReader Scope (Context s)
 
 -- | Encapsulates the state of `Context`.
-newtype ContextState s = ContextState FlextGL
-                         deriving ( Eq, Ord, Typeable )
-
-askFlextGL :: Context s FlextGL
-askFlextGL = liftFlextGLM askGL
+newtype ContextState s = ContextState Scope
+                         deriving ( Typeable )
 
 -- | Returns a context state that can be used to resume a context.
 contextState :: Context s (ContextState s)
-contextState = ContextState <$> liftFlextGLM askGL
+contextState = ContextState <$> ask
 
 -- | Unsafely unwraps a context to `IO`.
 --
@@ -77,14 +72,8 @@ contextState = ContextState <$> liftFlextGLM askGL
 -- This is unsafe because it can be used to break invariants of `Context` (see
 -- `Context`).
 unsafeResumeContext :: ContextState s -> Context s a -> IO a
-unsafeResumeContext (ContextState fgl) (Context action) =
-    runFlextGLM fgl action
-
--- | Lifts a `FlextGLM` action to `Context`.
---
--- This unsafe! It will happily break all the invariants concerning `Context`.
-liftFlextGLM :: FlextGLM a -> Context s a
-liftFlextGLM = Context
+unsafeResumeContext (ContextState gl) (Context action) =
+    runOpenGL gl action
 
 -- | Coerces a `Context` value to another. Safe and useful to work around
 -- problematic type system quirks.

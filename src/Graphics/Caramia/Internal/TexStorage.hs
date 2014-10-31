@@ -17,7 +17,6 @@ import Graphics.Caramia.Prelude
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Texture.Internal
 import Control.Monad.Catch
-import Foreign.Ptr
 
 -- | glTextureStorage1D
 fakeTextureStorage1D :: (OpenGLLike e m, MonadMask m)
@@ -28,7 +27,7 @@ fakeTextureStorage1D :: (OpenGLLike e m, MonadMask m)
                      -> GLsizei
                      -> m ()
 fakeTextureStorage1D texture target levels internalformat width = mask_ $ do
-    branchExt has_GL_EXT_direct_state_access
+    branchExt gl_EXT_direct_state_access
               dsaFakeTextureStorage1D
               nodsaFakeTextureStorage1D
   where
@@ -74,7 +73,7 @@ fakeTextureStorage2D :: (OpenGLLike e m, MonadMask m)
                      -> GLsizei
                      -> m ()
 fakeTextureStorage2D texture target levels internalformat width height =
-    mask_ $ branchExt has_GL_EXT_direct_state_access
+    mask_ $ branchExt gl_EXT_direct_state_access
                       dsaFakeTextureStorage2D
                       nodsaFakeTextureStorage2D
   where
@@ -157,7 +156,7 @@ fakeTextureStorage3D :: (MonadMask m, OpenGLLike e m)
                      -> GLsizei
                      -> m ()
 fakeTextureStorage3D texture target levels internalformat width height depth =
-    mask_ $ branchExt has_GL_EXT_direct_state_access
+    mask_ $ branchExt gl_EXT_direct_state_access
                       dsaFakeTextureStorage3D
                       nodsaFakeTextureStorage3D
   where

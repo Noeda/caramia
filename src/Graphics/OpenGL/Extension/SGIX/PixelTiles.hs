@@ -1,0 +1,45 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Extension.SGIX.PixelTiles (
+	-- * Extension Support
+	  gl_SGIX_pixel_tiles
+
+	-- * GL_SGIX_pixel_tiles
+	, gl_PIXEL_TILE_BEST_ALIGNMENT_SGIX
+	, gl_PIXEL_TILE_CACHE_INCREMENT_SGIX
+	, gl_PIXEL_TILE_CACHE_SIZE_SGIX
+	, gl_PIXEL_TILE_GRID_DEPTH_SGIX
+	, gl_PIXEL_TILE_GRID_HEIGHT_SGIX
+	, gl_PIXEL_TILE_GRID_WIDTH_SGIX
+	, gl_PIXEL_TILE_HEIGHT_SGIX
+	, gl_PIXEL_TILE_WIDTH_SGIX
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+gl_SGIX_pixel_tiles :: (Monad m, MonadReader e m, HasScope e) => m Bool
+gl_SGIX_pixel_tiles = extGL 647
+
+gl_PIXEL_TILE_BEST_ALIGNMENT_SGIX :: GLenum
+gl_PIXEL_TILE_BEST_ALIGNMENT_SGIX = 0x813E
+
+gl_PIXEL_TILE_CACHE_INCREMENT_SGIX :: GLenum
+gl_PIXEL_TILE_CACHE_INCREMENT_SGIX = 0x813F
+
+gl_PIXEL_TILE_CACHE_SIZE_SGIX :: GLenum
+gl_PIXEL_TILE_CACHE_SIZE_SGIX = 0x8145
+
+gl_PIXEL_TILE_GRID_DEPTH_SGIX :: GLenum
+gl_PIXEL_TILE_GRID_DEPTH_SGIX = 0x8144
+
+gl_PIXEL_TILE_GRID_HEIGHT_SGIX :: GLenum
+gl_PIXEL_TILE_GRID_HEIGHT_SGIX = 0x8143
+
+gl_PIXEL_TILE_GRID_WIDTH_SGIX :: GLenum
+gl_PIXEL_TILE_GRID_WIDTH_SGIX = 0x8142
+
+gl_PIXEL_TILE_HEIGHT_SGIX :: GLenum
+gl_PIXEL_TILE_HEIGHT_SGIX = 0x8141
+
+gl_PIXEL_TILE_WIDTH_SGIX :: GLenum
+gl_PIXEL_TILE_WIDTH_SGIX = 0x8140

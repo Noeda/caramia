@@ -47,15 +47,16 @@ import qualified Data.IntMap.Strict as IM
 import Foreign.Marshal.Alloc
 import Foreign.Ptr
 import Foreign.Storable
+import Foreign.C.String
 import Graphics.Caramia.Internal.ContextLocalData
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Internal.OpenGLDebug
 import Graphics.Caramia.Context.Internal
-import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Graphics.Caramia.Prelude
 import Graphics.Rendering.OpenGL.Raw.GetProcAddress
 import Control.Concurrent hiding ( newChan, writeChan )
 import Control.Concurrent.Chan.Unagi
+import Control.Monad.Trans.Reader
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import System.IO.Unsafe
@@ -103,11 +104,9 @@ giveContext action = mask $ \restore -> do
         error $ "giveContext: current thread is not bound. How can it have " <>
                 "an OpenGL context?"
 
-    flextGL <- flextInit (\str -> castFunPtrToPtr <$> getProcAddress str) >>= \case
-        f@(Failure _) -> throwM f
-        Success funs -> return funs
-
-    checkOpenGLVersion33 flextGL
+    scope <- initGL $ \str ->
+        castFunPtrToPtr <$> (getProcAddress =<< peekCString str)
+    checkOpenGLVersion33 scope
 
     cid <- atomicModifyIORef' nextContextID $ \old ->
                ( old+1, ContextID old )
@@ -116,7 +115,7 @@ giveContext action = mask $ \restore -> do
     chans <- ContextWorkQueue <$> newContextWorkQueue
     atomicModifyIORef_' workMachineQueues $ IM.insert (unContextID cid) chans
 
-    finally (restore $ insides flextGL) scrapContext
+    finally (restore $ insides scope) scrapContext
   where
     Context startup = do
         should_activate_debug_mode <-
@@ -124,7 +123,7 @@ giveContext action = mask $ \restore -> do
         when should_activate_debug_mode activateDebugMode
         finally (action :: Context () a) flushDebugMessages
 
-    insides flextGL = runFlextGLM flextGL $ do
+    insides scope = runOpenGL scope $ do
         -- Enable sRGB framebuffers
         -- There seems to be no reason not to enable it; you can turn off sRGB
         -- handling in other ways.
@@ -141,7 +140,7 @@ setViewportSize :: Int    -- ^ Width
 setViewportSize w h =
     glViewport 0 0 (safeFromIntegral w) (safeFromIntegral h)
 
-checkOpenGLVersion33 :: FlextGL -> IO ()
+checkOpenGLVersion33 :: Scope -> IO ()
 checkOpenGLVersion33 gl =
     -- You cannot trust OS X to report versions correctly :-(
 #ifdef MAC_OPENGL
@@ -153,8 +152,8 @@ checkOpenGLVersion33 gl =
         poke major_ptr 0
         poke minor_ptr 0
 
-        F.glGetIntegerv gl_MAJOR_VERSION major_ptr gl
-        F.glGetIntegerv gl_MAJOR_VERSION minor_ptr gl
+        runReaderT (glGetIntegerv gl_MAJOR_VERSION major_ptr) gl
+        runReaderT (glGetIntegerv gl_MAJOR_VERSION minor_ptr) gl
         major <- peek major_ptr
         minor <- peek minor_ptr
         unless (major > 3 ||

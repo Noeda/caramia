@@ -38,10 +38,10 @@ import Control.Monad.Catch
 -- program.
 newVAO :: Context s (VAO s)
 newVAO = mask_ $ do
-    gl <- ask
+    gl <- scope <$> ask
     res <- newResource create
                        (\(VAO_ vao) ->
-                           runFlextGLM gl $ mglDeleteVertexArray vao)
+                           runReaderT (mglDeleteVertexArray vao) gl)
                        (return ())
     ref <- liftIO $ newIORef []
     return VAO { resource = res

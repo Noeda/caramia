@@ -1,0 +1,49 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Extension.APPLE.ClipDistance (
+	-- * Extension Support
+	  gl_APPLE_clip_distance
+
+	-- * GL_APPLE_clip_distance
+	, gl_CLIP_DISTANCE0_APPLE
+	, gl_CLIP_DISTANCE1_APPLE
+	, gl_CLIP_DISTANCE2_APPLE
+	, gl_CLIP_DISTANCE3_APPLE
+	, gl_CLIP_DISTANCE4_APPLE
+	, gl_CLIP_DISTANCE5_APPLE
+	, gl_CLIP_DISTANCE6_APPLE
+	, gl_CLIP_DISTANCE7_APPLE
+	, gl_MAX_CLIP_DISTANCES_APPLE
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+gl_APPLE_clip_distance :: (Monad m, MonadReader e m, HasScope e) => m Bool
+gl_APPLE_clip_distance = extGL 46
+
+gl_CLIP_DISTANCE0_APPLE :: GLenum
+gl_CLIP_DISTANCE0_APPLE = 0x3000
+
+gl_CLIP_DISTANCE1_APPLE :: GLenum
+gl_CLIP_DISTANCE1_APPLE = 0x3001
+
+gl_CLIP_DISTANCE2_APPLE :: GLenum
+gl_CLIP_DISTANCE2_APPLE = 0x3002
+
+gl_CLIP_DISTANCE3_APPLE :: GLenum
+gl_CLIP_DISTANCE3_APPLE = 0x3003
+
+gl_CLIP_DISTANCE4_APPLE :: GLenum
+gl_CLIP_DISTANCE4_APPLE = 0x3004
+
+gl_CLIP_DISTANCE5_APPLE :: GLenum
+gl_CLIP_DISTANCE5_APPLE = 0x3005
+
+gl_CLIP_DISTANCE6_APPLE :: GLenum
+gl_CLIP_DISTANCE6_APPLE = 0x3006
+
+gl_CLIP_DISTANCE7_APPLE :: GLenum
+gl_CLIP_DISTANCE7_APPLE = 0x3007
+
+gl_MAX_CLIP_DISTANCES_APPLE :: GLenum
+gl_MAX_CLIP_DISTANCES_APPLE = 0x0D32

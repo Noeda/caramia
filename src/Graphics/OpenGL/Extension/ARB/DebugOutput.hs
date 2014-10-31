@@ -1,0 +1,117 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Extension.ARB.DebugOutput (
+	-- * Extension Support
+	  gl_ARB_debug_output
+
+	-- * GL_ARB_debug_output
+	, glDebugMessageCallbackARB
+	, glDebugMessageControlARB
+	, glDebugMessageInsertARB
+	, glGetDebugMessageLogARB
+	, gl_DEBUG_CALLBACK_FUNCTION_ARB
+	, gl_DEBUG_CALLBACK_USER_PARAM_ARB
+	, gl_DEBUG_LOGGED_MESSAGES_ARB
+	, gl_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH_ARB
+	, gl_DEBUG_OUTPUT_SYNCHRONOUS_ARB
+	, gl_DEBUG_SEVERITY_HIGH_ARB
+	, gl_DEBUG_SEVERITY_LOW_ARB
+	, gl_DEBUG_SEVERITY_MEDIUM_ARB
+	, gl_DEBUG_SOURCE_API_ARB
+	, gl_DEBUG_SOURCE_APPLICATION_ARB
+	, gl_DEBUG_SOURCE_OTHER_ARB
+	, gl_DEBUG_SOURCE_SHADER_COMPILER_ARB
+	, gl_DEBUG_SOURCE_THIRD_PARTY_ARB
+	, gl_DEBUG_SOURCE_WINDOW_SYSTEM_ARB
+	, gl_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB
+	, gl_DEBUG_TYPE_ERROR_ARB
+	, gl_DEBUG_TYPE_OTHER_ARB
+	, gl_DEBUG_TYPE_PERFORMANCE_ARB
+	, gl_DEBUG_TYPE_PORTABILITY_ARB
+	, gl_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB
+	, gl_MAX_DEBUG_LOGGED_MESSAGES_ARB
+	, gl_MAX_DEBUG_MESSAGE_LENGTH_ARB
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+gl_ARB_debug_output :: (Monad m, MonadReader e m, HasScope e) => m Bool
+gl_ARB_debug_output = extGL 91
+
+glDebugMessageCallbackARB :: (MonadIO m, MonadReader e m, HasScope e) => GLDEBUGPROCARB -> Ptr () -> m ()
+glDebugMessageCallbackARB v0 v1 = funGL 150 >>= \f -> liftIO $ f v0 v1
+
+glDebugMessageControlARB :: (MonadIO m, MonadReader e m, HasScope e) => GLenum -> GLenum -> GLenum -> GLsizei -> Ptr GLuint -> GLboolean -> m ()
+glDebugMessageControlARB v0 v1 v2 v3 v4 v5 = funGL 151 >>= \f -> liftIO $ f v0 v1 v2 v3 v4 v5
+
+glDebugMessageInsertARB :: (MonadIO m, MonadReader e m, HasScope e) => GLenum -> GLenum -> GLuint -> GLenum -> GLsizei -> Ptr GLchar -> m ()
+glDebugMessageInsertARB v0 v1 v2 v3 v4 v5 = funGL 152 >>= \f -> liftIO $ f v0 v1 v2 v3 v4 v5
+
+glGetDebugMessageLogARB :: (MonadIO m, MonadReader e m, HasScope e) => GLuint -> GLsizei -> Ptr GLenum -> Ptr GLenum -> Ptr GLuint -> Ptr GLenum -> Ptr GLsizei -> Ptr GLchar -> m GLuint
+glGetDebugMessageLogARB v0 v1 v2 v3 v4 v5 v6 v7 = funGL 153 >>= \f -> liftIO $ f v0 v1 v2 v3 v4 v5 v6 v7
+
+gl_DEBUG_CALLBACK_FUNCTION_ARB :: GLenum
+gl_DEBUG_CALLBACK_FUNCTION_ARB = 0x8244
+
+gl_DEBUG_CALLBACK_USER_PARAM_ARB :: GLenum
+gl_DEBUG_CALLBACK_USER_PARAM_ARB = 0x8245
+
+gl_DEBUG_LOGGED_MESSAGES_ARB :: GLenum
+gl_DEBUG_LOGGED_MESSAGES_ARB = 0x9145
+
+gl_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH_ARB :: GLenum
+gl_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH_ARB = 0x8243
+
+gl_DEBUG_OUTPUT_SYNCHRONOUS_ARB :: GLenum
+gl_DEBUG_OUTPUT_SYNCHRONOUS_ARB = 0x8242
+
+gl_DEBUG_SEVERITY_HIGH_ARB :: GLenum
+gl_DEBUG_SEVERITY_HIGH_ARB = 0x9146
+
+gl_DEBUG_SEVERITY_LOW_ARB :: GLenum
+gl_DEBUG_SEVERITY_LOW_ARB = 0x9148
+
+gl_DEBUG_SEVERITY_MEDIUM_ARB :: GLenum
+gl_DEBUG_SEVERITY_MEDIUM_ARB = 0x9147
+
+gl_DEBUG_SOURCE_API_ARB :: GLenum
+gl_DEBUG_SOURCE_API_ARB = 0x8246
+
+gl_DEBUG_SOURCE_APPLICATION_ARB :: GLenum
+gl_DEBUG_SOURCE_APPLICATION_ARB = 0x824A
+
+gl_DEBUG_SOURCE_OTHER_ARB :: GLenum
+gl_DEBUG_SOURCE_OTHER_ARB = 0x824B
+
+gl_DEBUG_SOURCE_SHADER_COMPILER_ARB :: GLenum
+gl_DEBUG_SOURCE_SHADER_COMPILER_ARB = 0x8248
+
+gl_DEBUG_SOURCE_THIRD_PARTY_ARB :: GLenum
+gl_DEBUG_SOURCE_THIRD_PARTY_ARB = 0x8249
+
+gl_DEBUG_SOURCE_WINDOW_SYSTEM_ARB :: GLenum
+gl_DEBUG_SOURCE_WINDOW_SYSTEM_ARB = 0x8247
+
+gl_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB :: GLenum
+gl_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB = 0x824D
+
+gl_DEBUG_TYPE_ERROR_ARB :: GLenum
+gl_DEBUG_TYPE_ERROR_ARB = 0x824C
+
+gl_DEBUG_TYPE_OTHER_ARB :: GLenum
+gl_DEBUG_TYPE_OTHER_ARB = 0x8251
+
+gl_DEBUG_TYPE_PERFORMANCE_ARB :: GLenum
+gl_DEBUG_TYPE_PERFORMANCE_ARB = 0x8250
+
+gl_DEBUG_TYPE_PORTABILITY_ARB :: GLenum
+gl_DEBUG_TYPE_PORTABILITY_ARB = 0x824F
+
+gl_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB :: GLenum
+gl_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB = 0x824E
+
+gl_MAX_DEBUG_LOGGED_MESSAGES_ARB :: GLenum
+gl_MAX_DEBUG_LOGGED_MESSAGES_ARB = 0x9144
+
+gl_MAX_DEBUG_MESSAGE_LENGTH_ARB :: GLenum
+gl_MAX_DEBUG_MESSAGE_LENGTH_ARB = 0x9143

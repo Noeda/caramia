@@ -1,0 +1,104 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Extension.EXT.DrawBuffers (
+	-- * Extension Support
+	  gl_EXT_draw_buffers
+
+	-- * GL_EXT_draw_buffers
+	, glDrawBuffersEXT
+	, gl_COLOR_ATTACHMENT0_EXT
+	, gl_COLOR_ATTACHMENT10_EXT
+	, gl_COLOR_ATTACHMENT11_EXT
+	, gl_COLOR_ATTACHMENT12_EXT
+	, gl_COLOR_ATTACHMENT13_EXT
+	, gl_COLOR_ATTACHMENT14_EXT
+	, gl_COLOR_ATTACHMENT15_EXT
+	, gl_COLOR_ATTACHMENT1_EXT
+	, gl_COLOR_ATTACHMENT2_EXT
+	, gl_COLOR_ATTACHMENT3_EXT
+	, gl_COLOR_ATTACHMENT4_EXT
+	, gl_COLOR_ATTACHMENT5_EXT
+	, gl_COLOR_ATTACHMENT6_EXT
+	, gl_COLOR_ATTACHMENT7_EXT
+	, gl_COLOR_ATTACHMENT8_EXT
+	, gl_COLOR_ATTACHMENT9_EXT
+	, gl_DRAW_BUFFER0_EXT
+	, gl_DRAW_BUFFER10_EXT
+	, gl_DRAW_BUFFER11_EXT
+	, gl_DRAW_BUFFER12_EXT
+	, gl_DRAW_BUFFER13_EXT
+	, gl_DRAW_BUFFER14_EXT
+	, gl_DRAW_BUFFER15_EXT
+	, gl_DRAW_BUFFER1_EXT
+	, gl_DRAW_BUFFER2_EXT
+	, gl_DRAW_BUFFER3_EXT
+	, gl_DRAW_BUFFER4_EXT
+	, gl_DRAW_BUFFER5_EXT
+	, gl_DRAW_BUFFER6_EXT
+	, gl_DRAW_BUFFER7_EXT
+	, gl_DRAW_BUFFER8_EXT
+	, gl_DRAW_BUFFER9_EXT
+	, gl_MAX_COLOR_ATTACHMENTS_EXT
+	, gl_MAX_DRAW_BUFFERS_EXT
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+import Graphics.OpenGL.Internal.Shared
+
+gl_EXT_draw_buffers :: (Monad m, MonadReader e m, HasScope e) => m Bool
+gl_EXT_draw_buffers = extGL 272
+
+glDrawBuffersEXT :: (MonadIO m, MonadReader e m, HasScope e) => GLsizei -> Ptr GLenum -> m ()
+glDrawBuffersEXT v0 v1 = funGL 1228 >>= \f -> liftIO $ f v0 v1
+
+gl_DRAW_BUFFER0_EXT :: GLenum
+gl_DRAW_BUFFER0_EXT = 0x8825
+
+gl_DRAW_BUFFER10_EXT :: GLenum
+gl_DRAW_BUFFER10_EXT = 0x882F
+
+gl_DRAW_BUFFER11_EXT :: GLenum
+gl_DRAW_BUFFER11_EXT = 0x8830
+
+gl_DRAW_BUFFER12_EXT :: GLenum
+gl_DRAW_BUFFER12_EXT = 0x8831
+
+gl_DRAW_BUFFER13_EXT :: GLenum
+gl_DRAW_BUFFER13_EXT = 0x8832
+
+gl_DRAW_BUFFER14_EXT :: GLenum
+gl_DRAW_BUFFER14_EXT = 0x8833
+
+gl_DRAW_BUFFER15_EXT :: GLenum
+gl_DRAW_BUFFER15_EXT = 0x8834
+
+gl_DRAW_BUFFER1_EXT :: GLenum
+gl_DRAW_BUFFER1_EXT = 0x8826
+
+gl_DRAW_BUFFER2_EXT :: GLenum
+gl_DRAW_BUFFER2_EXT = 0x8827
+
+gl_DRAW_BUFFER3_EXT :: GLenum
+gl_DRAW_BUFFER3_EXT = 0x8828
+
+gl_DRAW_BUFFER4_EXT :: GLenum
+gl_DRAW_BUFFER4_EXT = 0x8829
+
+gl_DRAW_BUFFER5_EXT :: GLenum
+gl_DRAW_BUFFER5_EXT = 0x882A
+
+gl_DRAW_BUFFER6_EXT :: GLenum
+gl_DRAW_BUFFER6_EXT = 0x882B
+
+gl_DRAW_BUFFER7_EXT :: GLenum
+gl_DRAW_BUFFER7_EXT = 0x882C
+
+gl_DRAW_BUFFER8_EXT :: GLenum
+gl_DRAW_BUFFER8_EXT = 0x882D
+
+gl_DRAW_BUFFER9_EXT :: GLenum
+gl_DRAW_BUFFER9_EXT = 0x882E
+
+gl_MAX_DRAW_BUFFERS_EXT :: GLenum
+gl_MAX_DRAW_BUFFERS_EXT = 0x8824

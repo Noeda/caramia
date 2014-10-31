@@ -20,7 +20,7 @@
 
 {-# LANGUAGE NoImplicitPrelude, FlexibleInstances, DeriveDataTypeable #-}
 {-# LANGUAGE ExistentialQuantification, ViewPatterns, OverloadedStrings #-}
-{-# LANGUAGE FlexibleContexts, ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts, ConstraintKinds, RankNTypes #-}
 
 module Graphics.Caramia.Shader
     ( newShader
@@ -59,9 +59,7 @@ import qualified Data.Text.Foreign as T
 import Foreign
 import Foreign.C.Types
 import Graphics.Caramia.Context
-import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Internal.ContextLocalData
-import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Math
 import Graphics.Caramia.Prelude
@@ -126,9 +124,8 @@ setUniform :: Uniformable a
            -> Context s ()
 setUniform uniformable location pipeline =
     withResource (resourcePL pipeline) $ \(Pipeline_ program) -> do
-        liftFlextGLM $ do
-            gl <- askGL
-            liftIO $ setUniform_ gl program (safeFromIntegral location) uniformable
+        gl <- scope <$> ask
+        liftIO $ setUniform_ gl program (safeFromIntegral location) uniformable
 {-# INLINE [1] setUniform #-}
 
 newShaderGeneric :: Ptr CChar
@@ -147,18 +144,19 @@ newShaderGeneric source_code_ptr source_code_len stage = mask_ $ do
                   , viewStage = stage }
   where
     deleter gl (CompiledShader shader) =
-       F.glDeleteShader shader gl
+       runReaderT (glDeleteShader shader) gl
 
     create = do
         gl <- ask
         shader_name <- glCreateShader (toConstant stage)
         liftIO $ with source_code_ptr $ \cstr_ptr ->
             with (fromIntegral source_code_len :: GLint) $ \len_ptr ->
-                F.glShaderSource
+                runReaderT
+                   (glShaderSource
                     shader_name
                     1
-                    cstr_ptr
-                    len_ptr
+                    (castPtr cstr_ptr)
+                    len_ptr)
                     gl
 
         glCompileShader shader_name
@@ -201,10 +199,9 @@ newShader source_code stage = do
 -- DELETES the shader if there were errors.
 checkCompilationErrors :: GLuint -> Context s ()
 checkCompilationErrors shader_name = do
-    gl <- ask
-    status <- liftIO $ gget gl $ F.glGetShaderiv shader_name gl_COMPILE_STATUS
+    status <- gget $ glGetShaderiv shader_name gl_COMPILE_STATUS
     when (status == fromIntegral gl_FALSE) $ do
-        log_len <- liftIO $ gget gl $ F.glGetShaderiv shader_name gl_INFO_LOG_LENGTH
+        log_len <- gget $ glGetShaderiv shader_name gl_INFO_LOG_LENGTH
         st <- contextState
         liftIO $ allocaBytes (safeFromIntegral log_len) $ \str -> unsafeResumeContext st $ do
             glGetShaderInfoLog shader_name log_len nullPtr str
@@ -219,10 +216,9 @@ checkCompilationErrors shader_name = do
 -- DELETES the program if there were errors.
 checkLinkingErrors :: GLuint -> Context s ()
 checkLinkingErrors program_name = do
-    gl <- ask
-    status <- liftIO $ gget gl $ F.glGetProgramiv program_name gl_LINK_STATUS
+    status <- gget $ glGetProgramiv program_name gl_LINK_STATUS
     when (status == fromIntegral gl_FALSE) $ do
-        log_len <- liftIO $ gget gl $ F.glGetProgramiv program_name gl_INFO_LOG_LENGTH
+        log_len <- gget $ glGetProgramiv program_name gl_INFO_LOG_LENGTH
         st <- contextState
         liftIO $ allocaBytes (safeFromIntegral log_len) $ \str -> unsafeResumeContext st $ do
             glGetProgramInfoLog program_name log_len nullPtr str
@@ -249,14 +245,12 @@ newPipeline = newTraditionalPipeline
 
 newTraditionalPipeline :: [Shader s] -> Context s (Pipeline s)
 newTraditionalPipeline shaders = mask_ $ do
-    gl <- liftFlextGLM askGL
-
+    gl <- scope <$> ask
     res <- newResource creator
                        (deleter gl)
                        (return ())
     nid <- liftIO $ atomicModifyIORef' shaderIdentifierSupply $ \old ->
         ( old+1, old )
-
     return Pipeline { resourcePL = res
                     , pipelineIdentifier = nid
                     , shaders = shaders }
@@ -271,10 +265,13 @@ newTraditionalPipeline shaders = mask_ $ do
         checkLinkingErrors program
         return $ Pipeline_ program
 
-    deleter gl (Pipeline_ program) = F.glDeleteProgram program gl
+    deleter gl (Pipeline_ program) =
+        runReaderT (glDeleteProgram program) gl
 
-gget :: Storable a => FlextGL -> (Ptr a -> FlextGL -> IO ()) -> IO a
-gget gl action = alloca $ \ptr -> action ptr gl >> peek ptr
+gget :: (Storable a, OpenGLLike e m)
+     => (forall e2 m2. OpenGLLike e2 m2 => Ptr a -> m2 ())
+     -> m a
+gget action = allocaG $ \ptr -> action ptr >> liftIO (peek ptr)
 
 -- | Class of data types that can be set to a uniform in a shader pipeline.
 --
@@ -284,27 +281,27 @@ gget gl action = alloca $ \ptr -> action ptr gl >> peek ptr
 -- (which is 2^32-1 for unsigned integer types and 2^31-1 for signed integer
 -- types).
 class Uniformable a where
-    setUniform_ :: FlextGL -> GLuint -> GLint -> a -> IO ()
+    setUniform_ :: Scope -> GLuint -> GLint -> a -> IO ()
 
-type USetter1 a = FlextGL -> GLuint -> GLint -> a -> IO ()
-type USetter2 a = FlextGL -> GLuint -> GLint -> (a, a) -> IO ()
-type USetter3 a = FlextGL -> GLuint -> GLint -> (a, a, a) -> IO ()
-type USetter4 a = FlextGL -> GLuint -> GLint -> (a, a, a, a) -> IO ()
+type USetter1 a = Scope -> GLuint -> GLint -> a -> IO ()
+type USetter2 a = Scope -> GLuint -> GLint -> (a, a) -> IO ()
+type USetter3 a = Scope -> GLuint -> GLint -> (a, a, a) -> IO ()
+type USetter4 a = Scope -> GLuint -> GLint -> (a, a, a, a) -> IO ()
 
 setUi1 :: Integral a => USetter1 a
 setUi1 gl program loc w =
-    runFlextGLM gl $ mglProgramUniform1ui program loc (safeFromIntegral w)
+    runOpenGL gl $ mglProgramUniform1ui program loc (safeFromIntegral w)
 {-# INLINE setUi1 #-}
 
 setUi2 :: Integral a => USetter2 a
 setUi2 gl program loc (w1, w2) =
-    runFlextGLM gl $ mglProgramUniform2ui program loc (safeFromIntegral w1
-                                                      ,safeFromIntegral w2)
+    runOpenGL gl $ mglProgramUniform2ui program loc (safeFromIntegral w1
+                                                    ,safeFromIntegral w2)
 {-# INLINE setUi2 #-}
 
 setUi3 :: Integral a => USetter3 a
 setUi3 gl program loc (w1, w2, w3) =
-    runFlextGLM gl $
+    runOpenGL gl $
     mglProgramUniform3ui program loc (safeFromIntegral w1
                                      ,safeFromIntegral w2
                                      ,safeFromIntegral w3)
@@ -312,7 +309,7 @@ setUi3 gl program loc (w1, w2, w3) =
 
 setUi4 :: Integral a => USetter4 a
 setUi4 gl program loc (w1, w2, w3, w4) =
-    runFlextGLM gl $
+    runOpenGL gl $
     mglProgramUniform4ui program loc (safeFromIntegral w1
                                      ,safeFromIntegral w2
                                      ,safeFromIntegral w3
@@ -321,20 +318,20 @@ setUi4 gl program loc (w1, w2, w3, w4) =
 
 setI1 :: Integral a => USetter1 a
 setI1 gl program loc w =
-    runFlextGLM gl $
+    runOpenGL gl $
     mglProgramUniform1i program loc (safeFromIntegral w)
 {-# INLINE setI1 #-}
 
 setI2 :: Integral a => USetter2 a
 setI2 gl program loc (w1, w2) =
-    runFlextGLM gl $
+    runOpenGL gl $
     mglProgramUniform2i program loc (safeFromIntegral w1
                                     ,safeFromIntegral w2)
 {-# INLINE setI2 #-}
 
 setI3 :: Integral a => USetter3 a
 setI3 gl program loc (w1, w2, w3) =
-    runFlextGLM gl $
+    runOpenGL gl $
     mglProgramUniform3i program loc (safeFromIntegral w1
                                     ,safeFromIntegral w2
                                     ,safeFromIntegral w3)
@@ -342,7 +339,7 @@ setI3 gl program loc (w1, w2, w3) =
 
 setI4 :: Integral a => USetter4 a
 setI4 gl program loc (w1, w2, w3, w4) =
-    runFlextGLM gl $
+    runOpenGL gl $
     mglProgramUniform4i program loc (safeFromIntegral w1
                                     ,safeFromIntegral w2
                                     ,safeFromIntegral w3
@@ -448,22 +445,22 @@ instance Uniformable (Integer, Integer, Integer, Integer) where
     setUniform_ = setI4
 instance Uniformable Float where
     setUniform_ gl program loc f1 =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform1f program loc (CFloat f1)
 instance Uniformable (Float, Float) where
     setUniform_ gl program loc (f1, f2) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform2f program loc (CFloat f1, CFloat f2)
 instance Uniformable (Float, Float, Float) where
     setUniform_ gl program loc (f1, f2, f3) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform3f program loc
                             (CFloat f1
                             ,CFloat f2
                             ,CFloat f3)
 instance Uniformable (Float, Float, Float, Float) where
     setUniform_ gl program loc (f1, f2, f3, f4) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform4f program loc
                             (CFloat f1
                             ,CFloat f2
@@ -471,39 +468,39 @@ instance Uniformable (Float, Float, Float, Float) where
                             ,CFloat f4)
 instance Uniformable CFloat where
     setUniform_ gl program loc f1 =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform1f program loc f1
 instance Uniformable (CFloat, CFloat) where
     setUniform_ gl program loc (f1, f2) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform2f program loc (f1, f2)
 instance Uniformable (CFloat, CFloat, CFloat) where
     setUniform_ gl program loc (f1, f2, f3) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform3f program loc (f1, f2, f3)
 instance Uniformable (CFloat, CFloat, CFloat, CFloat) where
     setUniform_ gl program loc (f1, f2, f3, f4) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform4f program loc (f1, f2, f3, f4)
 
 instance Uniformable Double where
     setUniform_ gl program loc f1 =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform1f program loc (double2CFloat f1)
 instance Uniformable (Double, Double) where
     setUniform_ gl program loc (f1, f2) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform2f program loc (double2CFloat f1, double2CFloat f2)
 instance Uniformable (Double, Double, Double) where
     setUniform_ gl program loc (f1, f2, f3) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform3f program loc
                             (double2CFloat f1
                             ,double2CFloat f2
                             ,double2CFloat f3)
 instance Uniformable (Double, Double, Double, Double) where
     setUniform_ gl program loc (f1, f2, f3, f4) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform4f program loc
                             (double2CFloat f1
                             ,double2CFloat f2
@@ -511,22 +508,22 @@ instance Uniformable (Double, Double, Double, Double) where
                             ,double2CFloat f4)
 instance Uniformable CDouble where
     setUniform_ gl program loc f1 =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform1f program loc (cdouble2CFloat f1)
 instance Uniformable (CDouble, CDouble) where
     setUniform_ gl program loc (f1, f2) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform2f program loc (cdouble2CFloat f1, cdouble2CFloat f2)
 instance Uniformable (CDouble, CDouble, CDouble) where
     setUniform_ gl program loc (f1, f2, f3) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform3f program loc
                             (cdouble2CFloat f1
                             ,cdouble2CFloat f2
                             ,cdouble2CFloat f3)
 instance Uniformable (CDouble, CDouble, CDouble, CDouble) where
     setUniform_ gl program loc (f1, f2, f3, f4) =
-        runFlextGLM gl $
+        runOpenGL gl $
         mglProgramUniform4f program loc
                             (cdouble2CFloat f1
                             ,cdouble2CFloat f2
@@ -544,14 +541,14 @@ instance Uniformable Quaternion where
 instance Uniformable Matrix33 where
     setUniform_ gl program loc m33 =
         withMatrix33Ptr m33 $ \ptr ->
-            runFlextGLM gl $
+            runOpenGL gl $
                 mglProgramUniformMatrix3fv program loc
                                            (1, fromIntegral gl_FALSE, ptr)
 
 instance Uniformable Matrix44 where
     setUniform_ gl program loc m44 =
         withMatrix44Ptr m44 $ \ptr ->
-            runFlextGLM gl $
+            runOpenGL gl $
                 mglProgramUniformMatrix4fv program loc
                                            (1, fromIntegral gl_FALSE, ptr)
 
@@ -562,14 +559,14 @@ newtype Transpose44 = Transpose44 Matrix44
 instance Uniformable Transpose33 where
     setUniform_ gl program loc (Transpose33 m33) =
         withMatrix33Ptr m33 $ \ptr ->
-            runFlextGLM gl $
+            runOpenGL gl $
                 mglProgramUniformMatrix3fv program loc
                                            (1, fromIntegral gl_TRUE, ptr)
 
 instance Uniformable Transpose44 where
     setUniform_ gl program loc (Transpose44 m44) =
         withMatrix44Ptr m44 $ \ptr ->
-            runFlextGLM gl $
+            runOpenGL gl $
                 mglProgramUniformMatrix4fv program loc
                                            (1, fromIntegral gl_TRUE, ptr)
 
@@ -594,10 +591,10 @@ cdouble2CFloat (CDouble dbl) = CFloat $ double2Float dbl
 -- `setUniform` to make it do nothing.
 getUniformLocation :: T.Text -> Pipeline s -> Context s UniformLocation
 getUniformLocation name pipeline = fromIntegral <$> do
-    gl <- liftFlextGLM askGL
+    gl <- scope <$> ask
     withResource (resourcePL pipeline) (\(Pipeline_ program) ->
          liftIO $ B.useAsCString (T.encodeUtf8 name) $ \cstr ->
-             F.glGetUniformLocation program cstr gl)
+             runReaderT (glGetUniformLocation program cstr) gl)
 
 -- context local pipeline
 newtype CLNopPipeline s = CLNopPipeline { unwrapCLNop :: Pipeline s }

@@ -1,0 +1,97 @@
+-- This file was automatically generated.
+module Graphics.OpenGL.Extension.EXT.TextureEnvCombine (
+	-- * Extension Support
+	  gl_EXT_texture_env_combine
+
+	-- * GL_EXT_texture_env_combine
+	, gl_ADD_SIGNED_EXT
+	, gl_COMBINE_ALPHA_EXT
+	, gl_COMBINE_EXT
+	, gl_COMBINE_RGB_EXT
+	, gl_CONSTANT_EXT
+	, gl_INTERPOLATE_EXT
+	, gl_OPERAND0_ALPHA_EXT
+	, gl_OPERAND0_RGB_EXT
+	, gl_OPERAND1_ALPHA_EXT
+	, gl_OPERAND1_RGB_EXT
+	, gl_OPERAND2_ALPHA_EXT
+	, gl_OPERAND2_RGB_EXT
+	, gl_PREVIOUS_EXT
+	, gl_PRIMARY_COLOR_EXT
+	, gl_RGB_SCALE_EXT
+	, gl_SOURCE0_ALPHA_EXT
+	, gl_SOURCE0_RGB_EXT
+	, gl_SOURCE1_ALPHA_EXT
+	, gl_SOURCE1_RGB_EXT
+	, gl_SOURCE2_ALPHA_EXT
+	, gl_SOURCE2_RGB_EXT
+) where
+
+import Graphics.OpenGL.Internal.Scope
+import Graphics.OpenGL.Basic
+
+gl_EXT_texture_env_combine :: (Monad m, MonadReader e m, HasScope e) => m Bool
+gl_EXT_texture_env_combine = extGL 357
+
+gl_ADD_SIGNED_EXT :: GLenum
+gl_ADD_SIGNED_EXT = 0x8574
+
+gl_COMBINE_ALPHA_EXT :: GLenum
+gl_COMBINE_ALPHA_EXT = 0x8572
+
+gl_COMBINE_EXT :: GLenum
+gl_COMBINE_EXT = 0x8570
+
+gl_COMBINE_RGB_EXT :: GLenum
+gl_COMBINE_RGB_EXT = 0x8571
+
+gl_CONSTANT_EXT :: GLenum
+gl_CONSTANT_EXT = 0x8576
+
+gl_INTERPOLATE_EXT :: GLenum
+gl_INTERPOLATE_EXT = 0x8575
+
+gl_OPERAND0_ALPHA_EXT :: GLenum
+gl_OPERAND0_ALPHA_EXT = 0x8598
+
+gl_OPERAND0_RGB_EXT :: GLenum
+gl_OPERAND0_RGB_EXT = 0x8590
+
+gl_OPERAND1_ALPHA_EXT :: GLenum
+gl_OPERAND1_ALPHA_EXT = 0x8599
+
+gl_OPERAND1_RGB_EXT :: GLenum
+gl_OPERAND1_RGB_EXT = 0x8591
+
+gl_OPERAND2_ALPHA_EXT :: GLenum
+gl_OPERAND2_ALPHA_EXT = 0x859A
+
+gl_OPERAND2_RGB_EXT :: GLenum
+gl_OPERAND2_RGB_EXT = 0x8592
+
+gl_PREVIOUS_EXT :: GLenum
+gl_PREVIOUS_EXT = 0x8578
+
+gl_PRIMARY_COLOR_EXT :: GLenum
+gl_PRIMARY_COLOR_EXT = 0x8577
+
+gl_RGB_SCALE_EXT :: GLenum
+gl_RGB_SCALE_EXT = 0x8573
+
+gl_SOURCE0_ALPHA_EXT :: GLenum
+gl_SOURCE0_ALPHA_EXT = 0x8588
+
+gl_SOURCE0_RGB_EXT :: GLenum
+gl_SOURCE0_RGB_EXT = 0x8580
+
+gl_SOURCE1_ALPHA_EXT :: GLenum
+gl_SOURCE1_ALPHA_EXT = 0x8589
+
+gl_SOURCE1_RGB_EXT :: GLenum
+gl_SOURCE1_RGB_EXT = 0x8581
+
+gl_SOURCE2_ALPHA_EXT :: GLenum
+gl_SOURCE2_ALPHA_EXT = 0x858A
+
+gl_SOURCE2_RGB_EXT :: GLenum
+gl_SOURCE2_RGB_EXT = 0x8582

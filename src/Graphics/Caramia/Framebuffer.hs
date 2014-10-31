@@ -41,7 +41,6 @@ import Data.Bits
 import qualified Data.IntSet as IS
 import Data.List ( nub )
 import Foreign.C.Types
-import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Storable
 import GHC.Float
@@ -49,7 +48,6 @@ import Graphics.Caramia.Color
 import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Framebuffer.Internal
 import Graphics.Caramia.ImageFormats
-import qualified Graphics.Caramia.Internal.FlextGLFlipped as F
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
@@ -161,7 +159,7 @@ newFramebuffer targets
                 for_ targets $ \(index, tex) ->
                     attacher tex (toConstantA index)
 
-                gl <- ask
+                gl <- scope <$> ask
                 liftIO $ allocaArray max_bufs $ \buf_ptr -> do
                     for_ [0..max_bufs-1] $ \bufnum ->
                         pokeElemOff buf_ptr bufnum $
@@ -169,7 +167,8 @@ newFramebuffer targets
                                 then gl_COLOR_ATTACHMENT0 +
                                      fromIntegral bufnum
                                 else gl_NONE
-                    F.glDrawBuffers (fromIntegral max_bufs) buf_ptr gl
+                    runReaderT
+                        (glDrawBuffers (fromIntegral max_bufs) buf_ptr) gl
 
             return $ Framebuffer_ fbuf_name
 
@@ -182,7 +181,7 @@ newFramebuffer targets
         folder accum _ = accum
 
     deleter gl (Framebuffer_ fbuf_name) =
-        runFlextGLM gl $ mglDeleteFramebuffer fbuf_name
+        runReaderT (mglDeleteFramebuffer fbuf_name) gl
 
     targetsSanityCheck max_bufs = for_ targets $ \(attachment, target) -> do
         let format = Tex.imageFormat $ Tex.viewSpecification $ texture target
@@ -234,7 +233,7 @@ newFramebuffer targets
 --
 -- Almost all GPUs in the last few years have at least 8.
 getMaximumDrawBuffers :: Context s Int
-getMaximumDrawBuffers = liftFlextGLM $ do
+getMaximumDrawBuffers = do
     -- number of draw buffers
     num_drawbuffers <- gi gl_MAX_DRAW_BUFFERS
     -- number of attachments
@@ -292,9 +291,8 @@ clear clearing fbuf = withBinding fbuf $ mask_ $
 
     recDepth Nothing = recStencil (clearStencil clearing)
     recDepth (Just depth) = do
-        gl <- ask
-        old_depth <- liftIO $ alloca $ \ptr ->
-            F.glGetDoublev gl_DEPTH_CLEAR_VALUE ptr gl *> peek ptr
+        old_depth <- allocaG $ \ptr ->
+            glGetDoublev gl_DEPTH_CLEAR_VALUE ptr *> liftIO (peek ptr)
         glClearDepth (CDouble $ float2Double depth)
         recStencil (clearStencil clearing)
         glClearDepth old_depth

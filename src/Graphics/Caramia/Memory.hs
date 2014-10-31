@@ -10,7 +10,6 @@ module Graphics.Caramia.Memory
 
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Context
-import Graphics.Caramia.Context.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
 
 data MemoryInfo = MemoryInfo
@@ -27,24 +26,23 @@ data MemoryInfo = MemoryInfo
 -- No guarantees for accuracy either. Seriously, don't rely on this for
 -- anything but rough estimation.
 getMemoryInfo :: Context s MemoryInfo
-getMemoryInfo = liftFlextGLM $ do
-    gl <- askGL
-    if | has_GL_ATI_meminfo gl -> atiGetMem
-       | has_GL_NVX_gpu_memory_info gl -> nvidiaGetMem
-       | otherwise -> return noInformation
+getMemoryInfo =
+    branchExt gl_ATI_meminfo atiGetMem $
+    branchExt gl_NVX_gpu_memory_info nvidiaGetMem $
+    return noInformation
 
 noInformation :: MemoryInfo
 noInformation = MemoryInfo
     { availableVideoMemory = Nothing
     , totalVideoMemory = Nothing }
 
-atiGetMem :: FlextGLM MemoryInfo
+atiGetMem :: Context s MemoryInfo
 atiGetMem = do
     result <- gi gl_TEXTURE_FREE_MEMORY_ATI
     return MemoryInfo { availableVideoMemory = Just $ fromIntegral result
                       , totalVideoMemory = Nothing }
 
-nvidiaGetMem :: FlextGLM MemoryInfo
+nvidiaGetMem :: Context s MemoryInfo
 nvidiaGetMem = do
     result <- gi gl_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX
     result2 <- gi gl_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX
