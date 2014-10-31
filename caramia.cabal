@@ -126,6 +126,8 @@ library
 
   other-modules:
                        -- Let's get these off immediately when opengl-wrangler enters hackage
+                       Graphics.OpenGL.Internal.Scope
+                       Graphics.OpenGL.Internal.Shared
                        Graphics.OpenGL.Extension.ThreeDFX
                        Graphics.OpenGL.Extension.ThreeDFX.Multisample
                        Graphics.OpenGL.Extension.ThreeDFX.Tbuffer
