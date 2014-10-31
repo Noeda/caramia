@@ -53,7 +53,7 @@ currentContextID = fromJust <$>
     liftIO (M.lookup <$> myThreadId <*> readIORef runningContexts)
 
 -- | Same as `currentContextID` but works in any `MonadIO` monad. This one can
--- also fail.
+-- also fail (in case current thread is not one in which a context is active).
 --
 -- Returns `Nothing` if there is no context active.
 currentContextID' :: MonadIO m => m (Maybe ContextID)
