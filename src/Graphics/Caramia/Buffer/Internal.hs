@@ -46,7 +46,7 @@ data AccessFlags =
   | ReadWriteAccess -- ^ Both reading and writing can be done.
   | NoAccess        -- ^ No access; you cannot map the buffer at all after
                     --   creation.
-  deriving ( Eq, Ord, Show, Read )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 -- | Additional mapping flags.
 data MapFlag =
@@ -54,5 +54,5 @@ data MapFlag =
                           --   You will have to use synchronization primitives
                           --   to make sure you and OpenGL won't be using
                           --   the buffer at the same time.
-  deriving ( Eq, Ord, Show, Read, Typeable )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
