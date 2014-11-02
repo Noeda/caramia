@@ -181,7 +181,7 @@ data ImageFormat =
   | DEPTH_COMPONENT16
   | DEPTH32F_STENCIL8
   | DEPTH24_STENCIL8
-  deriving ( Eq, Ord, Show, Read, Typeable )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 toConstantIF :: ImageFormat -> GLenum
 toConstantIF R8 = gl_R8
@@ -262,7 +262,7 @@ data SpecificationType =
   | FInt32
   | FFloat
   | FHalfFloat
-  deriving ( Eq, Ord, Show, Read, Typeable )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 toConstantST :: SpecificationType -> GLenum
 toConstantST FWord8 = gl_UNSIGNED_BYTE

@@ -22,7 +22,7 @@ data BlendEquation =
   | BEReverseSubtract
   | BEMin
   | BEMax
-  deriving ( Eq, Ord, Show, Read, Typeable )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 -- | Describes the arithmetic to use in blending.
 --
@@ -43,7 +43,7 @@ data BlendFunc =
   | BFConstantAlpha
   | BFOneMinusConstantAlpha
   | BFSrcAlphaSaturate
-  deriving ( Eq, Ord, Show, Read, Typeable )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 toConstantBE :: BlendEquation -> GLenum
 toConstantBE BEAdd = gl_FUNC_ADD
