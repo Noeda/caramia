@@ -8,6 +8,7 @@ module Graphics.Caramia.Memory
     , MemoryInfo(..) )
     where
 
+import Control.Monad.IO.Class
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Context
 import Graphics.Caramia.Internal.OpenGLCApi
@@ -27,8 +28,8 @@ data MemoryInfo = MemoryInfo
 --
 -- No guarantees for accuracy either. Seriously, don't rely on this for
 -- anything but rough estimation.
-getMemoryInfo :: IO MemoryInfo
-getMemoryInfo = do
+getMemoryInfo :: MonadIO m => m MemoryInfo
+getMemoryInfo = liftIO $ do
     _ <- currentContextID  -- Just checking that OpenGL context is active.
     has_meminfo <- has_GL_ATI_meminfo
     has_gpu_memory_info <- has_GL_NVX_gpu_memory_info

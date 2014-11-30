@@ -65,7 +65,8 @@ import Foreign.C.Types
 import Foreign.Storable
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Utils
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -93,56 +94,56 @@ mglGenFramebuffer = alloca $ \x_ptr -> glGenFramebuffers 1 x_ptr *> peek x_ptr
 mglDeleteFramebuffer :: GLuint -> IO ()
 mglDeleteFramebuffer x = with x $ \x_ptr -> glDeleteFramebuffers 1 x_ptr
 
-withBoundDrawFramebuffer :: GLuint -> IO a -> IO a
+withBoundDrawFramebuffer :: (MonadIO m, MonadMask m) => GLuint -> m a -> m a
 withBoundDrawFramebuffer x action = do
     old <- gi gl_DRAW_FRAMEBUFFER_BINDING
-    finally (glBindFramebuffer gl_DRAW_FRAMEBUFFER x *> action)
+    finally (glBindFramebuffer gl_DRAW_FRAMEBUFFER x >> action)
             (glBindFramebuffer gl_DRAW_FRAMEBUFFER old)
 
-withBoundProgram :: GLuint -> IO a -> IO a
+withBoundProgram :: (MonadIO m, MonadMask m) => GLuint -> m a -> m a
 withBoundProgram program action = do
     old <-
-        alloca $ \x_ptr -> glGetIntegerv gl_CURRENT_PROGRAM x_ptr *> peek x_ptr
-    finally (glUseProgram program *> action)
+        liftIO $ alloca $ \x_ptr -> glGetIntegerv gl_CURRENT_PROGRAM x_ptr >> peek x_ptr
+    finally (glUseProgram program >> action)
             (glUseProgram $ fromIntegral old)
 
-setBoundProgram :: GLuint -> IO ()
+setBoundProgram :: MonadIO m => GLuint -> m ()
 setBoundProgram = glUseProgram
 
-withBoundBuffer :: GLuint -> IO a -> IO a
+withBoundBuffer :: (MonadIO m, MonadMask m) => GLuint -> m a -> m a
 withBoundBuffer buf action = do
     old <-
-        alloca $ \x_ptr -> glGetIntegerv gl_ARRAY_BUFFER_BINDING x_ptr *>
-                           peek x_ptr
-    finally (glBindBuffer gl_ARRAY_BUFFER buf *> action)
+        liftIO $ alloca $ \x_ptr -> glGetIntegerv gl_ARRAY_BUFFER_BINDING x_ptr >>
+                                    peek x_ptr
+    finally (glBindBuffer gl_ARRAY_BUFFER buf >> action)
             (glBindBuffer gl_ARRAY_BUFFER $ fromIntegral old)
 
 setBoundElementBuffer :: GLuint -> IO ()
 setBoundElementBuffer =
     glBindBuffer gl_ELEMENT_ARRAY_BUFFER
 
-withBoundElementBuffer :: GLuint -> IO a -> IO a
+withBoundElementBuffer :: (MonadIO m, MonadMask m) => GLuint -> m a -> m a
 withBoundElementBuffer buf action = do
     old <-
-        alloca $ \x_ptr -> glGetIntegerv gl_ELEMENT_ARRAY_BUFFER_BINDING x_ptr *>
-                           peek x_ptr
-    finally (glBindBuffer gl_ELEMENT_ARRAY_BUFFER buf *> action)
+        liftIO $ alloca $ \x_ptr -> glGetIntegerv gl_ELEMENT_ARRAY_BUFFER_BINDING x_ptr >>
+                                    peek x_ptr
+    finally (glBindBuffer gl_ELEMENT_ARRAY_BUFFER buf >> action)
             (glBindBuffer gl_ELEMENT_ARRAY_BUFFER $ fromIntegral old)
 
-withBoundPixelUnpackBuffer :: GLuint -> IO a -> IO a
+withBoundPixelUnpackBuffer :: (MonadIO m, MonadMask m) => GLuint -> m a -> m a
 withBoundPixelUnpackBuffer buf action = do
     old <-
-        alloca $ \x_ptr -> glGetIntegerv gl_PIXEL_UNPACK_BUFFER_BINDING x_ptr *>
-                           peek x_ptr
-    finally (glBindBuffer gl_PIXEL_UNPACK_BUFFER buf *> action)
+        liftIO $ alloca $ \x_ptr -> glGetIntegerv gl_PIXEL_UNPACK_BUFFER_BINDING x_ptr >>
+                                    peek x_ptr
+    finally (glBindBuffer gl_PIXEL_UNPACK_BUFFER buf >> action)
             (glBindBuffer gl_PIXEL_UNPACK_BUFFER $ fromIntegral old)
 
-withBoundVAO :: GLuint -> IO a -> IO a
+withBoundVAO :: (MonadIO m, MonadMask m) => GLuint -> m a -> m a
 withBoundVAO vao action = do
     old <-
-        alloca $ \x_ptr -> glGetIntegerv gl_VERTEX_ARRAY_BINDING x_ptr *>
-                           peek x_ptr
-    finally (glBindVertexArray vao *> action)
+        liftIO $ alloca $ \x_ptr -> glGetIntegerv gl_VERTEX_ARRAY_BINDING x_ptr >>
+                                    peek x_ptr
+    finally (glBindVertexArray vao >> action)
             (glBindVertexArray $ fromIntegral old)
 
 mglVertexArrayVertexAttribDivisor ::
@@ -297,10 +298,10 @@ mglNamedCopyBufferSubData src dst src_offset dst_offset num_bytes =
                                 num_bytes
 
 -- | Shortcut to `glGetIntegerv` when you query only one integer.
-gi :: GLenum -> IO GLuint
-gi x = alloca $ \get_ptr -> glGetIntegerv x (castPtr get_ptr) *>
+gi :: MonadIO m => GLenum -> m GLuint
+gi x = liftIO $ alloca $ \get_ptr -> glGetIntegerv x (castPtr get_ptr) *>
                             peek get_ptr
 
-gf :: GLenum -> IO GLfloat
-gf x = alloca $ \get_ptr -> glGetFloatv x (castPtr get_ptr) *> peek get_ptr
+gf :: MonadIO m => GLenum -> m GLfloat
+gf x = liftIO $ alloca $ \get_ptr -> glGetFloatv x (castPtr get_ptr) *> peek get_ptr
 

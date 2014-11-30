@@ -10,7 +10,8 @@ import Graphics.Caramia.Internal.OpenGLCApi
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats
 import System.IO.Unsafe
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 
 data Texture = Texture
     { resource :: !(Resource Texture_)
@@ -84,11 +85,11 @@ data Topology =
     -- <https://www.opengl.org/wiki/Buffer_Texture>
   deriving ( Eq, Show, Typeable )
 
-withBinding :: GLenum -> GLenum -> GLuint -> IO a -> IO a
+withBinding :: (MonadIO m, MonadMask m) => GLenum -> GLenum -> GLuint -> m a -> m a
 withBinding tex tex_binding tex_name action = do
     old <- gi tex_binding
     finally
-        (glBindTexture tex tex_name *>
+        (glBindTexture tex tex_name >>
          action)
         (glBindTexture tex old)
 
@@ -129,7 +130,7 @@ getTopologyBindPoints = \case
         (gl_TEXTURE_BUFFER
         ,gl_TEXTURE_BINDING_BUFFER)
 
-withBindingByTopology :: Texture -> (GLenum -> IO a) -> IO a
+withBindingByTopology :: (MonadIO m, MonadMask m) => Texture -> (GLenum -> m a) -> m a
 withBindingByTopology tex action =
     withResource (resource tex) $ \(Texture_ name) ->
         let (bind_target, bind_query) = getTopologyBindPoints topo
@@ -137,7 +138,7 @@ withBindingByTopology tex action =
   where
     topo = topology $ viewSpecification tex
 
-withTextureBinding :: Texture -> TextureUnit -> IO a -> IO a
+withTextureBinding :: (MonadIO m, MonadMask m) => Texture -> TextureUnit -> m a -> m a
 withTextureBinding tex unit action = do
     old_active <- gi gl_ACTIVE_TEXTURE
     glActiveTexture (gl_TEXTURE0 + fromIntegral unit)

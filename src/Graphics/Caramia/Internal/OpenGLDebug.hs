@@ -12,7 +12,8 @@ import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Internal.ContextLocalData
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 import System.IO
 import Foreign.Storable
 import Foreign.C.String
@@ -44,8 +45,8 @@ activateDebugMode = do
                                  cstr
         storeContextLocalData (DebugModeActivated True)
 
-flushDebugMessages :: IO ()
-flushDebugMessages = do
+flushDebugMessages :: MonadIO m => m ()
+flushDebugMessages = liftIO $ do
     DebugModeActivated debug_mode <-
         retrieveContextLocalData $ return $ DebugModeActivated False
     when debug_mode $

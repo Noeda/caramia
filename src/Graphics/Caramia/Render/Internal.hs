@@ -5,7 +5,8 @@ module Graphics.Caramia.Render.Internal where
 import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Internal.OpenGLCApi
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 
 -- | A comparison function. Incoming value is compared with this function to
 -- the existing value.
@@ -61,13 +62,14 @@ stencilOpToConstant Decrease = gl_DECR
 stencilOpToConstant DecreaseAndWrap = gl_DECR_WRAP
 stencilOpToConstant Invert = gl_INVERT
 
-setStencilFunc :: ComparisonFunc
+setStencilFunc :: MonadIO m
+               => ComparisonFunc
                -> StencilOp
                -> StencilOp
                -> StencilOp
                -> Word32
                -> Word32
-               -> IO ()
+               -> m ()
 setStencilFunc func op1 op2 op3 ref mask = do
     glStencilFunc (comparisonFuncToConstant func)
                   (fromIntegral ref)
@@ -77,14 +79,15 @@ setStencilFunc func op1 op2 op3 ref mask = do
                 (stencilOpToConstant op3)
 {-# INLINE setStencilFunc #-}
 
-withStencilFunc :: ComparisonFunc
+withStencilFunc :: (MonadIO m, MonadMask m)
+                => ComparisonFunc
                 -> StencilOp
                 -> StencilOp
                 -> StencilOp
                 -> Word32
                 -> Word32
-                -> IO a
-                -> IO a
+                -> m a
+                -> m a
 withStencilFunc func op1 op2 op3 ref mask action = do
     old_func <- gi gl_STENCIL_FUNC
     old_ref <- gi gl_STENCIL_REF
@@ -92,48 +95,51 @@ withStencilFunc func op1 op2 op3 ref mask action = do
     old_op1 <- gi gl_STENCIL_FAIL
     old_op2 <- gi gl_STENCIL_PASS_DEPTH_FAIL
     old_op3 <- gi gl_STENCIL_PASS_DEPTH_PASS
-    finally (setStencilFunc func op1 op2 op3 ref mask *> action)
-            (glStencilFunc old_func (fromIntegral old_ref) old_mask *>
-             glStencilOp old_op1 old_op2 old_op3)
+    finally (setStencilFunc func op1 op2 op3 ref mask >> action)
+            (do
+                 glStencilFunc old_func (fromIntegral old_ref) old_mask
+                 glStencilOp old_op1 old_op2 old_op3)
 
-withCulling :: Culling -> IO a -> IO a
+withCulling :: (MonadIO m, MonadMask m) => Culling -> m a -> m a
 withCulling culling action = do
     old_culling <- gi gl_CULL_FACE_MODE
     was_enabled <- glIsEnabled gl_CULL_FACE
-    finally (setCulling culling *> action)
-            (do if was_enabled == fromIntegral gl_TRUE
-                  then glEnable gl_CULL_FACE
-                  else glDisable gl_CULL_FACE
-                glCullFace old_culling)
+    finally (setCulling culling >> action)
+            (liftIO $ do
+                 if was_enabled == fromIntegral gl_TRUE
+                     then glEnable gl_CULL_FACE
+                     else glDisable gl_CULL_FACE
+                 glCullFace old_culling)
 
-setCulling :: Culling -> IO ()
+setCulling :: (MonadIO m, MonadMask m) => Culling -> m ()
 setCulling NoCulling = glDisable gl_CULL_FACE
 setCulling x = mask_ $
-    glEnable gl_CULL_FACE *>
+    glEnable gl_CULL_FACE >>
     glCullFace (cullingToConstant x)
 
-setDepthFunc :: ComparisonFunc -> Bool -> IO ()
-setDepthFunc func write_depth =
-    glDepthFunc (comparisonFuncToConstant func) *>
+setDepthFunc :: MonadIO m => ComparisonFunc -> Bool -> m ()
+setDepthFunc func write_depth = do
+    glDepthFunc (comparisonFuncToConstant func)
     glDepthMask (fromIntegral $ if write_depth then gl_TRUE else gl_FALSE)
 
-withDepthFunc :: ComparisonFunc -> Bool -> IO a -> IO a
+withDepthFunc :: (MonadIO m, MonadMask m) => ComparisonFunc -> Bool -> m a -> m a
 withDepthFunc func write_depth action = do
     old_depth_func <- gi gl_DEPTH_FUNC
     old_depth_write <- gi gl_DEPTH_WRITEMASK
-    finally (setDepthFunc func write_depth *> action)
-            (glDepthFunc old_depth_func *>
-             glDepthMask (fromIntegral old_depth_write))
+    finally (setDepthFunc func write_depth >> action)
+            (do
+                 glDepthFunc old_depth_func
+                 glDepthMask (fromIntegral old_depth_write))
 
-setFragmentPassTests :: FragmentPassTests -> IO ()
+setFragmentPassTests :: (MonadIO m, MonadMask m) => FragmentPassTests -> m ()
 setFragmentPassTests (FragmentPassTests {..}) = do
     case depthTest of
         Nothing -> glDisable gl_DEPTH_TEST
-        Just dt -> glEnable gl_DEPTH_TEST *>
+        Just dt -> glEnable gl_DEPTH_TEST >>
                    setDepthFunc dt writeDepth
     case stencilTest of
         Nothing -> glDisable gl_STENCIL_TEST
-        Just st -> glEnable gl_STENCIL_TEST *>
+        Just st -> glEnable gl_STENCIL_TEST >>
                    setStencilFunc st
                                   failStencilOp
                                   depthFailStencilOp
@@ -142,13 +148,13 @@ setFragmentPassTests (FragmentPassTests {..}) = do
                                   stencilMask
     setCulling cullFace
 
-withFragmentPassTests :: FragmentPassTests -> IO a -> IO a
+withFragmentPassTests :: (MonadIO m, MonadMask m) => FragmentPassTests -> m a -> m a
 withFragmentPassTests (FragmentPassTests {..}) action = do
     was_it_enabled <- glIsEnabled gl_DEPTH_TEST
     finally
         (case depthTest of
-             Nothing -> glDisable gl_DEPTH_TEST *> next
-             Just dt -> glEnable gl_DEPTH_TEST *>
+             Nothing -> glDisable gl_DEPTH_TEST >> next
+             Just dt -> glEnable gl_DEPTH_TEST >>
                         withDepthFunc dt writeDepth next) $
         if was_it_enabled == fromIntegral gl_TRUE
           then glEnable gl_DEPTH_TEST
@@ -158,8 +164,8 @@ withFragmentPassTests (FragmentPassTests {..}) action = do
         was_it_enabled <- glIsEnabled gl_STENCIL_TEST
         finally
             (case stencilTest of
-                 Nothing -> glDisable gl_STENCIL_TEST *> next'
-                 Just st -> glEnable gl_STENCIL_TEST *>
+                 Nothing -> glDisable gl_STENCIL_TEST >> next'
+                 Just st -> glEnable gl_STENCIL_TEST >>
                             withStencilFunc st
                                             failStencilOp
                                             depthFailStencilOp

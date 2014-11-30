@@ -27,14 +27,15 @@ import Graphics.Caramia.VAO.Internal
 import Graphics.Caramia.Resource
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.Internal.OpenGLCApi
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 
 -- | Creates a vertex array object.
 --
 -- Initially, the vertex array object makes no data available to a shader
 -- program.
-newVAO :: IO VAO
-newVAO = mask_ $ do
+newVAO :: MonadIO m => m VAO
+newVAO = liftIO $ mask_ $ do
     res <- newResource create
                        (\(VAO_ vao) -> mglDeleteVertexArray vao)
                        (return ())
@@ -213,11 +214,12 @@ defaultSourcingType x =
 -- Consequences are undefined if your `Sourcing` does not make sense. There is
 -- some error checking but it can only detect obviously invalid values in the
 -- sourcing.
-sourceVertexData :: Buf.Buffer   -- ^ From which buffer to source the data.
+sourceVertexData :: MonadIO m
+                 => Buf.Buffer   -- ^ From which buffer to source the data.
                  -> Sourcing     -- ^ Specifies how the sourcing is done.
                  -> VAO
-                 -> IO ()
-sourceVertexData buffer sourcing vao = mask_ $
+                 -> m ()
+sourceVertexData buffer sourcing vao = liftIO $ mask_ $
     withResource (resource vao) $ \(VAO_ name) ->
         withResource (Buf.resource buffer) $ \(Buf.Buffer_ bufname) -> do
             errorChecking

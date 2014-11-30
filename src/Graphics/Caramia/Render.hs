@@ -10,7 +10,7 @@ module Graphics.Caramia.Render
       draw
     , runDraws
     -- * Draw command stream
-    , Draw()
+    , DrawT
     , drawR
     , setPipeline
     , setTextureBindings
@@ -53,8 +53,8 @@ import Graphics.Caramia.Resource
 import Graphics.Caramia.Buffer.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
 import Control.Monad.IO.Class
+import Control.Monad.Catch
 import Control.Monad.Trans.State.Strict
-import Control.Exception
 import Foreign
 import Foreign.C.Types
 
@@ -227,15 +227,15 @@ data SourceData =
 --
 -- There is a very large overhead in doing a single `draw` call. You probably
 -- want to use `runDraws` and `drawR` instead.
-draw :: DrawCommand -> DrawParams -> IO ()
+draw :: (MonadIO m, MonadMask m) => DrawCommand -> DrawParams -> m ()
 draw cmd params = runDraws params (drawR cmd)
 
 -- | Same as `draw` but in a `Draw` command stream.
-drawR :: DrawCommand -> Draw ()
+drawR :: (MonadIO m, MonadMask m) => DrawCommand -> DrawT m ()
 drawR (DrawCommand {..})
     | numIndices == 0 = return ()
-    | otherwise = Draw $ do
-    old_ebo <- boundEbo <$> get
+    | otherwise = DrawT $ do
+    state <- get
     liftIO $
         withResource (VAO.resource primitivesVAO) $ \(VAO.VAO_ vao_name) ->
         withBoundVAO vao_name $
@@ -249,7 +249,7 @@ drawR (DrawCommand {..})
                 PrimitivesWithIndices {..} ->
                     withResource (resource indexBuffer) $
                             \(Buffer_ buf_name) -> do
-                        when (buf_name /= old_ebo) $
+                        when (buf_name /= boundEbo state) $
                             setBoundElementBuffer buf_name
                         glDrawElementsInstanced
                                 (toConstant primitiveType)
@@ -276,15 +276,15 @@ data DrawState = DrawState
     , boundFragmentPassTests :: !FragmentPassTests
     , activeTexture :: !GLuint }
 
-newtype Draw a = Draw (StateT DrawState IO a)
-                 deriving ( Monad, Applicative, Functor, Typeable )
+newtype DrawT m a = DrawT (StateT DrawState m a)
+                  deriving ( Monad, Applicative, Functor, Typeable )
 
 -- | Using `liftIO` is safe inside a `Draw` stream. It is possible to run
 -- nested `Draw` streams this way as well.
 --
 -- One useful thing to do is to set uniforms to pipelines with `setUniform`.
-instance MonadIO Draw where
-    liftIO = Draw . liftIO
+instance MonadIO m => MonadIO (DrawT m) where
+  liftIO = DrawT . liftIO
 
 -- | Runs a drawing specification.
 --
@@ -294,11 +294,12 @@ instance MonadIO Draw where
 --
 -- Another way to think of this is a place where the functional, \"no hidden
 -- state\" design of the Caramia API is relaxed inside the `Draw` stream.
-runDraws :: DrawParams      -- ^ Initial drawing parameters. These can be
+runDraws :: (MonadIO m, MonadMask m)
+         => DrawParams      -- ^ Initial drawing parameters. These can be
                             --   changed in the `Draw` command stream.
-         -> Draw a          -- ^ Draw command stream.
-         -> IO a
-runDraws params (Draw cmd_stream) =
+         -> DrawT m a          -- ^ Draw command stream.
+         -> m a
+runDraws params (DrawT cmd_stream) =
     withParams params $ do
         (result, st) <-
             runStateT cmd_stream DrawState
@@ -312,7 +313,7 @@ runDraws params (Draw cmd_stream) =
                 }
         st `seq` return result
 
-withParams :: DrawParams -> IO a -> IO a
+withParams :: (MonadIO m, MonadMask m) => DrawParams -> m a -> m a
 withParams (DrawParams {..}) action =
     FBuf.withBinding targetFramebuffer $
     withPipeline pipeline $
@@ -323,44 +324,47 @@ withParams (DrawParams {..}) action =
     withPolygonOffset polygonOffset $ do
         old_active <- gi gl_ACTIVE_TEXTURE
         -- Framebuffer may not restore the viewport so we have to do it here.
-        allocaArray 4 $ \viewport_ptr -> do
+        (ox, oy, ow, oh) <- liftIO $ allocaArray 4 $ \viewport_ptr -> do
             glGetIntegerv gl_VIEWPORT viewport_ptr
             ox <- peekElemOff viewport_ptr 0
             oy <- peekElemOff viewport_ptr 1
             ow <- peekElemOff viewport_ptr 2
             oh <- peekElemOff viewport_ptr 3
-            finally (glActiveTexture gl_TEXTURE0 *>
-                    action)
-                    (glActiveTexture old_active *>
-                     glViewport ox oy ow oh)
+            return (ox, oy, ow, oh)
+        finally (glActiveTexture gl_TEXTURE0 >>
+                 action)
+                $ do
+                    glActiveTexture old_active
+                    glViewport ox oy ow oh
 
-withPolygonOffset :: (Float, Float) -> IO a -> IO a
+withPolygonOffset :: (MonadIO m, MonadMask m) => (Float, Float) -> m a -> m a
 withPolygonOffset (factor, units) action = do
     old_factor <- gf gl_POLYGON_OFFSET_FACTOR
     old_units <- gf gl_POLYGON_OFFSET_UNITS
-    finally (do glPolygonOffset (CFloat factor) (CFloat units)
-                action) $
+    finally (glPolygonOffset (CFloat factor) (CFloat units) >>
+             action) $
         glPolygonOffset old_factor old_units
 
 -- | Sets the active texture (not public API! What would they use this for
 -- anyway?).
-setActiveTexture :: GLuint -> Draw ()
-setActiveTexture unit = Draw $ do
-    old_active <- activeTexture <$> get
-    when (old_active /= unit) $
-        liftIO (glActiveTexture $ gl_TEXTURE0 + unit) *>
+setActiveTexture :: MonadIO m => GLuint -> DrawT m ()
+setActiveTexture unit = DrawT $ do
+    state <- get
+    when (activeTexture state /= unit) $
+        glActiveTexture (gl_TEXTURE0 + unit) >>
         modify (\old -> old { activeTexture = unit })
 
 -- | Sets new texture bindings.
-setTextureBindings :: IM.IntMap Texture -> Draw ()
+setTextureBindings :: MonadIO m => IM.IntMap Texture -> DrawT m ()
 setTextureBindings texes = do
-    old_texes <- Draw $ boundTextures <$> get
+    state <- DrawT get
+    let old_texes = boundTextures state
     -- Iterate over the old bindings.
-    for_ (IM.assocs old_texes) $ \(index, tex) ->
+    forM_ (IM.assocs old_texes) $ \(index, tex) ->
         case IM.lookup index texes of
             -- A texture was bound previously, new bindings don't bind the
             -- texture at this unit.
-            Nothing -> setActiveTexture (safeFromIntegral index) *>
+            Nothing -> setActiveTexture (safeFromIntegral index) >>
                 let (bind_target, _) =
                         Texture.getTopologyBindPoints $
                         topology $ viewSpecification tex
@@ -383,9 +387,9 @@ setTextureBindings texes = do
                         in liftIO $ glBindTexture bind_target name
     -- Iterate over new bindings. We need to only check those that were not
     -- part of the old bindings.
-    for_ (IM.assocs texes) $ \(index, tex) ->
+    forM_ (IM.assocs texes) $ \(index, tex) ->
         case IM.lookup index old_texes of
-            Just _ -> pure ()   -- already handled in the above for_
+            Just _ -> return ()   -- already handled in the above forM_
             Nothing -> do
                 name <- liftIO $ withResource (Texture.resource tex) $
                             \(Texture.Texture_ name) -> return name
@@ -395,13 +399,13 @@ setTextureBindings texes = do
                         topology $ viewSpecification tex
                  in liftIO $ glBindTexture bind_target name
 
-    Draw $ modify (\old -> old { boundTextures = texes })
+    DrawT $ modify (\old -> old { boundTextures = texes })
 
 -- | Changes the pipeline in a `Draw` command stream.
-setPipeline :: Shader.Pipeline -> Draw ()
-setPipeline pl = Draw $ do
-    old_pl <- boundPipeline <$> get
-    when (old_pl /= pl) $ do
+setPipeline :: MonadIO m => Shader.Pipeline -> DrawT m ()
+setPipeline pl = DrawT $ do
+    state <- get
+    when (boundPipeline state /= pl) $ do
         liftIO $ withResource (Shader.resourcePL pl) $
             \(Shader.Pipeline_ program) ->
                 setBoundProgram program
@@ -409,45 +413,44 @@ setPipeline pl = Draw $ do
 {-# INLINE setPipeline #-}
 
 -- | Changes the current blending mode.
-setBlending :: BlendSpec -> Draw ()
-setBlending blends = Draw $ do
-    old_blending <- boundBlending <$> get
-    when (blends /= old_blending) $ do
-        liftIO $ setBlendings blends
+setBlending :: MonadIO m => BlendSpec -> DrawT m ()
+setBlending blends = DrawT $ do
+    state <- get
+    when (boundBlending state /= blends) $ do
+        setBlendings blends
         modify (\old -> old { boundBlending = blends })
 {-# INLINE setBlending #-}
 
 -- | Sets the new fragment pass tests.
-setFragmentPassTests :: FragmentPassTests -> Draw ()
-setFragmentPassTests tests = Draw $ do
-    old_tests <- boundFragmentPassTests <$> get
-    when (old_tests /= tests) $ do
+setFragmentPassTests :: MonadIO m => FragmentPassTests -> DrawT m ()
+setFragmentPassTests tests = DrawT $ do
+    state <- get
+    when (boundFragmentPassTests state /= tests) $ do
         liftIO $ I.setFragmentPassTests tests
         modify (\old -> old { boundFragmentPassTests = tests })
 {-# INLINE setFragmentPassTests #-}
 
 -- | Sets polygon offset.
-setPolygonOffset :: Float -> Float -> Draw ()
-setPolygonOffset factor units = Draw $
-    liftIO $ glPolygonOffset (CFloat factor) (CFloat units)
+setPolygonOffset :: MonadIO m => Float -> Float -> DrawT m ()
+setPolygonOffset factor units = glPolygonOffset (CFloat factor) (CFloat units)
 
 -- | Sets the current framebuffer.
-setTargetFramebuffer :: FBuf.Framebuffer -> Draw ()
-setTargetFramebuffer fbuf = Draw $ do
-    old_fbuf <- boundFramebuffer <$> get
-    when (old_fbuf /= fbuf) $ do
+setTargetFramebuffer :: MonadIO m => FBuf.Framebuffer -> DrawT m ()
+setTargetFramebuffer fbuf = DrawT $ do
+    state <- get
+    when (boundFramebuffer state /= fbuf) $ do
         liftIO $ FBuf.setBinding fbuf
         modify (\old -> old { boundFramebuffer = fbuf })
 {-# INLINE setTargetFramebuffer #-}
 
-withBoundTextures :: IM.IntMap Texture -> IO a -> IO a
+withBoundTextures :: (MonadIO m, MonadMask m) => IM.IntMap Texture -> m a -> m a
 withBoundTextures (IM.assocs -> bindings) action = rec bindings
   where
     rec [] = action
     rec ((unit, tex):rest) =
         withTextureBinding tex unit $ rec rest
 
-withPipeline :: Shader.Pipeline -> IO a -> IO a
+withPipeline :: (MonadIO m, MonadMask m) => Shader.Pipeline -> m a -> m a
 withPipeline pipeline action =
     withResource (Shader.resourcePL pipeline) $ \(Shader.Pipeline_ program) ->
         withBoundProgram program action

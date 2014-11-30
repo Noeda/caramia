@@ -24,7 +24,8 @@ module Graphics.Caramia.Resource
 
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Context
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 
 -- | The data type of a Caramia resource.
 data Resource a = Resource
@@ -46,7 +47,8 @@ instance Eq (Resource a) where
 --
 -- If you throw an exception in the OpenGL finalizer, then this will disrupt
 -- Caramia context and make it invalid. So try not to throw those exceptions?
-newResource :: IO a               -- ^ Action that returns the raw, unmanaged
+newResource :: (MonadIO m, MonadMask m)
+            => m a                -- ^ Action that returns the raw, unmanaged
                                   -- resource. Good place to create it.
             -> (a -> IO ())       -- ^ OpenGL finalizer. Will only be called in
                                   -- the same thread as this `newResource` is
@@ -61,7 +63,7 @@ newResource :: IO a               -- ^ Action that returns the raw, unmanaged
                                   -- cancelled and the resource is marked as
                                   -- finalized. This will be run even if the
                                   -- OpenGL context is gone.
-            -> IO (Resource a)
+            -> m (Resource a)
 newResource resource_creator finalizer normal_finalizer = mask_ $
     -- We need the context ID for correct finalization so we cannot take away
     -- this check with NO_RESOURCE_RUNTIME_CHECKS.
@@ -69,12 +71,12 @@ newResource resource_creator finalizer normal_finalizer = mask_ $
           (\cid -> do
             resource <- resource_creator
             let opengl_finalizer = finalizer resource
-            ref <- newIORef (Just ( resource
-                                  , opengl_finalizer
-                                  , normal_finalizer ))
+            ref <- liftIO $ newIORef (Just ( resource
+                                          , opengl_finalizer
+                                          , normal_finalizer ))
             let res = Resource { rawResource = ref
                                , nativeCid = cid }
-            void $ mkWeakIORef ref $ finalizeNow res
+            _ <- liftIO $ mkWeakIORef ref $ finalizeNow res
             return res)
           =<<
           currentContextID
@@ -124,21 +126,22 @@ finalizeNow resource = mask_ $ do
 -- | Uses a resource.
 --
 -- Throws an user error if the resource is used in a wrong or dead context.
-withResource :: Resource a
-             -> (a -> IO b)   -- ^ Use the resource inside this action. Don't
-                              -- return the unmanaged resource from this
-                              -- because behaviour is then undefined.
-             -> IO b
+withResource :: MonadIO m
+             => Resource a
+             -> (a -> m b)   -- ^ Use the resource inside this action. Don't
+                             -- return the unmanaged resource from this
+                             -- because behaviour is then undefined.
+             -> m b
 withResource resource action =
     maybe (error "withResource: resource has been finalized.")
           (\(res, _, _) -> do
-              cid <- currentContextID
+              cid <- liftIO $ currentContextID
               if cid == Just (nativeCid resource)
-                then action res <* touchIORef ref
+                then liftIO (touchIORef ref) >> action res
                 else error $ "withResource: attempted resource use " <>
                              "in a wrong context.")
           =<<
-          readIORef ref
+          liftIO (readIORef ref)
   where
     ref = rawResource resource
     touchIORef !_ = return ()

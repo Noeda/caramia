@@ -8,6 +8,7 @@ import qualified Data.Map.Strict as M
 import System.IO.Unsafe
 import Data.Dynamic
 import Control.Concurrent
+import Control.Monad.IO.Class
 
 -- | The type of a Caramia context ID.
 type ContextID = Int
@@ -39,9 +40,9 @@ contextLocalData = unsafePerformIO $ newIORef IM.empty
 -- The context ID is unique between different calls to `giveContext`.
 --
 -- Returns `Nothing` if there is no context active.
-currentContextID :: IO (Maybe ContextID)
+currentContextID :: MonadIO m => m (Maybe ContextID)
 currentContextID =
-    M.lookup <$> myThreadId <*> readIORef runningContexts
+    liftIO $ M.lookup <$> myThreadId <*> readIORef runningContexts
 {-# INLINE currentContextID #-}
 
 -- | Stores a context local value.
@@ -57,9 +58,9 @@ currentContextID =
 -- value in case a value was not already set.
 --
 -- Context local data is wiped to oblivion once `giveContext` ends.
-storeContextLocalData :: Typeable a => a -> IO ()
+storeContextLocalData :: (MonadIO m, Typeable a) => a -> m ()
 storeContextLocalData value =
-    maybe (error "storeContextLocalData: not in a context.")
+    liftIO $ maybe (error "storeContextLocalData: not in a context.")
           (\cid ->
               atomicModifyIORef' contextLocalData $ \old ->
                   ( IM.alter (Just . maybe (M.singleton
@@ -76,38 +77,38 @@ storeContextLocalData value =
 -- | Retrieves a context local value.
 --
 -- See `storeContextLocalData`.
-retrieveContextLocalData :: forall a. Typeable a
-                         => IO a  -- ^ Default value generating action; not
+retrieveContextLocalData :: forall m a. (MonadIO m, Typeable a)
+                         => m a  -- ^ Default value generating action; not
                                   -- evaluated if there was already a value
                                   -- stored.
-                         -> IO a
+                         -> m a
 retrieveContextLocalData defvalue =
     maybe (error "retrieveContextLocalData: not in a context.")
           (\cid -> do
               -- No need to care about IORef race conditions because all
               -- functions operating on a certain context ID will be
               -- run in the same thread, sequentially.
-              snapshot <- readIORef contextLocalData
+              snapshot <- liftIO $ readIORef contextLocalData
               case IM.lookup cid snapshot of
                   Nothing -> do
                       val <- dyndefvalue
-                      atomicModifyIORef' contextLocalData $ \old ->
+                      liftIO $ atomicModifyIORef' contextLocalData $ \old ->
                           ( IM.insert cid (M.singleton typ val) old
                           , fromDyn val undefined )
                   Just old_map ->
                       case M.lookup typ old_map of
                           Nothing -> do
                               val <- dyndefvalue
-                              atomicModifyIORef' contextLocalData $ \old ->
+                              liftIO $ atomicModifyIORef' contextLocalData $ \old ->
                                   ( IM.adjust (M.insert typ val)
                                               cid
                                               old
                                   , fromDyn val undefined )
                           Just value -> return (fromDyn value undefined))
-          =<< currentContextID
+          =<< liftIO currentContextID
   where
     typ = typeOf (undefined :: a)
-    dyndefvalue = toDyn <$> defvalue
+    dyndefvalue = defvalue >>= return . toDyn
 {-# INLINEABLE retrieveContextLocalData #-}
 
 

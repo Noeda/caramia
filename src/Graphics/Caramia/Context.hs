@@ -36,7 +36,8 @@ import Graphics.Caramia.Internal.OpenGLDebug
 import Graphics.Caramia.Internal.FlextGL
 
 import Control.Concurrent
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 import System.IO.Unsafe
 import System.Environment
 import Graphics.Rendering.OpenGL.Raw.GetProcAddress
@@ -81,26 +82,28 @@ instance Exception TooOldOpenGL
 --
 -- Throws `TooOldOpenGL` if the code detects a context that does not provide
 -- OpenGL 3.3.
-giveContext :: IO a -> IO a
+giveContext :: (MonadIO m, MonadMask m)
+            => m a -> m a
 giveContext action = mask $ \restore -> do
-    is_bound_thread <- isCurrentThreadBound
-    unless is_bound_thread $
-        error $ "giveContext: current thread is not bound. How can it have " <>
-                "an OpenGL context?"
+    liftIO $ do
+        is_bound_thread <- isCurrentThreadBound
+        unless is_bound_thread $
+            error $ "giveContext: current thread is not bound. How can it have " <>
+                   "an OpenGL context?"
 
-    flextInit (\str -> castFunPtrToPtr <$> getProcAddress str) >>= \case
-        f@(Failure _) -> throwIO f
-        _ -> return ()
+        flextInit (\str -> castFunPtrToPtr <$> getProcAddress str) >>= \case
+            f@(Failure _) -> throwM f
+            _ -> return ()
 
-    checkOpenGLVersion33
+        checkOpenGLVersion33
 
-    cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
-    tid <- myThreadId
-    atomicModifyIORef' runningContexts $ \old_map ->
-        ( M.insert tid cid old_map, () )
-    finally (restore insides) (flushDebugMessages >> scrapContext)
+        cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
+        tid <- myThreadId
+        atomicModifyIORef' runningContexts $ \old_map ->
+            ( M.insert tid cid old_map, () )
+    finally (restore $ insides >> action) (flushDebugMessages >> scrapContext)
   where
-    insides = do
+    insides = liftIO $ do
         should_activate_debug_mode <- isJust <$> lookupEnv "CARAMIA_OPENGL_DEBUG"
         when should_activate_debug_mode activateDebugMode
 
@@ -110,13 +113,12 @@ giveContext action = mask $ \restore -> do
         glEnable gl_FRAMEBUFFER_SRGB
         glEnable gl_BLEND
 
-        action
-
 -- | Sets the new viewport size. You should call this if the display size has
 -- changed; otherwise your rendering may look twisted and stretched.
-setViewportSize :: Int    -- ^ Width
+setViewportSize :: MonadIO m
+                => Int    -- ^ Width
                 -> Int    -- ^ Height
-                -> IO ()
+                -> m ()
 setViewportSize w h = do
     cid <- currentContextID
     when (isNothing cid) $ error "setViewportSize: not in a context."
@@ -133,14 +135,13 @@ checkOpenGLVersion33 =
         -- major and minor pointers
         poke major_ptr 0
         poke minor_ptr 0
-
         glGetIntegerv gl_MAJOR_VERSION major_ptr
         glGetIntegerv gl_MAJOR_VERSION minor_ptr
         major <- peek major_ptr
         minor <- peek minor_ptr
         unless (major > 3 ||
                 (major == 3 && minor >= 3)) $
-            throwIO
+            throwM
                 TooOldOpenGL { wantedVersion = (3, 3)
                              , reportedVersion = ( fromIntegral major
                                                  , fromIntegral minor )
@@ -150,8 +151,8 @@ checkOpenGLVersion33 =
 -- | Scraps the current context.
 --
 -- Not public API.
-scrapContext :: IO ()
-scrapContext = mask_ $ do
+scrapContext :: MonadIO m => m ()
+scrapContext = liftIO $ mask_ $ do
     maybe_cid <- currentContextID
     tid <- myThreadId
     case maybe_cid of
@@ -176,8 +177,8 @@ scrapContext = mask_ $ do
 -- for example, the `MVar` functions.
 --
 -- A good place to call this is right after or before swapping buffers.
-runPendingFinalizers :: IO ()
-runPendingFinalizers = mask_ $ do
+runPendingFinalizers :: MonadIO m => m ()
+runPendingFinalizers = liftIO $ mask_ $ do
     maybe_cid <- currentContextID
     case maybe_cid of
         Nothing -> return ()
@@ -192,7 +193,7 @@ runPendingFinalizers = mask_ $ do
             -- to be consistent anymore.
             result <- try finalizers
             case result of
-                Left exc -> scrapContext >> throwIO (exc :: SomeException)
+                Left exc -> scrapContext >> throwM (exc :: SomeException)
                 Right () -> return ()
     flushDebugMessages
 
@@ -203,9 +204,9 @@ runPendingFinalizers = mask_ $ do
 -- This is typically called from Haskell garbage collector finalizers because
 -- they cannot do finalization there (Haskell finalizers are running in the
 -- wrong operating system thread).
-scheduleFinalizer :: ContextID -> IO () -> IO ()
+scheduleFinalizer :: MonadIO m => ContextID -> IO () -> m ()
 scheduleFinalizer cid finalizer =
-    atomicModifyIORef' pendingFinalizers $ \old ->
+    liftIO $ atomicModifyIORef' pendingFinalizers $ \old ->
         ( IM.insertWith
             (flip (>>))
             cid

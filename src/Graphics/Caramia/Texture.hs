@@ -57,7 +57,8 @@ import Graphics.Caramia.Internal.OpenGLCApi
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats.Internal
 import Graphics.Caramia.Resource
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 import Foreign
 import Foreign.C.Types
 
@@ -343,7 +344,7 @@ newTexture spec = mask_ $ do
 
 -- | Generate all mipmaps for a texture. If mipmap levels were specified, that
 -- is.
-generateMipmaps :: Texture -> IO ()
+generateMipmaps :: (MonadIO m, MonadMask m) => Texture -> m ()
 generateMipmaps = flip withBindingByTopology glGenerateMipmap
 
 -- | Specifies the format in which buffer data is for the purposes of uploading
@@ -516,10 +517,11 @@ uploading3D buffer width height depth stype uf =
        , pixelAlignment = 1 }
 
 -- | Uploads an image to a texture.
-uploadToTexture :: Uploading
+uploadToTexture :: MonadIO m
+                => Uploading
                 -> Texture
-                -> IO ()
-uploadToTexture uploading tex = mask_ $
+                -> m ()
+uploadToTexture uploading tex = liftIO $ mask_ $
     withResource (Buf.resource (fromBuffer uploading)) $ \(Buf.Buffer_ buf) ->
     withBoundPixelUnpackBuffer buf $ do
         old_num_cols  <- fromIntegral <$> gi gl_UNPACK_ROW_LENGTH
@@ -702,29 +704,29 @@ instance TexParam MagFilter where
         | c == gl_LINEAR  = MaLinear
         | otherwise = error "MagFilter: unexpected filtering value."
 
-setMinFilter :: MinFilter -> Texture -> IO ()
+setMinFilter :: (MonadIO m, MonadMask m) => MinFilter -> Texture -> m ()
 setMinFilter = setTexParam
 
-setMagFilter :: MagFilter -> Texture -> IO ()
+setMagFilter :: (MonadIO m, MonadMask m) => MagFilter -> Texture -> m ()
 setMagFilter = setTexParam
 
-getMinFilter :: Texture -> IO MinFilter
+getMinFilter :: MonadIO m => Texture -> m MinFilter
 getMinFilter = getTexParam
 
-getMagFilter :: Texture -> IO MagFilter
+getMagFilter :: MonadIO m => Texture -> m MagFilter
 getMagFilter = getTexParam
 
-setTexParam :: TexParam a => a -> Texture -> IO ()
+setTexParam :: (MonadIO m, MonadMask m, TexParam a) => a -> Texture -> m ()
 setTexParam param tex = withBindingByTopology tex $ \target ->
     glTexParameteri target (tpEnum param) (fromIntegral $ tpToConstant param)
 
-getTexParam :: forall a. TexParam a => Texture -> IO a
-getTexParam tex = withBindingByTopology tex $ \target ->
+getTexParam :: forall m a. (MonadIO m, TexParam a) => Texture -> m a
+getTexParam tex = liftIO $ withBindingByTopology tex $ \target ->
     alloca $ \result_ptr -> do
         glGetTexParameteriv target (tpEnum (undefined :: a)) result_ptr
         tpFromConstant . fromIntegral <$> peek result_ptr
 
-setWrapping :: Wrapping -> Texture -> IO ()
+setWrapping :: (MonadIO m, MonadMask m) => Wrapping -> Texture -> m ()
 setWrapping wrapping tex = withBindingByTopology tex $ \target -> do
     glTexParameteri target gl_TEXTURE_WRAP_S
                            (fromIntegral $ toConstantW wrapping)
@@ -733,13 +735,13 @@ setWrapping wrapping tex = withBindingByTopology tex $ \target -> do
     glTexParameteri target gl_TEXTURE_WRAP_R
                            (fromIntegral $ toConstantW wrapping)
 
-setCompareMode :: CompareMode -> Texture -> IO ()
+setCompareMode :: (MonadIO m, MonadMask m) => CompareMode -> Texture -> m ()
 setCompareMode cmp_mode tex = withBindingByTopology tex $ \target ->
     glTexParameteri target gl_TEXTURE_COMPARE_MODE
                     (fromIntegral $ toConstantC cmp_mode)
 
-getCompareMode :: Texture -> IO CompareMode
-getCompareMode tex = withBindingByTopology tex $ \target ->
+getCompareMode :: (MonadIO m, MonadMask m) => Texture -> m CompareMode
+getCompareMode tex = liftIO $ withBindingByTopology tex $ \target ->
     alloca $ \result_ptr -> do
         glGetTexParameteriv target gl_TEXTURE_COMPARE_MODE result_ptr
         result <- fromIntegral <$> peek result_ptr
@@ -748,8 +750,8 @@ getCompareMode tex = withBindingByTopology tex $ \target ->
             | result == gl_COMPARE_REF_TO_TEXTURE -> CompareRefToTexture
             | otherwise -> error "getCompareMode: unexpected comparing mode."
 
-getWrapping :: Texture -> IO Wrapping
-getWrapping tex = withBindingByTopology tex $ \target ->
+getWrapping :: (MonadIO m, MonadMask m) => Texture -> m Wrapping
+getWrapping tex = liftIO $ withBindingByTopology tex $ \target ->
     alloca $ \result_ptr -> do
         glGetTexParameteriv target gl_TEXTURE_WRAP_S result_ptr
         result <- fromIntegral <$> peek result_ptr
@@ -758,12 +760,12 @@ getWrapping tex = withBindingByTopology tex $ \target ->
             | result == gl_REPEAT -> Repeat
             | otherwise -> error "getWrapping: unexpected wrapping mode."
 
-setAnisotropy :: Float -> Texture -> IO ()
+setAnisotropy :: (MonadIO m, MonadMask m) => Float -> Texture -> m ()
 setAnisotropy ani tex = withBindingByTopology tex $ \target ->
     glTexParameterf target gl_TEXTURE_MAX_ANISOTROPY_EXT (CFloat ani)
 
-getAnisotropy :: Texture -> IO Float
-getAnisotropy tex = withBindingByTopology tex $ \target ->
+getAnisotropy :: (MonadIO m, MonadMask m) => Texture -> m Float
+getAnisotropy tex = liftIO $ withBindingByTopology tex $ \target ->
     alloca $ \ani_ptr -> do
         glGetTexParameterfv target gl_TEXTURE_MAX_ANISOTROPY_EXT ani_ptr
         unwrap <$> peek ani_ptr

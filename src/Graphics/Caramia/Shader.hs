@@ -58,7 +58,8 @@ import Graphics.Caramia.Math
 
 import GHC.Float ( double2Float )
 
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 import Foreign
 import Foreign.C.Types
 import qualified Data.ByteString as B
@@ -117,13 +118,14 @@ instance Exception ShaderLinkingError where
     fromException = shaderExceptionFromException
 
 -- | Sets a uniform in a pipeline.
-setUniform :: Uniformable a
+setUniform :: MonadIO m
+           => Uniformable a
            => a
            -> UniformLocation
            -> Pipeline
-           -> IO ()
+           -> m ()
 setUniform uniformable location pipeline =
-    withResource (resourcePL pipeline) $ \(Pipeline_ program) ->
+    liftIO $ withResource (resourcePL pipeline) $ \(Pipeline_ program) ->
         setUniform_ program (safeFromIntegral location) uniformable
 {-# INLINE [1] setUniform #-}
 
@@ -131,7 +133,7 @@ newShaderGeneric :: Ptr CChar
                  -> Int
                  -> ShaderStage
                  -> IO Shader
-newShaderGeneric source_code_ptr source_code_len stage = mask_ $ do
+newShaderGeneric source_code_ptr source_code_len stage = liftIO $ mask_ $ do
     res <- newResource create
                        deleter
                        (return ())
@@ -158,11 +160,12 @@ newShaderGeneric source_code_ptr source_code_len stage = mask_ $ do
         return $ CompiledShader shader_name
 
 -- | Creates a shader from GLSL shader source, using a strict bytestring.
-newShaderB :: B.ByteString
+newShaderB :: MonadIO m
+           => B.ByteString
            -> ShaderStage
-           -> IO Shader
+           -> m Shader
 newShaderB source_code stage =
-    B.unsafeUseAsCStringLen source_code $ \(cstr, len) ->
+    liftIO $ B.unsafeUseAsCStringLen source_code $ \(cstr, len) ->
         newShaderGeneric cstr len stage
 
 -- | Creates a shader from GLSL shader source, using a lazy bytestring.
@@ -170,19 +173,21 @@ newShaderB source_code stage =
 -- The bytestring will be forced and converted to a strict bytestring
 -- internally, so this is not so efficient, if you care about storage
 -- efficiency in shader compilation.
-newShaderBL :: BL.ByteString
+newShaderBL :: MonadIO m
+            => BL.ByteString
             -> ShaderStage
-            -> IO Shader
+            -> m Shader
 newShaderBL source_code = newShaderB (BL.toStrict source_code)
 
 -- | Creates a shader from GLSL shader source, encoding a Text into an UTF-8
 -- string.
 --
 -- This can throw `ShaderCompilationError` if compilation fails.
-newShader :: T.Text      -- ^ The shader source code.
+newShader :: MonadIO m
+          => T.Text      -- ^ The shader source code.
           -> ShaderStage
-          -> IO Shader
-newShader source_code stage = T.withCStringLen source_code $ \(cstr, len) ->
+          -> m Shader
+newShader source_code stage = liftIO $ T.withCStringLen source_code $ \(cstr, len) ->
     newShaderGeneric cstr len stage
 
 -- | Checks that there are no compilation errors in an OpenGL shader object.
@@ -198,7 +203,7 @@ checkCompilationErrors shader_name = do
             log <- T.peekCStringLen ( str
                                     , safeFromIntegral $ max 0 $ log_len-1 )
             glDeleteShader shader_name
-            throwIO $ ShaderCompilationError log
+            throwM $ ShaderCompilationError log
 
 -- | Same as `checkCompilationErrors` but for linking.
 --
@@ -213,25 +218,23 @@ checkLinkingErrors program_name = do
             log <- T.peekCStringLen ( str
                                     , safeFromIntegral $ max 0 $ log_len-1)
             glDeleteProgram program_name
-            throwIO $ ShaderLinkingError log
+            throwM $ ShaderLinkingError log
 
 -- | Creates a pipeline from vertex and fragment shader source.
 --
 -- This is a convenience function for a common use case.
-newPipelineVF :: T.Text      -- ^ Vertex shader source.
+newPipelineVF :: MonadIO m
+              => T.Text      -- ^ Vertex shader source.
               -> T.Text      -- ^ Fragment shader source.
-              -> IO Pipeline
-newPipelineVF vert_src frag_src = do
+              -> m Pipeline
+newPipelineVF vert_src frag_src = liftIO $ do
     vsh <- newShader vert_src Vertex
     fsh <- newShader frag_src Fragment
     newPipeline [vsh, fsh]
 
 -- | Creates a pipeline composed of different shaders.
-newPipeline :: [Shader] -> IO Pipeline
-newPipeline = newTraditionalPipeline
-
-newTraditionalPipeline :: [Shader] -> IO Pipeline
-newTraditionalPipeline shaders = mask_ $ do
+newPipeline :: MonadIO m => [Shader] -> m Pipeline
+newPipeline shaders = liftIO $ mask_ $ do
     res <- newResource creator
                        deleter
                        (return ())
@@ -541,8 +544,8 @@ cdouble2CFloat (CDouble dbl) = CFloat $ double2Float dbl
 -- The uniform may not be in the shader or it may not be active. If this
 -- happens, a special uniform location is returned that can be used in
 -- `setUniform` to make it do nothing.
-getUniformLocation :: T.Text -> Pipeline -> IO UniformLocation
-getUniformLocation name pipeline = fromIntegral <$>
+getUniformLocation :: MonadIO m => T.Text -> Pipeline -> m UniformLocation
+getUniformLocation name pipeline = liftIO $ fromIntegral <$>
     withResource (resourcePL pipeline) (\(Pipeline_ program) ->
          B.useAsCString (T.encodeUtf8 name) $ \cstr ->
              glGetUniformLocation program cstr)
@@ -554,15 +557,14 @@ newtype CLNopPipeline = CLNopPipeline { unwrapCLNop :: Pipeline }
 -- | Returns a pipeline that does not do anything.
 --
 -- Within the same context, this returns the same pipeline for each invocation.
-nopPipeline :: IO Pipeline
+nopPipeline :: MonadIO m => m Pipeline
 nopPipeline =
-    unwrapCLNop <$> retrieveContextLocalData (CLNopPipeline <$> cr)
+    retrieveContextLocalData cr >>= return . unwrapCLNop
   where
     cr = do
         vsh <- newShader vsh_src Vertex
         fsh <- newShader fsh_src Fragment
-        newPipeline [vsh, fsh]
+        newPipeline [vsh, fsh] >>= return . CLNopPipeline
       where
         vsh_src = "#version 330\nvoid main() { }\n"
         fsh_src = "#version 330\nvoid main() { }\n"
-

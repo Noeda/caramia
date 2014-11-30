@@ -6,7 +6,8 @@ import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Color
-import Control.Exception
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 import Foreign
 import Foreign.C.Types
 
@@ -77,7 +78,7 @@ data BlendSpec = BlendSpec
     , blendColor    :: !Color }
     deriving ( Eq, Ord, Show, Read, Typeable )
 
-setBlendings :: BlendSpec -> IO ()
+setBlendings :: MonadIO m => BlendSpec -> m ()
 setBlendings (BlendSpec{..}) = do
     glBlendFuncSeparate (toConstantBF srcColorFunc)
                         (toConstantBF dstColorFunc)
@@ -90,9 +91,10 @@ setBlendings (BlendSpec{..}) = do
                  (CFloat $ viewBlue blendColor)
                  (CFloat $ viewAlpha blendColor)
 
-withBlendings :: BlendSpec
-              -> IO a
-              -> IO a
+withBlendings :: (MonadIO m, MonadMask m)
+              => BlendSpec
+              -> m a
+              -> m a
 withBlendings spec@(BlendSpec {..}) action = do
     old_be_color <- gi gl_BLEND_EQUATION_RGB
     old_be_alpha <- gi gl_BLEND_EQUATION_ALPHA
@@ -100,19 +102,20 @@ withBlendings spec@(BlendSpec {..}) action = do
     old_src_alpha <- gi gl_BLEND_SRC_ALPHA
     old_dst_color <- gi gl_BLEND_DST_RGB
     old_dst_alpha <- gi gl_BLEND_DST_ALPHA
-    allocaArray 4 $ \color_ptr -> do
+    (r, g, b, a) <- liftIO $ allocaArray 4 $ \color_ptr -> do
         glGetFloatv gl_BLEND_COLOR color_ptr
         r <- peekElemOff color_ptr 0
         g <- peekElemOff color_ptr 1
         b <- peekElemOff color_ptr 2
         a <- peekElemOff color_ptr 3
-        finally (setBlendings spec >> action) $ do
-            glBlendColor r g b a
-            glBlendFuncSeparate old_src_color
-                                old_dst_color
-                                old_src_alpha
-                                old_dst_alpha
-            glBlendEquationSeparate old_be_color
-                                    old_be_alpha
+        return (r, g, b, a)
+    finally (setBlendings spec >> action) $ do
+        glBlendColor r g b a
+        glBlendFuncSeparate old_src_color
+                            old_dst_color
+                            old_src_alpha
+                            old_dst_alpha
+        glBlendEquationSeparate old_be_color
+                                old_be_alpha
 
 

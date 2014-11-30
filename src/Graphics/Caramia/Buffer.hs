@@ -49,7 +49,8 @@ import qualified Data.Set as S
 
 import Data.Bits
 import Foreign
-import Control.Exception
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 
 -- | The frequency of access to a buffer.
 --
@@ -146,12 +147,13 @@ defaultBufferCreation = BufferCreation {
   , accessFlags = ReadWriteAccess }
 
 -- | Creates a new buffer according to `BufferCreation` specification.
-newBuffer :: BufferCreation
-          -> IO Buffer
+newBuffer :: MonadIO m
+          => BufferCreation
+          -> m Buffer
 newBuffer creation
     | size creation <= 0 =
-        error "newBuffer: size must be positive."
-    | otherwise = mask_ $ do
+        fail "newBuffer: size must be positive."
+    | otherwise = liftIO $ mask_ $ do
         resource <-
             newResource createBuffer
                         (\(Buffer_ bufname) -> mglDeleteBuffer bufname)
@@ -183,12 +185,13 @@ newBuffer creation
 -- | Same as `map` but allows more control over mapping.
 --
 -- @ map = map2 [] @
-map2 :: S.Set MapFlag
+map2 :: MonadIO m
+     => S.Set MapFlag
      -> Int
      -> Int
      -> AccessFlags
      -> Buffer
-     -> IO (Ptr ())
+     -> m (Ptr ())
 map2 map_flags offset num_bytes access_flags buffer
     -- a lot of this implementation is just error checking...
 
@@ -202,7 +205,7 @@ map2 map_flags offset num_bytes access_flags buffer
                   "requested mapping was [" <> show offset <> ".." <>
                   show (offset + num_bytes - 1) <> "]."
     | otherwise =
-    withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
+    liftIO $ withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
         bufstatus <- readIORef (status buffer)
         -- make sure buffer has not been alreayd mapped
         when (mapped bufstatus) $
@@ -239,12 +242,13 @@ map2 map_flags offset num_bytes access_flags buffer
 -- buffer.
 --
 -- You can not have two mappings going on at the same time.
-map :: Int         -- ^ Offset, in bytes, from start of the buffer from where
+map :: MonadIO m
+    => Int         -- ^ Offset, in bytes, from start of the buffer from where
                    --   to map.
     -> Int         -- ^ How many bytes to map.
     -> AccessFlags -- ^ What access is allowed in the mapping.
     -> Buffer
-    -> IO (Ptr ())
+    -> m (Ptr ())
 map = map2 S.empty
 
 -- | Exception that is thrown from `unmap` when buffer corruption is detected.
@@ -266,37 +270,38 @@ instance Exception BufferCorruption
 -- mapped. If there was corruption, `BufferCorruption` is thrown in this call.
 --
 -- Corruption means that the contents of the buffer are now undefined.
-unmap :: Buffer -> IO ()
-unmap buffer = do
+unmap :: MonadIO m => Buffer -> m ()
+unmap buffer = liftIO $ do
     bufstatus <- readIORef (status buffer)
     when (mapped bufstatus) $
         withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
             result <- mglUnmapNamedBuffer buf
             when (fromIntegral result == gl_FALSE) $
-                throwIO $ BufferCorruption buffer
+                throwM $ BufferCorruption buffer
             atomicModifyIORef' (status buffer) $ \old ->
                 ( old { mapped = False }, () )
 
 -- | Same as `withMapping` but with map flags.
 --
 -- See `map2`.
-withMapping2 :: S.Set MapFlag
+withMapping2 :: (MonadIO m, MonadMask m)
+             => S.Set MapFlag
              -> Int
              -> Int
              -> AccessFlags
              -> Buffer
-             -> (Ptr () -> IO a)
-             -> IO a
+             -> (Ptr () -> m a)
+             -> m a
 withMapping2 map_flags offset num_bytes access_flags buffer action =
     mask $ \restore -> do
         ptr <- map2 map_flags offset num_bytes access_flags buffer
         did_it_work <- try $ restore $ action ptr
         did_unmapping_work <- try $ unmap buffer
         case did_it_work of
-            Left exc -> throwIO (exc :: SomeException)
+            Left exc -> throwM (exc :: SomeException)
             Right result ->
                 case did_unmapping_work of
-                    Left no -> throwIO (no :: BufferCorruption)
+                    Left no -> throwM (no :: BufferCorruption)
                     Right () -> return result
 
 -- | A convenience function over map/unmap that automatically unmaps the buffer
@@ -314,25 +319,26 @@ withMapping2 map_flags offset num_bytes access_flags buffer action =
 -- re-throws the user exception. This unfortunately means there is no way to
 -- know if the buffer was corrupted if you threw an exception inside the
 -- action.
-withMapping :: Int
+withMapping :: (MonadIO m, MonadMask m)
+            => Int
             -> Int
             -> AccessFlags
             -> Buffer
-            -> (Ptr () -> IO a)   -- ^ The pointer is valid during this action.
-            -> IO a
+            -> (Ptr () -> m a)   -- ^ The pointer is valid during this action.
+            -> m a
 withMapping = withMapping2 S.empty
 
 -- | A convenience function to upload a storable vector to a buffer.
 --
 -- The buffer must be in an unmapped state and must be write-mappable.
-uploadVector :: V.Storable a
+uploadVector :: (MonadIO m, MonadMask m, V.Storable a)
              => V.Vector a    -- ^ The vector from which to pull data.
              -> Int           -- ^ Offset, in bytes, to which point in the
                               --   buffer to copy the data.
              -> Buffer
-             -> IO ()
+             -> m ()
 uploadVector vec offset buffer =
-    V.unsafeWith vec $ \src_ptr ->
+    liftIO $ V.unsafeWith vec $ \src_ptr ->
         withMapping offset byte_size WriteAccess buffer $ \tgt_ptr ->
             copyBytes tgt_ptr (castPtr src_ptr) byte_size
   where
@@ -350,12 +356,13 @@ uploadVector vec offset buffer =
 --
 -- You can use the same buffer for both destination and source but the copying
 -- area may not overlap.
-copy :: Buffer      -- ^ Destination buffer.
+copy :: MonadIO m
+     => Buffer      -- ^ Destination buffer.
      -> Int         -- ^ Offset in destination buffer.
      -> Buffer      -- ^ Source buffer.
      -> Int         -- ^ Offset in source buffer.
      -> Int         -- ^ How many bytes to copy.
-     -> IO ()
+     -> m ()
 copy dst_buffer dst_offset src_buffer src_offset num_bytes
     | dst_offset < 0 ||
       src_offset < 0 ||
@@ -365,7 +372,7 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
           error "copy: invalid offsets/byte sizes to make a buffer copy."
     | overlaps = error "copy: copying area overlaps."
     | otherwise =
-        withResource (resource dst_buffer) $ \(Buffer_ dst) ->
+        liftIO $ withResource (resource dst_buffer) $ \(Buffer_ dst) ->
             withResource (resource src_buffer) $ \(Buffer_ src) -> do
                 dst_status <- readIORef (status dst_buffer)
                 when (mapped dst_status) $
@@ -402,7 +409,7 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
 -- extension is not present, then this simply does nothing.
 --
 -- See <https://www.opengl.org/wiki/Buffer_Object#Invalidation>.
-invalidateBuffer :: Buffer -> IO ()
+invalidateBuffer :: MonadIO m => Buffer -> m ()
 invalidateBuffer buf = do
     has_it <- has_GL_ARB_invalidate_subdata
     when has_it $

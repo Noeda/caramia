@@ -22,13 +22,14 @@ module Graphics.Caramia.Sync
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 
 newtype Fence = Fence (Resource GLsync)
                 deriving ( Eq, Typeable )
 
 -- | Create a fence.
-fence :: IO Fence
+fence :: (MonadIO m, MonadMask m) => m Fence
 fence = mask_ $ do
     resource <-
         newResource createFence
@@ -41,10 +42,11 @@ fence = mask_ $ do
 -- | Waits for a fence to signal.
 --
 -- IMPORTANT: this is not interruptible by asynchronous exceptions.
-waitFence :: Int           -- ^ Number of microseconds to wait.
+waitFence :: MonadIO m
+          => Int           -- ^ Number of microseconds to wait.
           -> Fence
-          -> IO Bool       -- ^ `True` if the fence was signalled,
-                           --   `False` if waiting timed out.
+          -> m Bool       -- ^ `True` if the fence was signalled,
+                          --   `False` if waiting timed out.
 waitFence useconds (Fence resource) =
     withResource resource $ \fencesync -> do
         ret <- glClientWaitSync fencesync gl_SYNC_FLUSH_COMMANDS_BIT
@@ -63,6 +65,6 @@ waitFence useconds (Fence resource) =
 -- | Checks if a fence has been signalled.
 --
 -- @ isFenceSignalled = waitFence 0 @
-isFenceSignalled :: Fence -> IO Bool
+isFenceSignalled :: MonadIO m => Fence -> m Bool
 isFenceSignalled = waitFence 0
 

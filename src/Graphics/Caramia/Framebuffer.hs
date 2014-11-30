@@ -43,7 +43,8 @@ import Graphics.Caramia.Framebuffer.Internal
 import qualified Graphics.Caramia.Texture.Internal as Tex
 import Graphics.Caramia.ImageFormats
 import Graphics.Caramia.Internal.OpenGLCApi
-import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Catch
 import Data.List ( nub )
 import Data.Bits
 import System.IO.Unsafe
@@ -119,14 +120,15 @@ toConstantA DepthAttachment = gl_DEPTH_ATTACHMENT
 toConstantA StencilAttachment = gl_STENCIL_ATTACHMENT
 
 -- | Creates a new framebuffer.
-newFramebuffer :: [(Attachment, TextureTarget)]
-               -> IO Framebuffer
+newFramebuffer :: MonadIO m
+               => [(Attachment, TextureTarget)]
+               -> m Framebuffer
 newFramebuffer targets
     | null targets =
         error "newFramebuffer: no texture targets specified."
     | nub (fmap fst targets) /= fmap fst targets =
         error "newFramebuffer: there are duplicate attachments."
-    | otherwise = mask_ $ do
+    | otherwise = liftIO $ mask_ $ do
         max_bufs <- getMaximumDrawBuffers
         targetsSanityCheck max_bufs
 
@@ -210,24 +212,25 @@ newFramebuffer targets
     withThisFramebuffer res action = mask $ \restore -> do
         old_draw_framebuffer <- gi gl_DRAW_FRAMEBUFFER_BINDING
         old_read_framebuffer <- gi gl_READ_FRAMEBUFFER_BINDING
-        allocaArray 4 $ \viewport_ptr -> do
+        (x, y, w, h) <- liftIO $ allocaArray 4 $ \viewport_ptr -> do
             glGetIntegerv gl_VIEWPORT viewport_ptr
-            withResource res $ \(Framebuffer_ fbuf_name) -> do
-                glBindFramebuffer gl_FRAMEBUFFER fbuf_name
-                x <- peekElemOff viewport_ptr 0
-                y <- peekElemOff viewport_ptr 1
-                w <- peekElemOff viewport_ptr 2
-                h <- peekElemOff viewport_ptr 3
-                glViewport 0 0 (fromIntegral fw) (fromIntegral fh)
-                finally (restore action) $ do
-                    glViewport x y w h
-                    glBindFramebuffer gl_DRAW_FRAMEBUFFER old_draw_framebuffer
-                    glBindFramebuffer gl_READ_FRAMEBUFFER old_read_framebuffer
+            x <- peekElemOff viewport_ptr 0
+            y <- peekElemOff viewport_ptr 1
+            w <- peekElemOff viewport_ptr 2
+            h <- peekElemOff viewport_ptr 3
+            return (x, y, w, h)
+        withResource res $ \(Framebuffer_ fbuf_name) -> do
+            glBindFramebuffer gl_FRAMEBUFFER fbuf_name
+            glViewport 0 0 (fromIntegral fw) (fromIntegral fh)
+            finally (restore action) $ do
+                glViewport x y w h
+                glBindFramebuffer gl_DRAW_FRAMEBUFFER old_draw_framebuffer
+                glBindFramebuffer gl_READ_FRAMEBUFFER old_read_framebuffer
 
 -- | Returns the maximum number of draw buffers in the current context.
 --
 -- Almost all GPUs in the last few years have at least 8.
-getMaximumDrawBuffers :: IO Int
+getMaximumDrawBuffers :: MonadIO m => m Int
 getMaximumDrawBuffers = do
     _ <- currentContextID
     -- number of draw buffers
@@ -261,8 +264,8 @@ clearing = Clearing { clearDepth = Nothing
                     , clearColor = Nothing }
 
 -- | Clears values in a framebuffer.
-clear :: Clearing -> Framebuffer -> IO ()
-clear clearing fbuf = withBinding fbuf $ mask_ $
+clear :: MonadIO m => Clearing -> Framebuffer -> m ()
+clear clearing fbuf = liftIO $ withBinding fbuf $ mask_ $
     recColor (clearColor clearing)
   where
     bits = maybe 0 (const gl_COLOR_BUFFER_BIT) (clearColor clearing) .|.
