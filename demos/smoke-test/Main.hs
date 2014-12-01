@@ -2,7 +2,7 @@
 
 module Main ( main ) where
 
-import Graphics.Caramia.Prelude
+import Graphics.Caramia.Prelude hiding ( init )
 import Graphics.Caramia
 import Graphics.Caramia.Math
 
@@ -33,6 +33,7 @@ main = do
 program :: IO ()
 program =
     withCString "smoke-test" $ \cstr -> do
+        void $ init initFlagVideo
         _ <- glSetAttribute glAttrContextMajorVersion 3
         _ <- glSetAttribute glAttrContextMinorVersion 3
         _ <- glSetAttribute glAttrContextProfileMask glProfileCore
