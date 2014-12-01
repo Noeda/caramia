@@ -126,17 +126,13 @@ setViewportSize w h = do
 
 checkOpenGLVersion33 :: IO ()
 checkOpenGLVersion33 =
-    -- You cannot trust OS X to report versions correctly :-(
-#ifdef MAC_OPENGL
-    return ()
-#else
     alloca $ \major_ptr -> alloca $ \minor_ptr -> do
         -- in case glGetIntegerv is completely broken, set initial values for
         -- major and minor pointers
         poke major_ptr 0
         poke minor_ptr 0
         glGetIntegerv gl_MAJOR_VERSION major_ptr
-        glGetIntegerv gl_MAJOR_VERSION minor_ptr
+        glGetIntegerv gl_MINOR_VERSION minor_ptr
         major <- peek major_ptr
         minor <- peek minor_ptr
         unless (major > 3 ||
@@ -146,7 +142,6 @@ checkOpenGLVersion33 =
                              , reportedVersion = ( fromIntegral major
                                                  , fromIntegral minor )
                              }
-#endif
 
 -- | Scraps the current context.
 --
