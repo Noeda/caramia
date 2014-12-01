@@ -95,7 +95,13 @@ giveContext action = mask $ \restore -> do
             f@(Failure _) -> throwM f
             _ -> return ()
 
-        checkOpenGLVersion33
+        v@(major, minor) <- getGLVersion
+        unless (major > 3 ||
+                (major == 3 && minor >= 3)) $
+            throwM
+                TooOldOpenGL { wantedVersion = (3, 3)
+                             , reportedVersion = v
+                             }
 
         cid <- newContextID
         tid <- myThreadId
@@ -123,25 +129,6 @@ setViewportSize w h = do
     cid <- currentContextID
     when (isNothing cid) $ error "setViewportSize: not in a context."
     glViewport 0 0 (safeFromIntegral w) (safeFromIntegral h)
-
-checkOpenGLVersion33 :: IO ()
-checkOpenGLVersion33 =
-    alloca $ \major_ptr -> alloca $ \minor_ptr -> do
-        -- in case glGetIntegerv is completely broken, set initial values for
-        -- major and minor pointers
-        poke major_ptr 0
-        poke minor_ptr 0
-        glGetIntegerv gl_MAJOR_VERSION major_ptr
-        glGetIntegerv gl_MINOR_VERSION minor_ptr
-        major <- peek major_ptr
-        minor <- peek minor_ptr
-        unless (major > 3 ||
-                (major == 3 && minor >= 3)) $
-            throwM
-                TooOldOpenGL { wantedVersion = (3, 3)
-                             , reportedVersion = ( fromIntegral major
-                                                 , fromIntegral minor )
-                             }
 
 -- | Scraps the current context.
 --
