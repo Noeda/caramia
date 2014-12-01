@@ -9,7 +9,7 @@
 --
 
 {-# LANGUAGE NoImplicitPrelude, ScopedTypeVariables, DeriveDataTypeable #-}
-{-# LANGUAGE CPP, LambdaCase #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Graphics.Caramia.Context
     (
