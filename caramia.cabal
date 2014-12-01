@@ -176,6 +176,19 @@ executable memory-info
     buildable:           False
   default-language:    Haskell2010
 
+-- Gets OpenGL version with two different ways to check if there is one that's consistent.
+executable gl-info
+  main-is:             Main.hs
+  ghc-options:         -Wall -fno-warn-name-shadowing -threaded -rtsopts -with-rtsopts=-N
+  hs-source-dirs:      demos/gl-info
+  if flag(build-toys)
+    build-depends:       base
+                        ,sdl2 ==1.2.*
+                        ,OpenGLRaw >=1.5
+  else
+    buildable:           False
+  default-language:    Haskell2010
+
 executable textures
   main-is:             Main.hs
   ghc-options:         -Wall -fno-warn-name-shadowing -threaded -rtsopts -with-rtsopts=-N
