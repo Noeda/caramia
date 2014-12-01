@@ -97,7 +97,7 @@ giveContext action = mask $ \restore -> do
 
         checkOpenGLVersion33
 
-        cid <- atomicModifyIORef' nextContextID $ \old -> ( old+1, old )
+        cid <- newContextID
         tid <- myThreadId
         atomicModifyIORef' runningContexts $ \old_map ->
             ( M.insert tid cid old_map, () )
@@ -157,7 +157,7 @@ scrapContext = liftIO $ mask_ $ do
     tid <- myThreadId
     case maybe_cid of
         Nothing -> return ()
-        Just cid -> do
+        Just (ContextID cid) -> do
             atomicModifyIORef' runningContexts $ \old_map ->
                 ( M.delete tid old_map, () )
             atomicModifyIORef' pendingFinalizers $ \old_map ->
@@ -182,7 +182,7 @@ runPendingFinalizers = liftIO $ mask_ $ do
     maybe_cid <- currentContextID
     case maybe_cid of
         Nothing -> return ()
-        Just cid -> do
+        Just (ContextID cid) -> do
             finalizers <- atomicModifyIORef' pendingFinalizers $
                 IM.delete cid &&&
                 IM.findWithDefault (return ())
@@ -205,7 +205,7 @@ runPendingFinalizers = liftIO $ mask_ $ do
 -- they cannot do finalization there (Haskell finalizers are running in the
 -- wrong operating system thread).
 scheduleFinalizer :: MonadIO m => ContextID -> IO () -> m ()
-scheduleFinalizer cid finalizer =
+scheduleFinalizer (ContextID cid) finalizer =
     liftIO $ atomicModifyIORef' pendingFinalizers $ \old ->
         ( IM.insertWith
             (flip (>>))

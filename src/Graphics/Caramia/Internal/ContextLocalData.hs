@@ -1,27 +1,32 @@
 {-# LANGUAGE NoImplicitPrelude, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Graphics.Caramia.Internal.ContextLocalData where
 
+import Control.Concurrent
+import Control.Monad.IO.Class
+import Data.Dynamic
 import Graphics.Caramia.Prelude
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Map.Strict as M
 import System.IO.Unsafe
-import Data.Dynamic
-import Control.Concurrent
-import Control.Monad.IO.Class
 
 -- | The type of a Caramia context ID.
-type ContextID = Int
+newtype ContextID = ContextID Int
+                    deriving ( Eq, Ord, Show, Typeable )
+
+nextContextID :: IORef ContextID
+nextContextID = unsafePerformIO $ newIORef $ ContextID 0
+{-# NOINLINE nextContextID #-}
+
+newContextID :: IO ContextID
+newContextID = atomicModifyIORef' nextContextID $ \(ContextID old) ->
+    ( ContextID $ old+1, ContextID old )
 
 -- currently running contexts, map from thread IDs to context IDs
 runningContexts :: IORef (M.Map ThreadId ContextID)
 runningContexts = unsafePerformIO $ newIORef M.empty
 {-# NOINLINE runningContexts #-}
-
--- used to give out new unique context IDs
-nextContextID :: IORef ContextID
-nextContextID = unsafePerformIO $ newIORef 0
-{-# NOINLINE nextContextID #-}
 
 -- context local data. This is like poor man's thread local storage but for
 -- contexts.
@@ -61,7 +66,7 @@ currentContextID =
 storeContextLocalData :: (MonadIO m, Typeable a) => a -> m ()
 storeContextLocalData value =
     liftIO $ maybe (error "storeContextLocalData: not in a context.")
-          (\cid ->
+          (\(ContextID cid) ->
               atomicModifyIORef' contextLocalData $ \old ->
                   ( IM.alter (Just . maybe (M.singleton
                                             (typeOf value)
@@ -84,7 +89,7 @@ retrieveContextLocalData :: forall m a. (MonadIO m, Typeable a)
                          -> m a
 retrieveContextLocalData defvalue =
     maybe (error "retrieveContextLocalData: not in a context.")
-          (\cid -> do
+          (\(ContextID cid) -> do
               -- No need to care about IORef race conditions because all
               -- functions operating on a certain context ID will be
               -- run in the same thread, sequentially.
