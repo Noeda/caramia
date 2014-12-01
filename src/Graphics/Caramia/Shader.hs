@@ -137,8 +137,7 @@ newShaderGeneric source_code_ptr source_code_len stage = liftIO $ mask_ $ do
     res <- newResource create
                        deleter
                        (return ())
-    nid <- atomicModifyIORef' shaderIdentifierSupply $ \old ->
-        ( old + 1, old )
+    nid <- newUnique
     return Shader { resource = res
                   , identifier = nid
                   , viewStage = stage }
@@ -238,8 +237,7 @@ newPipeline shaders = liftIO $ mask_ $ do
     res <- newResource creator
                        deleter
                        (return ())
-    nid <- atomicModifyIORef' shaderIdentifierSupply $ \old ->
-        ( old+1, old )
+    nid <- newUnique
     return Pipeline { resourcePL = res
                     , pipelineIdentifier = nid
                     , shaders = shaders }

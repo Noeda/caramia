@@ -142,7 +142,7 @@ newTexture spec = mask_ $ do
                        deleter
                        (return ())
 
-    index <- atomicModifyIORef' ordIndices $ \old -> ( old+1, old )
+    index <- newUnique
     return Texture { resource = res
                    , ordIndex = index
                    , viewSpecification = spec }

@@ -2,20 +2,20 @@
 
 module Graphics.Caramia.Framebuffer.Internal where
 
-import Graphics.Caramia.Prelude
-
-import Graphics.Caramia.Resource
-import Graphics.Caramia.Internal.OpenGLCApi
-import qualified Graphics.Caramia.Texture.Internal as Tex
+import Data.Unique
 import Control.Monad.IO.Class
 import Control.Monad.Catch
 import Foreign
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Resource
+import qualified Graphics.Caramia.Texture.Internal as Tex
 
 data Framebuffer =
     ScreenFramebuffer
   | Framebuffer {
         resource :: !(Resource Framebuffer_)
-      , ordIndex :: !Int
+      , ordIndex :: !Unique
       , viewTargets :: [(Attachment, TextureTarget)]
       , dimensions :: !(Int, Int)
       , binder :: forall m a. (MonadIO m, MonadMask m) => m a -> m a

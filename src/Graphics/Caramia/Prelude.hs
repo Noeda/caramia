@@ -16,20 +16,21 @@ import Prelude as Ex hiding
                       , and, all, mapM_, sequence_, product, maximum
                       , foldl1, minimum, (.), id )
 
-import Data.Foldable as Ex
-import Data.Traversable as Ex
-import Data.Int as Ex
-import Data.Word as Ex
-import Data.Typeable as Ex
-import Control.Category as Ex
+import Control.Applicative as Ex
 import Control.Arrow as Ex
+import Control.Category as Ex
 import Control.Monad as Ex hiding ( msum, forM, forM_, sequence, mapM, mapM_
                                   , sequence_ )
-import Control.Applicative as Ex
-import Data.Semigroup as Ex
+import Data.Foldable as Ex
 import Data.Maybe as Ex
+import Data.Int as Ex
 import Data.IORef as Ex
+import Data.Semigroup as Ex
 import qualified Data.Text as T
+import Data.Traversable as Ex
+import Data.Typeable as Ex
+import Data.Unique as Ex
+import Data.Word as Ex
 
 -- | Same as `show` but the result will be a `T.Text`, not `String`.
 showT :: Show a => a -> T.Text

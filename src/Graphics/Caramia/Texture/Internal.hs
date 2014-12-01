@@ -3,19 +3,17 @@
 
 module Graphics.Caramia.Texture.Internal where
 
-import Graphics.Caramia.Prelude
-
-import Graphics.Caramia.Resource
-import Graphics.Caramia.Internal.OpenGLCApi
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats
-import System.IO.Unsafe
-import Control.Monad.IO.Class
-import Control.Monad.Catch
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Resource
 
 data Texture = Texture
     { resource :: !(Resource Texture_)
-    , ordIndex :: !Int
+    , ordIndex :: !Unique
     , viewSpecification :: !TextureSpecification }
     deriving ( Typeable )
 
@@ -26,10 +24,6 @@ newtype Texture_ = Texture_ GLuint
 -- The minimum valid value is 0 and maximum is implementation dependant but
 -- in OpenGL at least 48 units will work at the same time in shaders.
 type TextureUnit = Int
-
-ordIndices :: IORef Int
-ordIndices = unsafePerformIO $ newIORef 0
-{-# NOINLINE ordIndices #-}
 
 instance Eq Texture where
     tex1 == tex2 = resource tex1 == resource tex2

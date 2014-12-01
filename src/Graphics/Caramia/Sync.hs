@@ -8,6 +8,7 @@
 --
 
 {-# LANGUAGE NoImplicitPrelude, DeriveDataTypeable, MultiWayIf #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Graphics.Caramia.Sync
     (
@@ -19,14 +20,18 @@ module Graphics.Caramia.Sync
     , Fence() )
     where
 
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
-import Control.Monad.IO.Class
-import Control.Monad.Catch
 
-newtype Fence = Fence (Resource GLsync)
-                deriving ( Eq, Typeable )
+data Fence = Fence { resource :: !(Resource GLsync)
+                   , ordIndex :: !Unique }
+                   deriving ( Eq, Typeable )
+
+instance Ord Fence where
+    (ordIndex -> o1) `compare` (ordIndex -> o2) = o1 `compare` o2
 
 -- | Create a fence.
 fence :: (MonadIO m, MonadMask m) => m Fence
@@ -35,7 +40,9 @@ fence = mask_ $ do
         newResource createFence
                     glDeleteSync
                     (return ())
-    return $ Fence resource
+    unique <- liftIO newUnique
+    return $ Fence { resource = resource
+                   , ordIndex = unique }
   where
     createFence = glFenceSync gl_SYNC_GPU_COMMANDS_COMPLETE 0
 
@@ -47,7 +54,7 @@ waitFence :: MonadIO m
           -> Fence
           -> m Bool       -- ^ `True` if the fence was signalled,
                           --   `False` if waiting timed out.
-waitFence useconds (Fence resource) =
+waitFence useconds (Fence{ resource = resource }) =
     withResource resource $ \fencesync -> do
         ret <- glClientWaitSync fencesync gl_SYNC_FLUSH_COMMANDS_BIT
                                 (fromIntegral actual_seconds)

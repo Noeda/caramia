@@ -3,11 +3,9 @@
 
 module Graphics.Caramia.Buffer.Internal where
 
-import Graphics.Caramia.Prelude
-
-import Graphics.Caramia.Resource
 import Graphics.Caramia.Internal.OpenGLCApi
-import System.IO.Unsafe
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Resource
 
 -- | Buffer data type.
 data Buffer = Buffer
@@ -15,13 +13,9 @@ data Buffer = Buffer
     , status     :: !(IORef BufferStatus)
     , viewAllowedMappings :: !AccessFlags -- ^ Returns the allowed mappings.
     , viewSize   :: !Int -- ^ Returns the size of the buffer, in bytes.
-    , ordIndex   :: !Int
+    , ordIndex   :: !Unique
     }
     deriving ( Typeable )
-
-bufferOrdIndex :: IORef Int
-bufferOrdIndex = unsafePerformIO $ newIORef 0
-{-# NOINLINE bufferOrdIndex #-}
 
 instance Ord Buffer where
     (ordIndex -> o1) `compare` (ordIndex -> o2) = o1 `compare` o2
@@ -30,9 +24,7 @@ data BufferStatus = BufferStatus
     { mapped :: !Bool }
 
 instance Show Buffer where
-    show (Buffer{..}) =
-        "<Buffer bytesize(" <> show viewSize <> ") idx(" <>
-         show ordIndex <> ")>"
+    show (Buffer{..}) = "<Buffer bytesize(" <> show viewSize <> ")>"
 
 instance Eq Buffer where
     (resource -> res1) == (resource -> res2) = res1 == res2

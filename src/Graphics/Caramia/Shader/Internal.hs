@@ -2,11 +2,9 @@
 
 module Graphics.Caramia.Shader.Internal where
 
-import Graphics.Caramia.Prelude
-
-import Graphics.Caramia.Resource
-import System.IO.Unsafe
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Resource
 
 -- | A shader object for a specific shader stage.
 --
@@ -15,7 +13,7 @@ data Shader = Shader
     { resource     :: !(Resource Shader_)
     , viewStage    :: !ShaderStage
     -- ^ Which stage does this shader belong to.
-    , identifier   :: !Int
+    , identifier   :: !Unique
     }
     deriving ( Typeable )
 
@@ -34,7 +32,7 @@ data Shader_ = CompiledShader !GLuint   -- OpenGL shader
 -- OpenGL equivalent is the shader program object.
 data Pipeline = Pipeline
     { resourcePL :: !(Resource Pipeline_)
-    , pipelineIdentifier :: !Int
+    , pipelineIdentifier :: !Unique
     , shaders :: [Shader] }
     deriving ( Typeable )
 
@@ -45,10 +43,6 @@ instance Ord Pipeline where
     p1 `compare` p2 = pipelineIdentifier p1 `compare` pipelineIdentifier p2
 
 newtype Pipeline_ = Pipeline_ GLuint
-
-shaderIdentifierSupply :: IORef Int
-shaderIdentifierSupply = unsafePerformIO $ newIORef 0
-{-# NOINLINE shaderIdentifierSupply #-}
 
 data ShaderStage =
     Vertex

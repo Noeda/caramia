@@ -159,7 +159,7 @@ newBuffer creation
                         (\(Buffer_ bufname) -> mglDeleteBuffer bufname)
                         (return ())
         initial_status <- newIORef BufferStatus { mapped = False }
-        oi <- atomicModifyIORef' bufferOrdIndex $ \old -> ( old+1, old )
+        oi <- newUnique
         return Buffer { resource = resource
                       , status = initial_status
                       , viewAllowedMappings = accessFlags creation

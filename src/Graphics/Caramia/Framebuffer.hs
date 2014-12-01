@@ -34,26 +34,25 @@ module Graphics.Caramia.Framebuffer
     , viewTargets )
     where
 
-import Graphics.Caramia.Prelude
-import Graphics.Caramia.Context
-import Graphics.Caramia.Color
-import Graphics.Caramia.Resource
-import Graphics.Caramia.Texture
-import Graphics.Caramia.Framebuffer.Internal
-import qualified Graphics.Caramia.Texture.Internal as Tex
-import Graphics.Caramia.ImageFormats
-import Graphics.Caramia.Internal.OpenGLCApi
-import Control.Monad.IO.Class
 import Control.Monad.Catch
-import Data.List ( nub )
+import Control.Monad.IO.Class
 import Data.Bits
-import System.IO.Unsafe
-import Foreign.Storable
+import qualified Data.IntSet as IS
+import Data.List ( nub )
+import Foreign.C.Types
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
-import Foreign.C.Types
+import Foreign.Storable
 import GHC.Float
-import qualified Data.IntSet as IS
+import Graphics.Caramia.Color
+import Graphics.Caramia.Context
+import Graphics.Caramia.Framebuffer.Internal
+import Graphics.Caramia.ImageFormats
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Resource
+import Graphics.Caramia.Texture
+import qualified Graphics.Caramia.Texture.Internal as Tex
 
 -- | Returns the screen framebuffer.
 --
@@ -110,10 +109,6 @@ layerTextureTarget tex mipmap_layer topo_layer = TextureTarget {
                 (safeFromIntegral topo_layer)
   , texture = tex }
 
-runningIndices :: IORef Int
-runningIndices = unsafePerformIO $ newIORef 0
-{-# NOINLINE runningIndices #-}
-
 toConstantA :: Attachment -> GLenum
 toConstantA (ColorAttachment x) = gl_COLOR_ATTACHMENT0 + fromIntegral x
 toConstantA DepthAttachment = gl_DEPTH_ATTACHMENT
@@ -135,8 +130,7 @@ newFramebuffer targets
         res <- newResource (creator max_bufs)
                            deleter
                            (return ())
-        index <- atomicModifyIORef' runningIndices $ \old ->
-            ( old+1, old )
+        index <- newUnique
         return Framebuffer { resource = res
                            , ordIndex = index
                            , viewTargets = targets
