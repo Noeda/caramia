@@ -3,6 +3,7 @@
 
 {-# LANGUAGE RecordWildCards, GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns, NoImplicitPrelude, DeriveDataTypeable #-}
+{-# LANGUAGE CPP #-}
 
 module Graphics.Caramia.Render
     ( 
@@ -10,7 +11,8 @@ module Graphics.Caramia.Render
       draw
     , runDraws
     -- * Draw command stream
-    , DrawT
+    , DrawT()
+    , Draw
     , drawR
     , setPipeline
     , setTextureBindings
@@ -277,10 +279,16 @@ data DrawState = DrawState
     , activeTexture :: !GLuint }
 
 newtype DrawT m a = DrawT (StateT DrawState m a)
+#if __GLASGOW_HASKELL__ < 708
+                  deriving ( Monad, Applicative, Functor )
+#else
                   deriving ( Monad, Applicative, Functor, Typeable )
+#endif
 
--- | Using `liftIO` is safe inside a `Draw` stream. It is possible to run
--- nested `Draw` streams this way as well.
+type Draw = DrawT IO
+
+-- | Using `liftIO` is safe inside a `DrawT` stream. It is possible to run
+-- nested `DrawT` streams this way as well.
 --
 -- One useful thing to do is to set uniforms to pipelines with `setUniform`.
 instance MonadIO m => MonadIO (DrawT m) where
