@@ -12,7 +12,6 @@ import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Internal.ContextLocalData
 import Control.Monad.Trans.State.Strict
 import Control.Monad.IO.Class
-import Control.Monad.IO.Class
 import Control.Monad.Catch
 import System.IO
 import Foreign.Storable
