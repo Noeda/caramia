@@ -21,14 +21,14 @@ module Graphics.Caramia.VAO
     , sourceTypeSize )
     where
 
-import Graphics.Caramia.Prelude
-
-import Graphics.Caramia.VAO.Internal
-import Graphics.Caramia.Resource
-import qualified Graphics.Caramia.Buffer.Internal as Buf
-import Graphics.Caramia.Internal.OpenGLCApi
 import Control.Monad.IO.Class
 import Control.Monad.Catch
+import Data.Unique
+import qualified Graphics.Caramia.Buffer.Internal as Buf
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Resource
+import Graphics.Caramia.VAO.Internal
 
 -- | Creates a vertex array object.
 --
@@ -40,8 +40,10 @@ newVAO = liftIO $ mask_ $ do
                        (\(VAO_ vao) -> mglDeleteVertexArray vao)
                        (return ())
     ref <- newIORef []
+    unique <- newUnique
     return VAO { resource = res
-               , boundBuffers = ref }
+               , boundBuffers = ref
+               , vaoIndex = unique }
   where
     create = VAO_ <$> mglGenVertexArray
 

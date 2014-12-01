@@ -75,7 +75,7 @@ data Primitive =
   | LineStripAdjacency
   | TriangleStripAdjacency
   | TrianglesAdjacency
-  deriving ( Eq, Ord, Show, Read )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 toConstant :: Primitive -> GLenum
 toConstant Triangles = gl_TRIANGLES
@@ -95,7 +95,7 @@ data IndexType =
     IWord32
   | IWord16
   | IWord8
-    deriving ( Eq, Ord, Show, Read )
+    deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 toConstantIT :: IndexType -> GLenum
 toConstantIT IWord32 = gl_UNSIGNED_INT
@@ -149,7 +149,7 @@ data DrawParams = DrawParams
     -- By default this is (0, 0) (that is, do nothing). See @ glPolygonOffset @
     -- for the meaning of these values.
     }
-    deriving ( Eq, Typeable )
+    deriving ( Eq, Ord, Typeable )
 
 -- | Default drawing parameters.
 --
@@ -181,7 +181,7 @@ data DrawCommand = DrawCommand
     , sourceData    :: SourceData
     -- ^ How to select the attribute data from `primitivesVAO`.
     }
-    deriving ( Eq, Typeable )
+    deriving ( Eq, Ord, Typeable )
 
 -- | Returns a default draw command.
 --
@@ -277,6 +277,7 @@ data DrawState = DrawState
     , boundFramebuffer :: !FBuf.Framebuffer
     , boundFragmentPassTests :: !FragmentPassTests
     , activeTexture :: !GLuint }
+    deriving ( Eq, Ord, Typeable )
 
 newtype DrawT m a = DrawT (StateT DrawState m a)
 #if __GLASGOW_HASKELL__ < 708
