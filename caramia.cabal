@@ -148,7 +148,6 @@ library
 
   if os(darwin)
     frameworks:        OpenGL
-    cpp-options:       -DMAC_OPENGL
 
 -- This is just a dumping ground test that does stupid things. It's used to
 -- check if things work at all.

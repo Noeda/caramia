@@ -31,7 +31,7 @@ main =
             poke major_ptr 0
             poke minor_ptr 0
             glGetIntegerv gl_MAJOR_VERSION major_ptr
-            glGetIntegerv gl_MAJOR_VERSION minor_ptr
+            glGetIntegerv gl_MINOR_VERSION minor_ptr
             (,) <$> peek major_ptr <*> peek minor_ptr
         putStrLn $ "glGetIntegerv gl_*_VERSION: " ++ show major1 ++ "." ++ show minor1
         ver_raw <- castPtr `fmap` glGetString gl_VERSION
