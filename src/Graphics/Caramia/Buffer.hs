@@ -23,9 +23,9 @@ module Graphics.Caramia.Buffer
       -- * Invalidation
     , invalidateBuffer
       -- * Manipulation
-    , map
-    , map2
-    , unmap
+    , bufferMap
+    , bufferMap2
+    , bufferUnmap
     , copy
     , withMapping
     , withMapping2
@@ -182,17 +182,17 @@ newBuffer creation
         | ptr == nullPtr = error "newBuffer: initial data is a null pointer."
         | otherwise = ptr
 
--- | Same as `map` but allows more control over mapping.
+-- | Same as `bufferMap` but allows more control over mapping.
 --
--- @ map = map2 [] @
-map2 :: MonadIO m
-     => S.Set MapFlag
-     -> Int
-     -> Int
-     -> AccessFlags
-     -> Buffer
-     -> m (Ptr ())
-map2 map_flags offset num_bytes access_flags buffer
+-- @ bufferMap = bufferMap2 [] @
+bufferMap2 :: MonadIO m
+           => S.Set MapFlag
+           -> Int
+           -> Int
+           -> AccessFlags
+           -> Buffer
+           -> m (Ptr ())
+bufferMap2 map_flags offset num_bytes access_flags buffer
     -- a lot of this implementation is just error checking...
 
     -- check that offset/num_bytes makes sense
@@ -207,7 +207,7 @@ map2 map_flags offset num_bytes access_flags buffer
     | otherwise =
     liftIO $ withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
         bufstatus <- readIORef (status buffer)
-        -- make sure buffer has not been alreayd mapped
+        -- make sure buffer has not been already mapped
         when (mapped bufstatus) $
             error "map: buffer is already mapped."
         -- can we really map with these access flags
@@ -238,20 +238,20 @@ map2 map_flags offset num_bytes access_flags buffer
 -- | Maps (part) of a buffer to system memory space.
 --
 -- The mapping is valid until the buffer is garbage collected (in which case
--- the mapping is automatically unmapped) or when `unmap` is called on the
+-- the mapping is automatically unmapped) or when `bufferUnmap` is called on the
 -- buffer.
 --
 -- You can not have two mappings going on at the same time.
-map :: MonadIO m
-    => Int         -- ^ Offset, in bytes, from start of the buffer from where
-                   --   to map.
-    -> Int         -- ^ How many bytes to map.
-    -> AccessFlags -- ^ What access is allowed in the mapping.
-    -> Buffer
-    -> m (Ptr ())
-map = map2 S.empty
+bufferMap :: MonadIO m
+          => Int         -- ^ Offset, in bytes, from start of the buffer from where
+                        --   to map.
+          -> Int         -- ^ How many bytes to map.
+          -> AccessFlags -- ^ What access is allowed in the mapping.
+          -> Buffer
+          -> m (Ptr ())
+bufferMap = bufferMap2 S.empty
 
--- | Exception that is thrown from `unmap` when buffer corruption is detected.
+-- | Exception that is thrown from `bufferUnmap` when buffer corruption is detected.
 --
 -- Corruption can happen due to external factors and is system-specific.
 data BufferCorruption = BufferCorruption Buffer
@@ -270,8 +270,8 @@ instance Exception BufferCorruption
 -- mapped. If there was corruption, `BufferCorruption` is thrown in this call.
 --
 -- Corruption means that the contents of the buffer are now undefined.
-unmap :: MonadIO m => Buffer -> m ()
-unmap buffer = liftIO $ do
+bufferUnmap :: MonadIO m => Buffer -> m ()
+bufferUnmap buffer = liftIO $ do
     bufstatus <- readIORef (status buffer)
     when (mapped bufstatus) $
         withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
@@ -283,7 +283,7 @@ unmap buffer = liftIO $ do
 
 -- | Same as `withMapping` but with map flags.
 --
--- See `map2`.
+-- See `bufferMap2`.
 withMapping2 :: (MonadIO m, MonadMask m)
              => S.Set MapFlag
              -> Int
@@ -294,9 +294,9 @@ withMapping2 :: (MonadIO m, MonadMask m)
              -> m a
 withMapping2 map_flags offset num_bytes access_flags buffer action =
     mask $ \restore -> do
-        ptr <- map2 map_flags offset num_bytes access_flags buffer
+        ptr <- bufferMap2 map_flags offset num_bytes access_flags buffer
         did_it_work <- try $ restore $ action ptr
-        did_unmapping_work <- try $ unmap buffer
+        did_unmapping_work <- try $ bufferUnmap buffer
         case did_it_work of
             Left exc -> throwM (exc :: SomeException)
             Right result ->
@@ -307,10 +307,10 @@ withMapping2 map_flags offset num_bytes access_flags buffer action =
 -- | A convenience function over map/unmap that automatically unmaps the buffer
 -- when done (even in the case of exceptions).
 --
--- The arguments to this function are the same as for `map`, except for extra
+-- The arguments to this function are the same as for `bufferMap`, except for extra
 -- action argument.
 --
--- This calls `unmap` which means it can throw `BufferCorruption` when the
+-- This calls `bufferUnmap` which means it can throw `BufferCorruption` when the
 -- action is done.
 --
 -- There is a rare case that can happen if your action throws an exception AND
