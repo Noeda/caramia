@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude, BangPatterns, DeriveDataTypeable #-}
+{-# LANGUAGE TypeFamilies, MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 -- | Matrix, vector and quaternion math module. This module is concerned about
@@ -164,6 +165,9 @@ import Foreign.Ptr ( Ptr, castPtr )
 import Foreign.Storable ( pokeElemOff, Storable(..) )
 import Foreign.Marshal.Array ( allocaArray )
 import Foreign.C.Types ( CFloat(..) )
+import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Generic.Mutable as M
+import qualified Data.Vector.Unboxed as U
 import Graphics.Caramia.Internal.Lens
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}
@@ -249,31 +253,31 @@ instance Storable Vector3 where
     sizeOf _ = sizeOf (undefined :: Float) * 3
     alignment _ = alignment (undefined :: Float)
     peek ptr = {-# SCC "Vector3_peek" #-} do
-        x <- peekElemOff cptr 0 :: IO Float
-        y <- peekElemOff cptr 1 :: IO Float
-        z <- peekElemOff cptr 2 :: IO Float
+        x <- peekElemOff cptr 0
+        y <- peekElemOff cptr 1
+        z <- peekElemOff cptr 2
         return $ Vector3 x y z
       where
-        cptr = castPtr ptr :: Ptr Float
+        cptr = castPtr ptr
 
     poke ptr (Vector3 x y z) = {-# SCC "Vector3_poke" #-} do
         pokeElemOff cptr 0 x
         pokeElemOff cptr 1 y
         pokeElemOff cptr 2 z
       where
-        cptr = castPtr ptr :: Ptr Float
+        cptr = castPtr ptr
 
 instance Storable Quaternion where
     sizeOf _ = sizeOf (undefined :: Float) * 4
     alignment _ = alignment (undefined :: Float)
     peek ptr = {-# SCC "Quaternion_peek" #-} do
-        x <- peekElemOff cptr 0 :: IO Float
-        y <- peekElemOff cptr 1 :: IO Float
-        z <- peekElemOff cptr 2 :: IO Float
-        w <- peekElemOff cptr 3 :: IO Float
+        x <- peekElemOff cptr 0
+        y <- peekElemOff cptr 1
+        z <- peekElemOff cptr 2
+        w <- peekElemOff cptr 3
         return $ Quaternion x y z w
       where
-        cptr = castPtr ptr :: Ptr Float
+        cptr = castPtr ptr
 
     poke ptr (Quaternion x y z w) = {-# SCC "Quaternion_poke" #-} do
         pokeElemOff cptr 0 x
@@ -281,34 +285,34 @@ instance Storable Quaternion where
         pokeElemOff cptr 2 z
         pokeElemOff cptr 3 w
       where
-        cptr = castPtr ptr :: Ptr Float
+        cptr = castPtr ptr
 
 instance Storable Matrix44 where
     sizeOf _ = sizeOf (undefined :: Float) * 16
     alignment _ = alignment (undefined :: Float)
     peek ptr = {-# SCC "Matrix44_peek" #-} do
-        r11 <- peekElemOff cptr 0 :: IO Float
-        r21 <- peekElemOff cptr 1 :: IO Float
-        r31 <- peekElemOff cptr 2 :: IO Float
-        r41 <- peekElemOff cptr 3 :: IO Float
-        r12 <- peekElemOff cptr 4 :: IO Float
-        r22 <- peekElemOff cptr 5 :: IO Float
-        r32 <- peekElemOff cptr 6 :: IO Float
-        r42 <- peekElemOff cptr 7 :: IO Float
-        r13 <- peekElemOff cptr 8 :: IO Float
-        r23 <- peekElemOff cptr 9 :: IO Float
-        r33 <- peekElemOff cptr 10 :: IO Float
-        r43 <- peekElemOff cptr 11 :: IO Float
-        r14 <- peekElemOff cptr 12 :: IO Float
-        r24 <- peekElemOff cptr 13 :: IO Float
-        r34 <- peekElemOff cptr 14 :: IO Float
-        r44 <- peekElemOff cptr 15 :: IO Float
+        r11 <- peekElemOff cptr 0
+        r21 <- peekElemOff cptr 1
+        r31 <- peekElemOff cptr 2
+        r41 <- peekElemOff cptr 3
+        r12 <- peekElemOff cptr 4
+        r22 <- peekElemOff cptr 5
+        r32 <- peekElemOff cptr 6
+        r42 <- peekElemOff cptr 7
+        r13 <- peekElemOff cptr 8
+        r23 <- peekElemOff cptr 9
+        r33 <- peekElemOff cptr 10
+        r43 <- peekElemOff cptr 11
+        r14 <- peekElemOff cptr 12
+        r24 <- peekElemOff cptr 13
+        r34 <- peekElemOff cptr 14
+        r44 <- peekElemOff cptr 15
         return $ matrix44 r11 r12 r13 r14
                           r21 r22 r23 r24
                           r31 r32 r33 r34
                           r41 r42 r43 r44
       where
-        cptr = castPtr ptr :: Ptr Float
+        cptr = castPtr ptr
 
     poke ptr mat = {-# SCC "Matrix44_poke" #-} do
         pokeElemOff cptr 0  f11
@@ -328,7 +332,7 @@ instance Storable Matrix44 where
         pokeElemOff cptr 14 f34
         pokeElemOff cptr 15 f44
       where
-        cptr = castPtr ptr :: Ptr Float
+        cptr = castPtr ptr
         f11 = m11 mat
         f21 = m21 mat
         f31 = m31 mat
@@ -350,20 +354,20 @@ instance Storable Matrix33 where
     sizeOf _ = sizeOf (undefined :: CFloat) * 9
     alignment _ = alignment (undefined :: CFloat)
     peek ptr = {-# SCC "Matrix33_peek" #-} do
-        r11 <- peekElemOff cptr 0 :: IO Float
-        r21 <- peekElemOff cptr 1 :: IO Float
-        r31 <- peekElemOff cptr 2 :: IO Float
-        r12 <- peekElemOff cptr 3 :: IO Float
-        r22 <- peekElemOff cptr 4 :: IO Float
-        r32 <- peekElemOff cptr 5 :: IO Float
-        r13 <- peekElemOff cptr 6 :: IO Float
-        r23 <- peekElemOff cptr 7 :: IO Float
-        r33 <- peekElemOff cptr 8 :: IO Float
+        r11 <- peekElemOff cptr 0
+        r21 <- peekElemOff cptr 1
+        r31 <- peekElemOff cptr 2
+        r12 <- peekElemOff cptr 3
+        r22 <- peekElemOff cptr 4
+        r32 <- peekElemOff cptr 5
+        r13 <- peekElemOff cptr 6
+        r23 <- peekElemOff cptr 7
+        r33 <- peekElemOff cptr 8
         return $ matrix33 r11 r12 r13
                           r21 r22 r23
                           r31 r32 r33
       where
-        cptr = castPtr ptr :: Ptr Float
+        cptr = castPtr ptr
 
     poke ptr mat = {-# SCC "Matrix33_poke" #-} do
         pokeElemOff cptr 0 f11
@@ -376,7 +380,7 @@ instance Storable Matrix33 where
         pokeElemOff cptr 7 f23
         pokeElemOff cptr 8 f33
       where
-        cptr = castPtr ptr :: Ptr Float
+        cptr = castPtr ptr
         f11 = n11 mat
         f21 = n21 mat
         f31 = n31 mat
@@ -386,6 +390,66 @@ instance Storable Matrix33 where
         f13 = n13 mat
         f23 = n23 mat
         f33 = n33 mat
+
+newtype instance U.MVector s Vector3 = MV_Vector3 (U.MVector s (Float, Float, Float))
+newtype instance U.Vector Vector3 = V_Vector3 (U.Vector (Float, Float, Float))
+
+instance U.Unbox Vector3
+
+instance M.MVector U.MVector Vector3 where
+  basicLength (MV_Vector3 v) = M.basicLength v
+  basicUnsafeSlice i n (MV_Vector3 v) = MV_Vector3 $ M.basicUnsafeSlice i n v
+  basicOverlaps (MV_Vector3 v1) (MV_Vector3 v2) = M.basicOverlaps v1 v2
+  basicUnsafeNew n = MV_Vector3 `liftM` M.basicUnsafeNew n
+  basicClear (MV_Vector3 v) = M.basicClear v
+  basicUnsafeCopy (MV_Vector3 v1) (MV_Vector3 v2) = M.basicUnsafeCopy v1 v2
+  basicUnsafeMove (MV_Vector3 v1) (MV_Vector3 v2) = M.basicUnsafeMove v1 v2
+  basicUnsafeGrow (MV_Vector3 v) n = MV_Vector3 `liftM` M.basicUnsafeGrow v n
+
+  basicUnsafeReplicate n (Vector3 x y z) = MV_Vector3 `liftM` M.basicUnsafeReplicate n (x,y,z)
+  basicUnsafeRead (MV_Vector3 v) i = fromTuple3 `liftM` M.basicUnsafeRead v i
+  basicUnsafeWrite (MV_Vector3 v) i (Vector3 x y z) = M.basicUnsafeWrite v i (x,y,z)
+  basicSet (MV_Vector3 v) (Vector3 x y z) = M.basicSet v (x,y,z)
+
+instance G.Vector U.Vector Vector3 where
+  basicUnsafeFreeze (MV_Vector3 v) = V_Vector3 `liftM` G.basicUnsafeFreeze v
+  basicUnsafeThaw (V_Vector3 v) = MV_Vector3 `liftM` G.basicUnsafeThaw v
+  basicLength (V_Vector3 v) = G.basicLength v
+  basicUnsafeSlice i n (V_Vector3 v) = V_Vector3 $ G.basicUnsafeSlice i n v
+  basicUnsafeCopy (MV_Vector3 mv) (V_Vector3 v) = G.basicUnsafeCopy mv v
+  elemseq _ = seq
+
+  basicUnsafeIndexM (V_Vector3 v) i = fromTuple3 `liftM` G.basicUnsafeIndexM v i
+
+newtype instance U.MVector s Quaternion = MV_Quaternion (U.MVector s (Float, Float, Float, Float))
+newtype instance U.Vector Quaternion = V_Quaternion (U.Vector (Float, Float, Float, Float))
+
+instance U.Unbox Quaternion
+
+instance M.MVector U.MVector Quaternion where
+  basicLength (MV_Quaternion v) = M.basicLength v
+  basicUnsafeSlice i n (MV_Quaternion v) = MV_Quaternion $ M.basicUnsafeSlice i n v
+  basicOverlaps (MV_Quaternion v1) (MV_Quaternion v2) = M.basicOverlaps v1 v2
+  basicUnsafeNew n = MV_Quaternion `liftM` M.basicUnsafeNew n
+  basicClear (MV_Quaternion v) = M.basicClear v
+  basicUnsafeCopy (MV_Quaternion v1) (MV_Quaternion v2) = M.basicUnsafeCopy v1 v2
+  basicUnsafeMove (MV_Quaternion v1) (MV_Quaternion v2) = M.basicUnsafeMove v1 v2
+  basicUnsafeGrow (MV_Quaternion v) n = MV_Quaternion `liftM` M.basicUnsafeGrow v n
+
+  basicUnsafeReplicate n (Quaternion x y z w) = MV_Quaternion `liftM` M.basicUnsafeReplicate n (x,y,z,w)
+  basicUnsafeRead (MV_Quaternion v) i = fromTupleq `liftM` M.basicUnsafeRead v i
+  basicUnsafeWrite (MV_Quaternion v) i (Quaternion x y z w) = M.basicUnsafeWrite v i (x,y,z,w)
+  basicSet (MV_Quaternion v) (Quaternion x y z w) = M.basicSet v (x,y,z,w)
+
+instance G.Vector U.Vector Quaternion where
+  basicUnsafeFreeze (MV_Quaternion v) = V_Quaternion `liftM` G.basicUnsafeFreeze v
+  basicUnsafeThaw (V_Quaternion v) = MV_Quaternion `liftM` G.basicUnsafeThaw v
+  basicLength (V_Quaternion v) = G.basicLength v
+  basicUnsafeSlice i n (V_Quaternion v) = V_Quaternion $ G.basicUnsafeSlice i n v
+  basicUnsafeCopy (MV_Quaternion mv) (V_Quaternion v) = G.basicUnsafeCopy mv v
+  elemseq _ = seq
+
+  basicUnsafeIndexM (V_Quaternion v) i = fromTupleq `liftM` G.basicUnsafeIndexM v i
 
 -- | Constructs a `Vector3` out of three values.
 vector3 :: Float       -- ^ X-coodinate.
