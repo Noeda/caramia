@@ -14,6 +14,7 @@ module Graphics.Caramia
     , module Graphics.Caramia.Color
     , module Graphics.Caramia.Blend
     , module Graphics.Caramia.Sync
+    , module Graphics.Caramia.Query
     )
     where
 
@@ -30,4 +31,5 @@ import Graphics.Caramia.Framebuffer
 import Graphics.Caramia.Color
 import Graphics.Caramia.Blend
 import Graphics.Caramia.Sync
+import Graphics.Caramia.Query
 
