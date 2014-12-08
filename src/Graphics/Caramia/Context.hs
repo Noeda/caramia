@@ -42,8 +42,6 @@ import System.IO.Unsafe
 import System.Environment
 import Graphics.Rendering.OpenGL.Raw.GetProcAddress
 import Foreign.Ptr
-import Foreign.Storable
-import Foreign.Marshal.Alloc
 
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap.Strict as IM
