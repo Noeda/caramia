@@ -69,6 +69,8 @@ description:
     .
     * Synchronization objects
     .
+    * Query objects
+    .
     Some notable missing features:
     .
     * Tesselation shaders. This is an OpenGL 4.x feature but we could add it.
@@ -117,6 +119,7 @@ library
                        Graphics.Caramia.Math
                        Graphics.Caramia.Memory
                        Graphics.Caramia.Prelude
+                       Graphics.Caramia.Query
                        Graphics.Caramia.Render
                        Graphics.Caramia.Render.Internal
                        Graphics.Caramia.Resource

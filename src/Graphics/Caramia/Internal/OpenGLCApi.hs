@@ -31,6 +31,8 @@ module Graphics.Caramia.Internal.OpenGLCApi
     , mglGenVertexArray
     , mglDeleteFramebuffer
     , mglGenFramebuffer
+    , mglDeleteQuery
+    , mglGenQuery
     , mglNamedBufferData
     , mglVertexArrayVertexAttribOffsetAndEnable
     , mglVertexArrayVertexAttribIOffsetAndEnable
@@ -93,6 +95,12 @@ mglGenFramebuffer = alloca $ \x_ptr -> glGenFramebuffers 1 x_ptr *> peek x_ptr
 
 mglDeleteFramebuffer :: GLuint -> IO ()
 mglDeleteFramebuffer x = with x $ \x_ptr -> glDeleteFramebuffers 1 x_ptr
+
+mglGenQuery :: IO GLuint
+mglGenQuery = alloca $ \x_ptr -> glGenQueries 1 x_ptr *> peek x_ptr
+
+mglDeleteQuery :: GLuint -> IO ()
+mglDeleteQuery x = with x $ \x_ptr -> glDeleteQueries 1 x_ptr
 
 withBoundDrawFramebuffer :: (MonadIO m, MonadMask m) => GLuint -> m a -> m a
 withBoundDrawFramebuffer x action = do
