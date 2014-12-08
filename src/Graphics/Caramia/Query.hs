@@ -16,7 +16,9 @@ module Graphics.Caramia.Query
     (
     -- * Main query operations
       withNumericQuery
+    , withNumericQuery'
     , withBooleanQuery
+    , withBooleanQuery'
     -- ** Creating queries manually
     , newNumericQuery
     , newBooleanQuery
@@ -36,6 +38,7 @@ module Graphics.Caramia.Query
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import Data.Unique
 import Foreign.Marshal.Alloc
 import Foreign.Storable
@@ -57,6 +60,12 @@ data BooleanQueryType
     = AnySamplesPassed
     deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
+-- | Which queries cannot be used together?
+illPairs :: M.Map SomeQuery (S.Set SomeQuery)
+illPairs = M.fromList
+    [ (Left SamplesPassed, S.singleton $ Right AnySamplesPassed)
+    , (Right AnySamplesPassed, S.singleton $ Left SamplesPassed) ]
+
 type SomeQuery = Either NumericQueryType BooleanQueryType
 
 -- | A query object. The type variable tells the type of the return values from
@@ -64,7 +73,8 @@ type SomeQuery = Either NumericQueryType BooleanQueryType
 data Query a = Query
     { resource :: !(Resource Query_)
     , ordIndex :: !Unique
-    , queryType :: !SomeQuery }
+    , queryType :: !SomeQuery
+    , isActive :: !(IORef Bool) }
     deriving ( Typeable )
 
 newtype Query_ = Query_ GLuint
@@ -76,14 +86,14 @@ instance Ord (Query a) where
     o1 `compare` o2 = ordIndex o1 `compare` ordIndex o2
 
 class QueryResultType a where
-    fromWord64 :: Word64 -> a
+    fromInt64 :: Int64 -> a
 
-instance QueryResultType Word64 where
-    fromWord64 = id
+instance QueryResultType Int64 where
+    fromInt64 = id
 
 instance QueryResultType Bool where
-    fromWord64 0 = False
-    fromWord64 _ = True
+    fromInt64 0 = False
+    fromInt64 _ = True
 
 numericQueryTypeToConstant :: NumericQueryType -> GLenum
 numericQueryTypeToConstant SamplesPassed = gl_SAMPLES_PASSED
@@ -111,9 +121,19 @@ eitherQueryTypeToConstant (Right qt) = booleanQueryTypeToConstant qt
 withNumericQuery :: (MonadIO m, MonadMask m)
                  => NumericQueryType
                  -> m a
-                 -> m (Query Word64, a)
+                 -> m (Query Int64, a)
 withNumericQuery querytype action = mask $ \restore ->
     newNumericQuery querytype >>= withQuery restore action
+
+-- | Same as `withNumericQuery` but throws away the result of the action
+-- itself.
+withNumericQuery' :: (MonadIO m, MonadMask m)
+                  => NumericQueryType
+                  -> m a
+                  -> m (Query Int64)
+withNumericQuery' qt action = do
+    (x, _) <- withNumericQuery qt action
+    return x
 
 -- | Same as `withNumericQuery`, but uses boolean queries, whose results is
 -- either `True` or `False`.
@@ -123,6 +143,16 @@ withBooleanQuery :: (MonadIO m, MonadMask m)
                  -> m (Query Bool, a)
 withBooleanQuery querytype action = mask $ \restore ->
     newBooleanQuery querytype >>= withQuery restore action
+
+-- | Same as `withBooleanQuery` but throws away the result of the action
+-- itself.
+withBooleanQuery' :: (MonadIO m, MonadMask m)
+                  => BooleanQueryType
+                  -> m a
+                  -> m (Query Bool)
+withBooleanQuery' qt action = do
+    (x, _) <- withBooleanQuery qt action
+    return x
 
 withQuery :: (MonadIO m, MonadMask m)
           => (forall a. m a -> m a)
@@ -154,6 +184,10 @@ removeQuery qt key = do
               _ -> old
         , () )
 
+prettyShow :: SomeQuery -> String
+prettyShow (Left x) = show x
+prettyShow (Right x) = show x
+
 addQuery :: SomeQuery -> Unique -> IO ()
 addQuery qt key = do
     ref <- getActiveQueries
@@ -161,9 +195,14 @@ addQuery qt key = do
     -- the IORef
     old <- readIORef ref
     case M.lookup qt old of
-        Just x | x == key ->
+        Just _ ->
             error $ "addQuery: attempted to have two queries of " <>
                     "the same type active at once."
+        _ -> return ()
+    case M.lookup qt illPairs of
+        Just x | Just y <- find (flip M.member old) x ->
+            error $ "addQuery: cannot use " <> prettyShow qt <>
+                    " with " <> prettyShow y <> " at the same time."
         _ -> return ()
     atomicModifyIORef' ref $ \old -> ( M.insert qt key old, () )
 
@@ -174,7 +213,7 @@ addQuery qt key = do
 --
 -- You may want to use `withNumericQuery` instead, which begins and ends
 -- the query for you.
-newNumericQuery :: MonadIO m => NumericQueryType -> m (Query Word64)
+newNumericQuery :: MonadIO m => NumericQueryType -> m (Query Int64)
 newNumericQuery = newQuery . Left
 
 -- | Same as `newNumericQuery` but for boolean queries.
@@ -195,14 +234,19 @@ newQuery qt =
                                     removeQuery qt unique
                                     mglDeleteQuery queryname)
                                 (return ())
+        ref <- newIORef False
         return $ Query { resource = resource
                        , ordIndex = unique
+                       , isActive = ref
                        , queryType = qt }
 
 -- | Begins a query. A query can only be started once.
 beginQuery :: MonadIO m => Query a -> m ()
 beginQuery qt = liftIO $ mask_ $ do
+    is_active <- readIORef (isActive qt)
+    when is_active $ error "beginQuery: query object is active already."
     withResource (resource qt) $ \(Query_ queryname) -> do
+        writeIORef (isActive qt) True
         addQuery (queryType qt) (ordIndex qt)
         glBeginQuery (eitherQueryTypeToConstant $ queryType qt)
                      queryname
@@ -210,8 +254,11 @@ beginQuery qt = liftIO $ mask_ $ do
 -- | Ends a query.
 endQuery :: MonadIO m => Query a -> m ()
 endQuery qt = liftIO $ mask_ $ do
+    is_active <- readIORef (isActive qt)
+    unless is_active $ error "endQuery: query object was not active."
     withResource (resource qt) $ \_ -> do
         -- curiously the query object itself is not actually used directly
+        writeIORef (isActive qt) False
         glEndQuery (eitherQueryTypeToConstant $ queryType qt)
         removeQuery (queryType qt) (ordIndex qt)
 
@@ -240,7 +287,7 @@ getResults (Query { resource = resource }) =
 actuallyGetResults :: QueryResultType a => GLuint -> IO a
 actuallyGetResults queryname = do
     result <- alloca $ \v64 -> do
-        glGetQueryObjectui64v queryname gl_QUERY_RESULT v64
+        glGetQueryObjecti64v queryname gl_QUERY_RESULT v64
         peek v64
-    return $ fromWord64 result
+    return $ fromInt64 result
 
