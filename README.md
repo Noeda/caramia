@@ -31,7 +31,8 @@ Here are some curious features that you might find useful.
     OpenGL 3.3 context. You may be interested at looking at the tests in this
     package to see how to use this with the `sdl2` package.
 
-  * Operations are in the `IO` monad. No messing around with custom monads.
+  * Operations are generalized over `MonadIO`. Works on top of pure `IO` and
+    also in your custom monad stacks, if they have `MonadIO` at bottom.
 
 (At least) the following OpenGL concepts are present in this library:
 
