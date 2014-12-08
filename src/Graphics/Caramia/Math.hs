@@ -1028,7 +1028,7 @@ distance33 !mat1 !mat2 = {-# SCC "distance33" #-}
     s33 = n33 mat2
 
 -- | Returns the Euclidean distance between two 4x4 matrices, where the
--- matrices are taken to be 9-vectors.
+-- matrices are taken to be 16-vectors.
 --
 -- This can be used as a rough estimate how close, or similar two matrices are
 -- to each other.
