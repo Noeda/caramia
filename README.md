@@ -54,6 +54,8 @@ Here are some curious features that you might find useful.
 
   * Synchronization objects
 
+  * Query objects
+
 Some notable missing features:
 
   * Tesselation shaders. This is an OpenGL 4.x feature but we could add it.
