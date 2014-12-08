@@ -47,27 +47,24 @@ module Graphics.Caramia.Shader
     )
     where
 
-import Graphics.Caramia.Prelude
-
-import Graphics.Caramia.Shader.Internal
-
-import Graphics.Caramia.Context
-import Graphics.Caramia.Resource
-import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Math
-
-import GHC.Float ( double2Float )
-
-import Control.Monad.IO.Class
-import Control.Monad.Catch
-import Foreign
-import Foreign.C.Types
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Foreign as T
+import Control.Monad.Catch
+import Control.Monad.IO.Class
+import Foreign
+import Foreign.C.Types
+import GHC.Float ( double2Float )
+import Graphics.Caramia.Color
+import Graphics.Caramia.Context
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Math
+import Graphics.Caramia.Resource
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Shader.Internal
 
 type UniformLocation = Int
 
@@ -439,6 +436,9 @@ instance Uniformable (Float, Float, Float, Float) where
                             (CFloat f2)
                             (CFloat f3)
                             (CFloat f4)
+instance Uniformable Color where
+    setUniform_ program loc (viewRgba -> tuple) =
+        setUniform_ program loc tuple
 instance Uniformable CFloat where
     setUniform_ = mglProgramUniform1f
 instance Uniformable (CFloat, CFloat) where
