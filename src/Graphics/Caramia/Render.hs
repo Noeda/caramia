@@ -54,6 +54,7 @@ import Graphics.Caramia.Texture.Internal ( withTextureBinding )
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Buffer.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
+import Control.Monad.Trans.Class
 import Control.Monad.IO.Class
 import Control.Monad.Catch
 import Control.Monad.Trans.State.Strict
@@ -294,6 +295,9 @@ type Draw = DrawT IO
 -- One useful thing to do is to set uniforms to pipelines with `setUniform`.
 instance MonadIO m => MonadIO (DrawT m) where
   liftIO = DrawT . liftIO
+
+instance MonadTrans DrawT where
+  lift = DrawT . lift
 
 -- | Runs a drawing specification.
 --
