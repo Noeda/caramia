@@ -14,12 +14,13 @@ module Graphics.Caramia.Render
     , DrawT()
     , Draw
     , drawR
-    , setPipeline
-    , setTextureBindings
     , setBlending
-    , setTargetFramebuffer
     , setFragmentPassTests
+    , setPipeline
     , setPolygonOffset
+    , setPrimitiveRestart
+    , setTargetFramebuffer
+    , setTextureBindings
     -- * Specifying what to draw
     , DrawCommand(..)
     , drawCommand
@@ -287,6 +288,7 @@ data DrawState = DrawState
     , boundBlending :: !BlendSpec
     , boundFramebuffer :: !FBuf.Framebuffer
     , boundFragmentPassTests :: !FragmentPassTests
+    , boundPrimitiveRestart :: !(Maybe Word32)
     , activeTexture :: !GLuint }
     deriving ( Eq, Ord, Typeable )
 
@@ -332,6 +334,7 @@ runDraws params (DrawT cmd_stream) =
                 , boundBlending = blending params
                 , boundFramebuffer = targetFramebuffer params
                 , boundTextures = bindTextures params
+                , boundPrimitiveRestart = Nothing
                 , activeTexture = 0
                 }
         st `seq` return result
@@ -393,6 +396,21 @@ setActiveTexture unit = DrawT $ do
     when (activeTexture state /= unit) $
         glActiveTexture (gl_TEXTURE0 + unit) >>
         modify (\old -> old { activeTexture = unit })
+
+-- | Sets new primitive restart mode.
+setPrimitiveRestart :: MonadIO m => Maybe Word32 -> DrawT m ()
+setPrimitiveRestart restart = DrawT $ do
+    pr <- return . boundPrimitiveRestart =<< get
+    liftIO $ case (pr, restart) of
+        (Nothing, Just x) -> do
+            glEnable gl_PRIMITIVE_RESTART
+            glPrimitiveRestartIndex (fromIntegral x)
+        (Just _, Nothing) -> do
+            glDisable gl_PRIMITIVE_RESTART
+        (Just y, Just x) | y /= x ->
+            glPrimitiveRestartIndex (fromIntegral x)
+        _ -> return ()
+    modify (\old -> old { boundPrimitiveRestart = restart })
 
 -- | Sets new texture bindings.
 setTextureBindings :: MonadIO m => IM.IntMap Texture -> DrawT m ()
