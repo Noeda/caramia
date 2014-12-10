@@ -334,7 +334,7 @@ runDraws params (DrawT cmd_stream) =
                 , boundBlending = blending params
                 , boundFramebuffer = targetFramebuffer params
                 , boundTextures = bindTextures params
-                , boundPrimitiveRestart = Nothing
+                , boundPrimitiveRestart = primitiveRestart params
                 , activeTexture = 0
                 }
         st `seq` return result
