@@ -149,6 +149,13 @@ data DrawParams = DrawParams
     --
     -- By default this is (0, 0) (that is, do nothing). See @ glPolygonOffset @
     -- for the meaning of these values.
+    , primitiveRestart :: !(Maybe Word32)
+    -- ^ Use primitive restart?
+    --
+    -- <https://www.opengl.org/wiki/Vertex_Rendering#Primitive_Restart>
+    --
+    -- Is this is `Nothing` (the default) then primitive restart will not be
+    -- used.
     }
     deriving ( Eq, Ord, Typeable )
 
@@ -160,6 +167,8 @@ data DrawParams = DrawParams
 --
 -- Blending mode is premultiplied alpha.
 --
+-- No primitive restart is used.
+--
 -- `targetFramebuffer` is the screen framebuffer.
 defaultDrawParams :: DrawParams
 defaultDrawParams = DrawParams {
@@ -168,7 +177,8 @@ defaultDrawParams = DrawParams {
   , blending = preMultipliedAlpha
   , bindTextures = IM.empty
   , targetFramebuffer = FBuf.screenFramebuffer
-  , polygonOffset = (0, 0) }
+  , polygonOffset = (0, 0)
+  , primitiveRestart = Nothing }
 
 -- | Contains a specification of what to draw.
 --
@@ -334,6 +344,7 @@ withParams (DrawParams {..}) action =
     withBlendings blending $
     withBoundTextures bindTextures $
     withBoundElementBuffer 0 $
+    withPrimitiveRestart Nothing $
     withPolygonOffset polygonOffset $ do
         old_active <- gi gl_ACTIVE_TEXTURE
         -- Framebuffer may not restore the viewport so we have to do it here.
@@ -349,6 +360,22 @@ withParams (DrawParams {..}) action =
                 $ do
                     glActiveTexture old_active
                     glViewport ox oy ow oh
+
+withPrimitiveRestart :: (MonadIO m, MonadMask m) => Maybe Word32 -> m a -> m a
+withPrimitiveRestart pr action = do
+    old_primitive_restart_enabled <- liftIO $ glIsEnabled gl_PRIMITIVE_RESTART
+    old_i <- gi gl_PRIMITIVE_RESTART_INDEX
+    finally (activate >> action)
+            (do if old_primitive_restart_enabled /= 0
+                  then glEnable gl_PRIMITIVE_RESTART
+                  else glDisable gl_PRIMITIVE_RESTART
+                glPrimitiveRestartIndex old_i)
+  where
+    activate = case pr of
+        Nothing -> glDisable gl_PRIMITIVE_RESTART
+        Just value -> do
+            glEnable gl_PRIMITIVE_RESTART
+            glPrimitiveRestartIndex (fromIntegral value)
 
 withPolygonOffset :: (MonadIO m, MonadMask m) => (Float, Float) -> m a -> m a
 withPolygonOffset (factor, units) action = do
