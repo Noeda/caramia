@@ -344,7 +344,7 @@ withParams (DrawParams {..}) action =
     withBlendings blending $
     withBoundTextures bindTextures $
     withBoundElementBuffer 0 $
-    withPrimitiveRestart Nothing $
+    withPrimitiveRestart primitiveRestart $
     withPolygonOffset polygonOffset $ do
         old_active <- gi gl_ACTIVE_TEXTURE
         -- Framebuffer may not restore the viewport so we have to do it here.
