@@ -23,8 +23,8 @@ module Graphics.Caramia.Color
     , viewAlpha )
     where
 
+import Control.Lens
 import Graphics.Caramia.Prelude
-import Graphics.Caramia.Internal.Lens
 import Foreign.Storable
 import Foreign.Ptr
 

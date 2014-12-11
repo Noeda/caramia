@@ -113,11 +113,9 @@ library
                        Graphics.Caramia.ImageFormats.Internal
                        Graphics.Caramia.Internal.ContextLocalData
                        Graphics.Caramia.Internal.FlextGL
-                       Graphics.Caramia.Internal.Lens
                        Graphics.Caramia.Internal.OpenGLCApi
                        Graphics.Caramia.Internal.OpenGLDebug
                        Graphics.Caramia.Internal.TexStorage
-                       Graphics.Caramia.Math
                        Graphics.Caramia.Memory
                        Graphics.Caramia.Prelude
                        Graphics.Caramia.Query
@@ -138,6 +136,8 @@ library
                       ,bytestring   >=0.10 && <1.0
                       ,containers   >=0.5 && <1.0
                       ,exceptions   >=0.6 && <1.0
+                      ,lens         >=4.6  && <5.0
+                      ,linear       >=1.15 && <2.0
                       ,OpenGLRaw    >=1.5 && <2.0
                       ,semigroups   >=0.15 && <1.0
                       ,text         >=0.9 && <2.0
@@ -161,6 +161,7 @@ executable smoke-test
   hs-source-dirs:      demos/smoke-test
   if flag(build-toys)
     build-depends:       base, caramia
+                        ,linear >=1.15 && <2.0
                         ,sdl2 ==1.2.*
                         ,text >=0.9 && <2.0
   else

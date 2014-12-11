@@ -61,10 +61,15 @@ import GHC.Float ( double2Float )
 import Graphics.Caramia.Color
 import Graphics.Caramia.Context
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Math
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Shader.Internal
+import Linear.Matrix
+import Linear.Quaternion
+import Linear.V1
+import Linear.V2
+import Linear.V3
+import Linear.V4
 
 type UniformLocation = Int
 
@@ -490,52 +495,155 @@ instance Uniformable (CDouble, CDouble, CDouble, CDouble) where
                             (cdouble2CFloat f3)
                             (cdouble2CFloat f4)
 
-instance Uniformable Vector3 where
-    setUniform_ program loc (toTuple3 -> tuple) =
-        setUniform_ program loc tuple
+double2FloatMap :: Functor a => a Double -> a Float
+double2FloatMap = fmap double2Float
+{-# INLINE double2FloatMap #-}
 
-instance Uniformable Quaternion where
-    setUniform_ program loc (toTupleq -> tuple) =
-        setUniform_ program loc tuple
+double2FloatMapMap :: (Functor a, Functor b) => a (b Double) -> a (b Float)
+double2FloatMapMap = fmap (fmap double2Float)
+{-# INLINE double2FloatMapMap #-}
 
-instance Uniformable Matrix33 where
-    setUniform_ program loc m33 =
-        withMatrix33Ptr m33 $
-            mglProgramUniformMatrix3fv program loc 1
-                 (fromIntegral gl_FALSE)
+cfloatToFloatMap :: Functor a => a CFloat -> a Float
+cfloatToFloatMap = fmap unwrap where
+  unwrap (CFloat x) = x
+{-# INLINE cfloatToFloatMap #-}
 
-instance Uniformable Matrix44 where
+cfloatToFloatMapMap :: (Functor a, Functor b) => a (b CFloat) -> a (b Float)
+cfloatToFloatMapMap = fmap (fmap unwrap) where
+  unwrap (CFloat x) = x
+{-# INLINE cfloatToFloatMapMap #-}
+
+cdoubleToDoubleMap :: Functor a => a CDouble -> a Double
+cdoubleToDoubleMap = fmap unwrap where
+  unwrap (CDouble x) = x
+{-# INLINE cdoubleToDoubleMap #-}
+
+cdoubleToDoubleMapMap :: (Functor a, Functor b) => a (b CDouble) -> a (b Double)
+cdoubleToDoubleMapMap = fmap (fmap unwrap) where
+  unwrap (CDouble x) = x
+{-# INLINE cdoubleToDoubleMapMap #-}
+
+instance Uniformable (Quaternion Float) where
+    setUniform_ program loc (Quaternion w (V3 x y z)) =
+        mglProgramUniform4f program loc (CFloat x) (CFloat y) (CFloat z) (CFloat w)
+
+instance Uniformable (Quaternion Double) where
+    setUniform_ program loc (double2FloatMap -> Quaternion w (V3 x y z)) =
+        mglProgramUniform4f program loc (CFloat x) (CFloat y) (CFloat z) (CFloat w)
+
+instance Uniformable (Quaternion CFloat) where
+    setUniform_ program loc (Quaternion w (V3 x y z)) =
+        mglProgramUniform4f program loc x y z w
+
+instance Uniformable (Quaternion CDouble) where
+    setUniform_ program loc (cdoubleToDoubleMap -> q) =
+        setUniform_ program loc q
+
+instance Uniformable (V1 CFloat) where
+    setUniform_ program loc (cfloatToFloatMap -> vec) =
+        setUniform_ program loc vec
+
+instance Uniformable (V2 CFloat) where
+    setUniform_ program loc (cfloatToFloatMap -> vec) =
+        setUniform_ program loc vec
+
+instance Uniformable (V3 CFloat) where
+    setUniform_ program loc (cfloatToFloatMap -> vec) =
+        setUniform_ program loc vec
+
+instance Uniformable (V4 CFloat) where
+    setUniform_ program loc (cfloatToFloatMap -> vec) =
+        setUniform_ program loc vec
+
+instance Uniformable (V1 CDouble) where
+    setUniform_ program loc (cdoubleToDoubleMap -> vec) =
+        setUniform_ program loc vec
+
+instance Uniformable (V2 CDouble) where
+    setUniform_ program loc (cdoubleToDoubleMap -> vec) =
+        setUniform_ program loc vec
+
+instance Uniformable (V3 CDouble) where
+    setUniform_ program loc (cdoubleToDoubleMap -> vec) =
+        setUniform_ program loc vec
+
+instance Uniformable (V4 CDouble) where
+    setUniform_ program loc (cdoubleToDoubleMap -> vec) =
+        setUniform_ program loc vec
+
+instance Uniformable (M33 CFloat) where
+    setUniform_ program loc (cfloatToFloatMapMap -> m33) =
+        setUniform_ program loc m33
+
+instance Uniformable (M44 CFloat) where
+    setUniform_ program loc (cfloatToFloatMapMap -> m44) =
+        setUniform_ program loc m44
+
+instance Uniformable (M33 CDouble) where
+    setUniform_ program loc (cdoubleToDoubleMapMap -> m33) =
+        setUniform_ program loc m33
+
+instance Uniformable (M44 CDouble) where
+    setUniform_ program loc (cdoubleToDoubleMapMap -> m44) =
+        setUniform_ program loc m44
+
+instance Uniformable (V1 Double) where
+    setUniform_ program loc (double2FloatMap -> V1 f1) =
+        mglProgramUniform1f program loc (CFloat f1)
+
+instance Uniformable (V2 Double) where
+    setUniform_ program loc (double2FloatMap -> V2 f1 f2) =
+        mglProgramUniform2f program loc (CFloat f1) (CFloat f2)
+
+instance Uniformable (V3 Double) where
+    setUniform_ program loc (double2FloatMap -> V3 f1 f2 f3) =
+        mglProgramUniform3f program loc (CFloat f1) (CFloat f2) (CFloat f3)
+
+instance Uniformable (V4 Double) where
+    setUniform_ program loc (double2FloatMap -> V4 f1 f2 f3 f4) =
+        mglProgramUniform4f program loc (CFloat f1) (CFloat f2) (CFloat f3) (CFloat f4)
+
+instance Uniformable (M33 Double) where
+    setUniform_ program loc (double2FloatMapMap -> m33) =
+        with m33 $
+            mglProgramUniformMatrix3fv program loc 1 (fromIntegral gl_FALSE) . castPtr
+
+instance Uniformable (M44 Double) where
     setUniform_ program loc m44 =
-        withMatrix44Ptr m44 $ mglProgramUniformMatrix4fv program loc 1
-            (fromIntegral gl_FALSE)
+        with (fmap (fmap double2Float) m44) $
+            mglProgramUniformMatrix4fv program loc 1 (fromIntegral gl_FALSE) . castPtr
 
--- these are for RULES firing
-newtype Transpose33 = Transpose33 Matrix33
-newtype Transpose44 = Transpose44 Matrix44
+instance Uniformable (V1 Float) where
+    setUniform_ program loc (V1 f1) =
+        mglProgramUniform1f program loc (CFloat f1)
 
-instance Uniformable Transpose33 where
-    setUniform_ program loc (Transpose33 m33) =
-        withMatrix33Ptr m33 $
-            mglProgramUniformMatrix3fv program loc 1 (fromIntegral gl_TRUE)
+instance Uniformable (V2 Float) where
+    setUniform_ program loc (V2 f1 f2) =
+        mglProgramUniform2f program loc (CFloat f1) (CFloat f2)
 
-instance Uniformable Transpose44 where
-    setUniform_ program loc (Transpose44 m44) =
-        withMatrix44Ptr m44 $ mglProgramUniformMatrix4fv program loc 1
-            (fromIntegral gl_TRUE)
+instance Uniformable (V3 Float) where
+    setUniform_ program loc (V3 f1 f2 f3) =
+        mglProgramUniform3f program loc (CFloat f1) (CFloat f2) (CFloat f3)
+
+instance Uniformable (V4 Float) where
+    setUniform_ program loc (V4 f1 f2 f3 f4) =
+        mglProgramUniform4f program loc (CFloat f1) (CFloat f2) (CFloat f3) (CFloat f4)
+
+instance Uniformable (M33 Float) where
+    setUniform_ program loc m33 =
+        with m33 $
+            mglProgramUniformMatrix3fv program loc 1 (fromIntegral gl_FALSE) . castPtr
+
+instance Uniformable (M44 Float) where
+    setUniform_ program loc m44 =
+        with m44 $
+            mglProgramUniformMatrix4fv program loc 1 (fromIntegral gl_FALSE) . castPtr
 
 double2CFloat :: Double -> CFloat
 double2CFloat dbl = CFloat $ double2Float dbl
 
 cdouble2CFloat :: CDouble -> CFloat
 cdouble2CFloat (CDouble dbl) = CFloat $ double2Float dbl
-
-{-# RULES "transpose/glProgramUniformMatrix3fv" forall (a :: Matrix33) b c.
-        setUniform (transpose33 a) b c =
-        setUniform (Transpose33 a) b c #-}
-
-{-# RULES "transpose/glProgramUniformMatrix4fv" forall (a :: Matrix44) b c.
-        setUniform (transpose44 a) b c =
-        setUniform (Transpose44 a) b c #-}
 
 -- | Returns a uniform location for a given name.
 --

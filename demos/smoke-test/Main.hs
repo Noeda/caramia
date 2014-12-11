@@ -2,16 +2,16 @@
 
 module Main ( main ) where
 
-import Graphics.Caramia.Prelude hiding ( init )
-import Graphics.Caramia
-import Graphics.Caramia.Math
-
-import Graphics.UI.SDL
-import qualified Graphics.UI.SDL as SDL
-import Foreign.C.String
 import Control.Exception
 import Data.Bits
 import qualified Data.Text as T
+import Foreign.C.String
+import Foreign.C.Types
+import Graphics.Caramia.Prelude hiding ( init )
+import Graphics.Caramia
+import Graphics.UI.SDL
+import qualified Graphics.UI.SDL as SDL
+import Linear.Matrix
 import System.Mem
 
 main :: IO ()
@@ -66,16 +66,16 @@ program =
                 sh1 <- newShader fragmentShaderSrc Fragment
                 pipeline <- newPipeline [sh1]
                 loc <- getUniformLocation "tutturuu" pipeline
-                setUniform (transpose44 identity44)
+                setUniform (transpose eye4 :: M44 CFloat)
                            loc
                            pipeline
-                setUniform identity44
+                setUniform (eye4 :: M44 CDouble)
                            loc
                            pipeline
-                setUniform identity33
+                setUniform (eye3 :: M33 Float)
                            loc
                            pipeline
-                setUniform (transpose33 identity33)
+                setUniform (transpose eye3 :: M33 Double)
                            loc
                            pipeline
 
