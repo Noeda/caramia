@@ -5,14 +5,15 @@
 -- <https://www.opengl.org/wiki/Buffer_Object>
 --
 
--- TODO: Add glBufferStorage based implementation.
--- OpenGLRaw (1.4.0.0) doesn't have this yet.
-
 {-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
 
 module Graphics.Caramia.Buffer
     ( -- * Creation
       newBuffer
+    , newBufferFromBS
+    , newBufferFromList
+    , newBufferFromVector
+    -- ** Types
     , Buffer()
     , AccessFrequency(..)
     , AccessNature(..)
@@ -38,19 +39,18 @@ module Graphics.Caramia.Buffer
     )
     where
 
-import Graphics.Caramia.Prelude hiding ( map )
-import Graphics.Caramia.Buffer.Internal
-
-import Graphics.Caramia.Resource
-import Graphics.Caramia.Internal.OpenGLCApi
-
-import qualified Data.Vector.Storable as V
-import qualified Data.Set as S
-
-import Data.Bits
-import Foreign
 import Control.Monad.Catch
 import Control.Monad.IO.Class
+import Data.Bits
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Unsafe as B
+import qualified Data.Set as S
+import qualified Data.Vector.Storable as V
+import Foreign
+import Graphics.Caramia.Buffer.Internal
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude hiding ( map )
+import Graphics.Caramia.Resource
 
 -- | The frequency of access to a buffer.
 --
@@ -181,6 +181,58 @@ newBuffer creation
     assertNotNull ptr
         | ptr == nullPtr = error "newBuffer: initial data is a null pointer."
         | otherwise = ptr
+
+-- | Creates a buffer from a storable vector.
+--
+-- This is a convenience function.
+newBufferFromVector :: (Storable a, MonadIO m)
+                    => V.Vector a
+                    -> (BufferCreation -> BufferCreation)
+                    -- ^ A hook to modify `BufferCreation`. You can use `id`.
+                    -- By default all access is forbidden and buffer usage is
+                    -- static, draw. Don't shrink buffer size or this may
+                    -- crash.
+                    -> m Buffer
+newBufferFromVector vec modifier = liftIO $
+    V.unsafeWith vec $ \src_ptr ->
+        newBuffer (modifier defaultBufferCreation {
+            accessHints = (Static, Draw)
+          , size = byte_size
+          , initialData = Just $ castPtr src_ptr
+          , accessFlags = NoAccess })
+  where
+    byte_size = V.length vec * sizeOf (undefined `asTypeOf` (vec V.! 0))
+
+-- | Creates a buffer from a list.
+--
+-- The principle is the same as in `newBufferFromVector`.
+newBufferFromList :: (Storable a, MonadIO m)
+                  => [a]
+                  -> (BufferCreation -> BufferCreation)
+                  -> m Buffer
+newBufferFromList lst modifier = liftIO $
+    withArrayLen lst $ \num_items ptr ->
+        let byte_size = num_items*sizeOf (undefined `asTypeOf` (lst !! 0))
+         in newBuffer (modifier defaultBufferCreation {
+             accessHints = (Static, Draw)
+           , size = byte_size
+           , initialData = Just $ castPtr ptr
+           , accessFlags = NoAccess })
+
+-- | Creates a buffer from a strict bytestring.
+--
+-- The principle is the same as in `newBufferFromVector`.
+newBufferFromBS :: MonadIO m
+                => B.ByteString
+                -> (BufferCreation -> BufferCreation)
+                -> m Buffer
+newBufferFromBS bs modifier = liftIO $
+    B.unsafeUseAsCStringLen bs $ \(ptr, size) ->
+        newBuffer (modifier defaultBufferCreation {
+            accessHints = (Static, Draw)
+          , size = size
+          , initialData = Just $ castPtr ptr
+          , accessFlags = NoAccess })
 
 -- | Same as `bufferMap` but allows more control over mapping.
 --
