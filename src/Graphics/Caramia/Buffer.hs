@@ -171,6 +171,20 @@ newBuffer creation
     (usage, access) = accessHints creation
 
     createBuffer = do
+        fancy_buffers <- has_GL_ARB_buffer_storage
+        if fancy_buffers
+          then createBufferByBufferStorage
+          else createBufferOldWay
+
+    createBufferByBufferStorage = do
+        buf <- mglGenBuffer
+        mglNamedBufferStorage buf
+                              safe_size
+                              (castPtr initial_data)
+                              (toConstantF $ accessFlags creation)
+        return (Buffer_ buf)
+
+    createBufferOldWay = do
         buf <- mglGenBuffer
         mglNamedBufferData buf
                            safe_size

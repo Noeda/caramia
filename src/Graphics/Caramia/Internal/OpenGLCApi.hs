@@ -34,6 +34,7 @@ module Graphics.Caramia.Internal.OpenGLCApi
     , mglDeleteQuery
     , mglGenQuery
     , mglNamedBufferData
+    , mglNamedBufferStorage
     , mglVertexArrayVertexAttribOffsetAndEnable
     , mglVertexArrayVertexAttribIOffsetAndEnable
     , mglVertexArrayVertexAttribDivisor
@@ -183,6 +184,17 @@ mglVertexArrayVertexAttribIOffsetAndEnable
             glEnableVertexAttribArray index
             glVertexAttribIPointer index size dtype stride
                                    (intPtrToPtr $ fromIntegral offset)
+
+mglNamedBufferStorage :: GLuint
+                      -> GLsizeiptr
+                      -> Ptr ()
+                      -> GLbitfield
+                      -> IO ()
+mglNamedBufferStorage buf size ptr flags =
+    whenExt has_GL_EXT_direct_state_access
+        (glNamedBufferStorageEXT buf size ptr flags)
+        (withBoundBuffer buf $
+         glBufferStorage gl_ARRAY_BUFFER size ptr flags)
 
 mglNamedBufferData :: GLuint
                    -> GLsizeiptr
