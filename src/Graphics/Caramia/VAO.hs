@@ -87,15 +87,15 @@ isIntegerType SFloat = False
 isIntegerType SDouble = False
 
 toConstant :: SourceType -> GLenum
-toConstant SWord8 = gl_UNSIGNED_BYTE
-toConstant SWord16 = gl_UNSIGNED_SHORT
-toConstant SWord32 = gl_UNSIGNED_INT
-toConstant SInt8 = gl_BYTE
-toConstant SInt16 = gl_SHORT
-toConstant SInt32 = gl_INT
-toConstant SHalfFloat = gl_HALF_FLOAT
-toConstant SFloat = gl_FLOAT
-toConstant SDouble = gl_DOUBLE
+toConstant SWord8 = GL_UNSIGNED_BYTE
+toConstant SWord16 = GL_UNSIGNED_SHORT
+toConstant SWord32 = GL_UNSIGNED_INT
+toConstant SInt8 = GL_BYTE
+toConstant SInt16 = GL_SHORT
+toConstant SInt32 = GL_INT
+toConstant SHalfFloat = GL_HALF_FLOAT
+toConstant SFloat = GL_FLOAT
+toConstant SDouble = GL_DOUBLE
 
 -- | Class of types that are valid for sourcing data.
 --
@@ -263,9 +263,9 @@ sourceVertexData buffer sourcing vao = liftIO $ mask_ $
             (safeFromIntegral $ attributeIndex sourcing)
             (safeFromIntegral ncomponents)
             (toConstant stype)
-            (fromIntegral $ if isIntegerType stype && normalize sourcing
-                              then gl_TRUE
-                              else gl_FALSE)
+            (if isIntegerType stype && normalize sourcing
+             then GL_TRUE
+             else GL_FALSE)
             (safeFromIntegral $ stride sourcing)
             (safeFromIntegral $ offset sourcing)
 

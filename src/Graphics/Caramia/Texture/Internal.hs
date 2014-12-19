@@ -87,42 +87,42 @@ withBinding tex tex_binding tex_name action = do
          action)
         (glBindTexture tex old)
 
--- | Given a bind location (such as gl_TEXTURE_3D), returns the query enum that
+-- | Given a bind location (such as GL_TEXTURE_3D), returns the query enum that
 -- retrieves the current binding from glGetIntegerv (such as
--- gl_TEXTURE_BINDING_3D).
+-- GL_TEXTURE_BINDING_3D).
 bindingQueryPoint :: GLenum -> GLenum
 bindingQueryPoint x =
-    if | x == gl_TEXTURE_1D -> gl_TEXTURE_BINDING_1D
-       | x == gl_TEXTURE_2D -> gl_TEXTURE_BINDING_2D
-       | x == gl_TEXTURE_3D -> gl_TEXTURE_BINDING_3D
-       | x == gl_TEXTURE_1D_ARRAY -> gl_TEXTURE_BINDING_1D_ARRAY
-       | x == gl_TEXTURE_2D_ARRAY -> gl_TEXTURE_BINDING_2D_ARRAY
-       | x == gl_TEXTURE_2D_MULTISAMPLE -> gl_TEXTURE_BINDING_2D_MULTISAMPLE
-       | x == gl_TEXTURE_2D_MULTISAMPLE_ARRAY -> gl_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
-       | x == gl_TEXTURE_CUBE_MAP -> gl_TEXTURE_BINDING_CUBE_MAP
-       | x == gl_TEXTURE_BUFFER -> gl_TEXTURE_BINDING_BUFFER
+    if | x == GL_TEXTURE_1D -> GL_TEXTURE_BINDING_1D
+       | x == GL_TEXTURE_2D -> GL_TEXTURE_BINDING_2D
+       | x == GL_TEXTURE_3D -> GL_TEXTURE_BINDING_3D
+       | x == GL_TEXTURE_1D_ARRAY -> GL_TEXTURE_BINDING_1D_ARRAY
+       | x == GL_TEXTURE_2D_ARRAY -> GL_TEXTURE_BINDING_2D_ARRAY
+       | x == GL_TEXTURE_2D_MULTISAMPLE -> GL_TEXTURE_BINDING_2D_MULTISAMPLE
+       | x == GL_TEXTURE_2D_MULTISAMPLE_ARRAY -> GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
+       | x == GL_TEXTURE_CUBE_MAP -> GL_TEXTURE_BINDING_CUBE_MAP
+       | x == GL_TEXTURE_BUFFER -> GL_TEXTURE_BINDING_BUFFER
        | otherwise ->
            error $ "bindingQueryPoint: unknown texture target: " <> show x
 
 getTopologyBindPoints :: Topology -> (GLenum, GLenum)
 getTopologyBindPoints = \case
-    Tex1D {..} -> (gl_TEXTURE_1D, gl_TEXTURE_BINDING_1D)
-    Tex2D {..} -> (gl_TEXTURE_2D, gl_TEXTURE_BINDING_2D)
-    Tex3D {..} -> (gl_TEXTURE_3D, gl_TEXTURE_BINDING_3D)
-    Tex1DArray {..} -> (gl_TEXTURE_1D_ARRAY, gl_TEXTURE_BINDING_1D_ARRAY)
-    Tex2DArray {..} -> (gl_TEXTURE_2D_ARRAY, gl_TEXTURE_BINDING_2D_ARRAY)
+    Tex1D {..} -> (GL_TEXTURE_1D, GL_TEXTURE_BINDING_1D)
+    Tex2D {..} -> (GL_TEXTURE_2D, GL_TEXTURE_BINDING_2D)
+    Tex3D {..} -> (GL_TEXTURE_3D, GL_TEXTURE_BINDING_3D)
+    Tex1DArray {..} -> (GL_TEXTURE_1D_ARRAY, GL_TEXTURE_BINDING_1D_ARRAY)
+    Tex2DArray {..} -> (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BINDING_2D_ARRAY)
     Tex2DMultisample {..} ->
-        (gl_TEXTURE_2D_MULTISAMPLE
-        ,gl_TEXTURE_BINDING_2D_MULTISAMPLE)
+        (GL_TEXTURE_2D_MULTISAMPLE
+        ,GL_TEXTURE_BINDING_2D_MULTISAMPLE)
     Tex2DMultisampleArray {..} ->
-        (gl_TEXTURE_2D_MULTISAMPLE_ARRAY
-        ,gl_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY)
+        (GL_TEXTURE_2D_MULTISAMPLE_ARRAY
+        ,GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY)
     TexCube {..} ->
-        (gl_TEXTURE_CUBE_MAP
-        ,gl_TEXTURE_BINDING_CUBE_MAP)
+        (GL_TEXTURE_CUBE_MAP
+        ,GL_TEXTURE_BINDING_CUBE_MAP)
     TexBuffer {} ->
-        (gl_TEXTURE_BUFFER
-        ,gl_TEXTURE_BINDING_BUFFER)
+        (GL_TEXTURE_BUFFER
+        ,GL_TEXTURE_BINDING_BUFFER)
 
 withBindingByTopology :: (MonadIO m, MonadMask m) => Texture -> (GLenum -> m a) -> m a
 withBindingByTopology tex action =
@@ -134,8 +134,8 @@ withBindingByTopology tex action =
 
 withTextureBinding :: (MonadIO m, MonadMask m) => Texture -> TextureUnit -> m a -> m a
 withTextureBinding tex unit action = do
-    old_active <- gi gl_ACTIVE_TEXTURE
-    glActiveTexture (gl_TEXTURE0 + fromIntegral unit)
+    old_active <- gi GL_ACTIVE_TEXTURE
+    glActiveTexture (GL_TEXTURE0 + fromIntegral unit)
     finally (withBindingByTopology tex $ const action) $
         glActiveTexture old_active
 

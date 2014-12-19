@@ -7,6 +7,8 @@ module Graphics.Caramia.Internal.OpenGLDebug
     , flushDebugMessages )
     where
 
+import Graphics.GL.Ext.KHR.Debug
+
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Internal.ContextLocalData
@@ -23,26 +25,22 @@ newtype DebugModeActivated = DebugModeActivated Bool
                              deriving ( Typeable )
 
 activateDebugMode :: IO ()
-activateDebugMode = do
-    necessary_extensions <- has_GL_KHR_debug
-    when necessary_extensions reallyActivateDebugMode
-  where
-    reallyActivateDebugMode = mask_ $ do
-        glDebugMessageControl gl_DONT_CARE
-                              gl_DONT_CARE
-                              gl_DONT_CARE
-                              0
-                              nullPtr
-                              (fromIntegral gl_TRUE)
-        glEnable gl_DEBUG_OUTPUT
-        withCStringLen "Debug output activated." $ \(cstr, len) ->
-            glDebugMessageInsert gl_DEBUG_SOURCE_APPLICATION
-                                 gl_DEBUG_TYPE_OTHER
-                                 0
-                                 gl_DEBUG_SEVERITY_LOW
-                                 (fromIntegral len)
-                                 cstr
-        storeContextLocalData (DebugModeActivated True)
+activateDebugMode = when gl_KHR_debug $ mask_ $ do
+    glDebugMessageControl GL_DONT_CARE
+                          GL_DONT_CARE
+                          GL_DONT_CARE
+                          0
+                          nullPtr
+                          GL_TRUE
+    glEnable GL_DEBUG_OUTPUT
+    withCStringLen "Debug output activated." $ \(cstr, len) ->
+        glDebugMessageInsert GL_DEBUG_SOURCE_APPLICATION
+                             GL_DEBUG_TYPE_OTHER
+                             0
+                             GL_DEBUG_SEVERITY_LOW
+                             (fromIntegral len)
+                             cstr
+    storeContextLocalData (DebugModeActivated True)
 
 flushDebugMessages :: MonadIO m => m ()
 flushDebugMessages = liftIO $ do
@@ -90,27 +88,27 @@ flushDebugMessages = liftIO $ do
     maxMsgs = 10000
 
 showSeverity :: GLenum -> String
-showSeverity x | x == gl_DEBUG_SEVERITY_HIGH = "high"
-               | x == gl_DEBUG_SEVERITY_MEDIUM = "medium"
-               | x == gl_DEBUG_SEVERITY_LOW = "low"
+showSeverity x | x == GL_DEBUG_SEVERITY_HIGH = "high"
+               | x == GL_DEBUG_SEVERITY_MEDIUM = "medium"
+               | x == GL_DEBUG_SEVERITY_LOW = "low"
 showSeverity _ = "unknown"
 
 showType :: GLenum -> String
-showType x | x == gl_DEBUG_TYPE_ERROR = "error"
-           | x == gl_DEBUG_TYPE_DEPRECATED_BEHAVIOR = "deprecated"
-           | x == gl_DEBUG_TYPE_UNDEFINED_BEHAVIOR = "undefined"
-           | x == gl_DEBUG_TYPE_PORTABILITY = "portability"
-           | x == gl_DEBUG_TYPE_PERFORMANCE = "performance"
-           | x == gl_DEBUG_TYPE_OTHER = "other"
+showType x | x == GL_DEBUG_TYPE_ERROR = "error"
+           | x == GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR = "deprecated"
+           | x == GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR = "undefined"
+           | x == GL_DEBUG_TYPE_PORTABILITY = "portability"
+           | x == GL_DEBUG_TYPE_PERFORMANCE = "performance"
+           | x == GL_DEBUG_TYPE_OTHER = "other"
 showType _ = "unknown"
 
 showSrc :: GLenum -> String
-showSrc x | x == gl_DEBUG_SOURCE_APPLICATION = "application"
-          | x == gl_DEBUG_SOURCE_OTHER = "other"
-          | x == gl_DEBUG_SOURCE_API = "api"
-          | x == gl_DEBUG_SOURCE_WINDOW_SYSTEM = "windowsystem"
-          | x == gl_DEBUG_SOURCE_SHADER_COMPILER = "shadercompiler"
-          | x == gl_DEBUG_SOURCE_THIRD_PARTY = "thirdparty"
+showSrc x | x == GL_DEBUG_SOURCE_APPLICATION = "application"
+          | x == GL_DEBUG_SOURCE_OTHER = "other"
+          | x == GL_DEBUG_SOURCE_API = "api"
+          | x == GL_DEBUG_SOURCE_WINDOW_SYSTEM = "windowsystem"
+          | x == GL_DEBUG_SOURCE_SHADER_COMPILER = "shadercompiler"
+          | x == GL_DEBUG_SOURCE_THIRD_PARTY = "thirdparty"
 showSrc _ = "unknown"
 
 

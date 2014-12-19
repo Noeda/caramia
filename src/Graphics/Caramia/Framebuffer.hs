@@ -39,7 +39,6 @@ import Control.Monad.IO.Class
 import Data.Bits
 import qualified Data.IntSet as IS
 import Data.List ( nub )
-import Foreign.C.Types
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Storable
@@ -73,7 +72,7 @@ frontTextureTarget tex = TextureTarget {
     attacher = \attachment ->
         withResource (Tex.resource tex) $ \(Tex.Texture_ texname) ->
             glFramebufferTexture
-                gl_DRAW_FRAMEBUFFER
+                GL_DRAW_FRAMEBUFFER
                 attachment
                 texname
                 0
@@ -87,7 +86,7 @@ mipmapTextureTarget tex mipmap_layer = TextureTarget {
     attacher = \attachment ->
         withResource (Tex.resource tex) $ \(Tex.Texture_ texname) ->
             glFramebufferTexture
-                gl_DRAW_FRAMEBUFFER
+                GL_DRAW_FRAMEBUFFER
                 attachment
                 texname
                 (safeFromIntegral mipmap_layer)
@@ -102,7 +101,7 @@ layerTextureTarget tex mipmap_layer topo_layer = TextureTarget {
     attacher = \attachment ->
         withResource (Tex.resource tex) $ \(Tex.Texture_ texname) ->
             glFramebufferTextureLayer
-                gl_DRAW_FRAMEBUFFER
+                GL_DRAW_FRAMEBUFFER
                 attachment
                 texname
                 (safeFromIntegral mipmap_layer)
@@ -110,9 +109,9 @@ layerTextureTarget tex mipmap_layer topo_layer = TextureTarget {
   , texture = tex }
 
 toConstantA :: Attachment -> GLenum
-toConstantA (ColorAttachment x) = gl_COLOR_ATTACHMENT0 + fromIntegral x
-toConstantA DepthAttachment = gl_DEPTH_ATTACHMENT
-toConstantA StencilAttachment = gl_STENCIL_ATTACHMENT
+toConstantA (ColorAttachment x) = GL_COLOR_ATTACHMENT0 + fromIntegral x
+toConstantA DepthAttachment = GL_DEPTH_ATTACHMENT
+toConstantA StencilAttachment = GL_STENCIL_ATTACHMENT
 
 -- | Creates a new framebuffer.
 newFramebuffer :: MonadIO m
@@ -157,9 +156,9 @@ newFramebuffer targets
                     forM_ [0..max_bufs-1] $ \bufnum ->
                         pokeElemOff buf_ptr bufnum $
                             if IS.member bufnum color_attachments
-                                then gl_COLOR_ATTACHMENT0 +
+                                then GL_COLOR_ATTACHMENT0 +
                                      fromIntegral bufnum
-                                else gl_NONE
+                                else GL_NONE
                     glDrawBuffers (fromIntegral max_bufs) buf_ptr
 
             return $ Framebuffer_ fbuf_name
@@ -200,26 +199,26 @@ newFramebuffer targets
 
     setThisFramebuffer res = do
         withResource res $ \(Framebuffer_ fbuf_name) ->
-            glBindFramebuffer gl_FRAMEBUFFER fbuf_name
+            glBindFramebuffer GL_FRAMEBUFFER fbuf_name
         glViewport 0 0 (fromIntegral fw) (fromIntegral fh)
 
     withThisFramebuffer res action = mask $ \restore -> do
-        old_draw_framebuffer <- gi gl_DRAW_FRAMEBUFFER_BINDING
-        old_read_framebuffer <- gi gl_READ_FRAMEBUFFER_BINDING
+        old_draw_framebuffer <- gi GL_DRAW_FRAMEBUFFER_BINDING
+        old_read_framebuffer <- gi GL_READ_FRAMEBUFFER_BINDING
         (x, y, w, h) <- liftIO $ allocaArray 4 $ \viewport_ptr -> do
-            glGetIntegerv gl_VIEWPORT viewport_ptr
+            glGetIntegerv GL_VIEWPORT viewport_ptr
             x <- peekElemOff viewport_ptr 0
             y <- peekElemOff viewport_ptr 1
             w <- peekElemOff viewport_ptr 2
             h <- peekElemOff viewport_ptr 3
             return (x, y, w, h)
         withResource res $ \(Framebuffer_ fbuf_name) -> do
-            glBindFramebuffer gl_FRAMEBUFFER fbuf_name
+            glBindFramebuffer GL_FRAMEBUFFER fbuf_name
             glViewport 0 0 (fromIntegral fw) (fromIntegral fh)
             finally (restore action) $ do
                 glViewport x y w h
-                glBindFramebuffer gl_DRAW_FRAMEBUFFER old_draw_framebuffer
-                glBindFramebuffer gl_READ_FRAMEBUFFER old_read_framebuffer
+                glBindFramebuffer GL_DRAW_FRAMEBUFFER old_draw_framebuffer
+                glBindFramebuffer GL_READ_FRAMEBUFFER old_read_framebuffer
 
 -- | Returns the maximum number of draw buffers in the current context.
 --
@@ -228,9 +227,9 @@ getMaximumDrawBuffers :: MonadIO m => m Int
 getMaximumDrawBuffers = do
     _ <- currentContextID
     -- number of draw buffers
-    num_drawbuffers <- gi gl_MAX_DRAW_BUFFERS
+    num_drawbuffers <- gi GL_MAX_DRAW_BUFFERS
     -- number of attachments
-    num_attachments <- gi gl_MAX_COLOR_ATTACHMENTS
+    num_attachments <- gi GL_MAX_COLOR_ATTACHMENTS
     return (fromIntegral $ min num_drawbuffers num_attachments)
 
 -- | Specifies what to clear in a `clear` invocation.
@@ -262,37 +261,34 @@ clear :: MonadIO m => Clearing -> Framebuffer -> m ()
 clear clearing fbuf = liftIO $ withBinding fbuf $ mask_ $
     recColor (clearColor clearing)
   where
-    bits = maybe 0 (const gl_COLOR_BUFFER_BIT) (clearColor clearing) .|.
-           maybe 0 (const gl_DEPTH_BUFFER_BIT) (clearDepth clearing) .|.
-           maybe 0 (const gl_STENCIL_BUFFER_BIT) (clearStencil clearing)
+    bits = maybe 0 (const GL_COLOR_BUFFER_BIT) (clearColor clearing) .|.
+           maybe 0 (const GL_DEPTH_BUFFER_BIT) (clearDepth clearing) .|.
+           maybe 0 (const GL_STENCIL_BUFFER_BIT) (clearStencil clearing)
 
     recColor Nothing = recDepth (clearDepth clearing)
     recColor (Just (viewRgba -> (r, g, b, a))) =
         allocaArray 4 $ \ptr -> do
-            glGetFloatv gl_COLOR_CLEAR_VALUE ptr
-            glClearColor (CFloat r)
-                         (CFloat g)
-                         (CFloat b)
-                         (CFloat a)
+            glGetFloatv GL_COLOR_CLEAR_VALUE ptr
+            glClearColor r g b a
             recDepth (clearDepth clearing)
             nr <- peekElemOff ptr 0
             ng <- peekElemOff ptr 1
             nb <- peekElemOff ptr 2
             na <- peekElemOff ptr 3
-            glClearColor (nr :: CFloat) ng nb na
+            glClearColor nr ng nb na
 
     recDepth Nothing = recStencil (clearStencil clearing)
     recDepth (Just depth) = do
         old_depth <- alloca $ \ptr ->
-            glGetDoublev gl_DEPTH_CLEAR_VALUE ptr *> peek ptr
-        glClearDepth (CDouble $ float2Double depth)
+            glGetDoublev GL_DEPTH_CLEAR_VALUE ptr *> peek ptr
+        glClearDepth $ float2Double depth
         recStencil (clearStencil clearing)
         glClearDepth old_depth
 
     recStencil Nothing = glClear bits
     recStencil (Just stencil) = do
         old_stencil <- alloca $ \ptr ->
-            glGetIntegerv gl_STENCIL_CLEAR_VALUE ptr *> peek ptr
+            glGetIntegerv GL_STENCIL_CLEAR_VALUE ptr *> peek ptr
         glClearStencil (safeFromIntegral stencil)
         glClear bits
         glClearStencil old_stencil

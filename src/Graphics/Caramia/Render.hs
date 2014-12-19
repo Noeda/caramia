@@ -80,17 +80,17 @@ data Primitive =
   deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 toConstant :: Primitive -> GLenum
-toConstant Triangles = gl_TRIANGLES
-toConstant TriangleStrip = gl_TRIANGLE_STRIP
-toConstant TriangleFan = gl_TRIANGLE_FAN
-toConstant Points = gl_POINTS
-toConstant Lines = gl_LINES
-toConstant LineStrip = gl_LINE_STRIP
-toConstant LineLoop = gl_LINE_LOOP
-toConstant LinesAdjacency = gl_LINES_ADJACENCY
-toConstant LineStripAdjacency = gl_LINE_STRIP_ADJACENCY
-toConstant TriangleStripAdjacency = gl_TRIANGLE_STRIP_ADJACENCY
-toConstant TrianglesAdjacency = gl_TRIANGLES_ADJACENCY
+toConstant Triangles = GL_TRIANGLES
+toConstant TriangleStrip = GL_TRIANGLE_STRIP
+toConstant TriangleFan = GL_TRIANGLE_FAN
+toConstant Points = GL_POINTS
+toConstant Lines = GL_LINES
+toConstant LineStrip = GL_LINE_STRIP
+toConstant LineLoop = GL_LINE_LOOP
+toConstant LinesAdjacency = GL_LINES_ADJACENCY
+toConstant LineStripAdjacency = GL_LINE_STRIP_ADJACENCY
+toConstant TriangleStripAdjacency = GL_TRIANGLE_STRIP_ADJACENCY
+toConstant TrianglesAdjacency = GL_TRIANGLES_ADJACENCY
 
 -- | The type of indices in an index buffer. See `indexBuffer`.
 data IndexType =
@@ -100,9 +100,9 @@ data IndexType =
     deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 toConstantIT :: IndexType -> GLenum
-toConstantIT IWord32 = gl_UNSIGNED_INT
-toConstantIT IWord16 = gl_UNSIGNED_SHORT
-toConstantIT IWord8 = gl_UNSIGNED_BYTE
+toConstantIT IWord32 = GL_UNSIGNED_INT
+toConstantIT IWord16 = GL_UNSIGNED_SHORT
+toConstantIT IWord8 = GL_UNSIGNED_BYTE
 
 class IndexTypeable a where
     -- | Turns a Haskell type to `IndexType`.
@@ -349,16 +349,16 @@ withParams (DrawParams {..}) action =
     withBoundElementBuffer 0 $
     withPrimitiveRestart primitiveRestart $
     withPolygonOffset polygonOffset $ do
-        old_active <- gi gl_ACTIVE_TEXTURE
+        old_active <- gi GL_ACTIVE_TEXTURE
         -- Framebuffer may not restore the viewport so we have to do it here.
         (ox, oy, ow, oh) <- liftIO $ allocaArray 4 $ \viewport_ptr -> do
-            glGetIntegerv gl_VIEWPORT viewport_ptr
+            glGetIntegerv GL_VIEWPORT viewport_ptr
             ox <- peekElemOff viewport_ptr 0
             oy <- peekElemOff viewport_ptr 1
             ow <- peekElemOff viewport_ptr 2
             oh <- peekElemOff viewport_ptr 3
             return (ox, oy, ow, oh)
-        finally (glActiveTexture gl_TEXTURE0 >>
+        finally (glActiveTexture GL_TEXTURE0 >>
                  action)
                 $ do
                     glActiveTexture old_active
@@ -366,25 +366,25 @@ withParams (DrawParams {..}) action =
 
 withPrimitiveRestart :: (MonadIO m, MonadMask m) => Maybe Word32 -> m a -> m a
 withPrimitiveRestart pr action = do
-    old_primitive_restart_enabled <- liftIO $ glIsEnabled gl_PRIMITIVE_RESTART
-    old_i <- gi gl_PRIMITIVE_RESTART_INDEX
+    old_primitive_restart_enabled <- liftIO $ glIsEnabled GL_PRIMITIVE_RESTART
+    old_i <- gi GL_PRIMITIVE_RESTART_INDEX
     finally (activate >> action)
             (do if old_primitive_restart_enabled /= 0
-                  then glEnable gl_PRIMITIVE_RESTART
-                  else glDisable gl_PRIMITIVE_RESTART
+                  then glEnable GL_PRIMITIVE_RESTART
+                  else glDisable GL_PRIMITIVE_RESTART
                 glPrimitiveRestartIndex old_i)
   where
     activate = case pr of
-        Nothing -> glDisable gl_PRIMITIVE_RESTART
+        Nothing -> glDisable GL_PRIMITIVE_RESTART
         Just value -> do
-            glEnable gl_PRIMITIVE_RESTART
+            glEnable GL_PRIMITIVE_RESTART
             glPrimitiveRestartIndex (fromIntegral value)
 
 withPolygonOffset :: (MonadIO m, MonadMask m) => (Float, Float) -> m a -> m a
 withPolygonOffset (factor, units) action = do
-    old_factor <- gf gl_POLYGON_OFFSET_FACTOR
-    old_units <- gf gl_POLYGON_OFFSET_UNITS
-    finally (glPolygonOffset (CFloat factor) (CFloat units) >>
+    old_factor <- gf GL_POLYGON_OFFSET_FACTOR
+    old_units <- gf GL_POLYGON_OFFSET_UNITS
+    finally (glPolygonOffset factor units >>
              action) $
         glPolygonOffset old_factor old_units
 
@@ -394,7 +394,7 @@ setActiveTexture :: MonadIO m => GLuint -> DrawT m ()
 setActiveTexture unit = DrawT $ do
     state <- get
     when (activeTexture state /= unit) $
-        glActiveTexture (gl_TEXTURE0 + unit) >>
+        glActiveTexture (GL_TEXTURE0 + unit) >>
         modify (\old -> old { activeTexture = unit })
 
 -- | Sets new primitive restart mode.
@@ -403,10 +403,10 @@ setPrimitiveRestart restart = DrawT $ do
     pr <- return . boundPrimitiveRestart =<< get
     liftIO $ case (pr, restart) of
         (Nothing, Just x) -> do
-            glEnable gl_PRIMITIVE_RESTART
+            glEnable GL_PRIMITIVE_RESTART
             glPrimitiveRestartIndex (fromIntegral x)
         (Just _, Nothing) -> do
-            glDisable gl_PRIMITIVE_RESTART
+            glDisable GL_PRIMITIVE_RESTART
         (Just y, Just x) | y /= x ->
             glPrimitiveRestartIndex (fromIntegral x)
         _ -> return ()
@@ -490,7 +490,7 @@ setFragmentPassTests tests = DrawT $ do
 
 -- | Sets polygon offset.
 setPolygonOffset :: MonadIO m => Float -> Float -> DrawT m ()
-setPolygonOffset factor units = glPolygonOffset (CFloat factor) (CFloat units)
+setPolygonOffset factor units = glPolygonOffset factor units
 
 -- | Sets the current framebuffer.
 setTargetFramebuffer :: MonadIO m => FBuf.Framebuffer -> DrawT m ()

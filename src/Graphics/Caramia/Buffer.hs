@@ -51,6 +51,8 @@ import Graphics.Caramia.Buffer.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude hiding ( map )
 import Graphics.Caramia.Resource
+import Graphics.GL.Ext.ARB.BufferStorage
+import Graphics.GL.Ext.ARB.InvalidateSubdata
 
 -- | The frequency of access to a buffer.
 --
@@ -86,20 +88,20 @@ canMapWith NoAccess NoAccess = True
 canMapWith NoAccess _ = False
 
 toConstant :: AccessFrequency -> AccessNature -> GLuint
-toConstant Stream Draw = gl_STREAM_DRAW
-toConstant Stream Read = gl_STREAM_READ
-toConstant Stream Copy = gl_STREAM_COPY
-toConstant Static Draw = gl_STATIC_DRAW
-toConstant Static Read = gl_STATIC_READ
-toConstant Static Copy = gl_STATIC_COPY
-toConstant Dynamic Draw = gl_DYNAMIC_DRAW
-toConstant Dynamic Read = gl_DYNAMIC_READ
-toConstant Dynamic Copy = gl_DYNAMIC_COPY
+toConstant Stream Draw = GL_STREAM_DRAW
+toConstant Stream Read = GL_STREAM_READ
+toConstant Stream Copy = GL_STREAM_COPY
+toConstant Static Draw = GL_STATIC_DRAW
+toConstant Static Read = GL_STATIC_READ
+toConstant Static Copy = GL_STATIC_COPY
+toConstant Dynamic Draw = GL_DYNAMIC_DRAW
+toConstant Dynamic Read = GL_DYNAMIC_READ
+toConstant Dynamic Copy = GL_DYNAMIC_COPY
 
 toConstantF :: AccessFlags -> GLbitfield
-toConstantF ReadAccess      = gl_MAP_READ_BIT
-toConstantF WriteAccess     = gl_MAP_WRITE_BIT
-toConstantF ReadWriteAccess = gl_MAP_READ_BIT .|. gl_MAP_WRITE_BIT
+toConstantF ReadAccess      = GL_MAP_READ_BIT
+toConstantF WriteAccess     = GL_MAP_WRITE_BIT
+toConstantF ReadWriteAccess = GL_MAP_READ_BIT .|. GL_MAP_WRITE_BIT
 toConstantF NoAccess        = 0
 
 toConstantMF :: S.Set MapFlag -> GLbitfield
@@ -107,7 +109,7 @@ toConstantMF ss
     | S.null ss = 0
     | otherwise =
         if UnSynchronized `S.member` ss
-          then gl_MAP_UNSYNCHRONIZED_BIT
+          then GL_MAP_UNSYNCHRONIZED_BIT
           else 0
 
 -- | This data describes how a buffer should behave and what operations can be
@@ -171,8 +173,7 @@ newBuffer creation
     (usage, access) = accessHints creation
 
     createBuffer = do
-        fancy_buffers <- has_GL_ARB_buffer_storage
-        if fancy_buffers
+        if gl_ARB_buffer_storage
           then createBufferByBufferStorage
           else createBufferOldWay
 
@@ -342,7 +343,7 @@ bufferUnmap buffer = liftIO $ do
     when (mapped bufstatus) $
         withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
             result <- mglUnmapNamedBuffer buf
-            when (fromIntegral result == gl_FALSE) $
+            when (result == GL_FALSE) $
                 throwM $ BufferCorruption buffer
             atomicModifyIORef' (status buffer) $ \old ->
                 ( old { mapped = False }, () )
@@ -476,9 +477,8 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
 --
 -- See <https://www.opengl.org/wiki/Buffer_Object#Invalidation>.
 invalidateBuffer :: MonadIO m => Buffer -> m ()
-invalidateBuffer buf = do
-    has_it <- has_GL_ARB_invalidate_subdata
-    when has_it $
+invalidateBuffer buf =
+    when gl_ARB_invalidate_subdata $
         withResource (resource buf) $ \(Buffer_ name) ->
             glInvalidateBufferData name
 

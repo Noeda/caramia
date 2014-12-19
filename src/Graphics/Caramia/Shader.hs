@@ -76,9 +76,9 @@ type UniformLocation = Int
 -- TODO: add tesselation shaders
 
 toConstant :: ShaderStage -> GLenum
-toConstant Vertex = gl_VERTEX_SHADER
-toConstant Fragment = gl_FRAGMENT_SHADER
-toConstant Geometry = gl_GEOMETRY_SHADER
+toConstant Vertex = GL_VERTEX_SHADER
+toConstant Fragment = GL_FRAGMENT_SHADER
+toConstant Geometry = GL_GEOMETRY_SHADER
 
 -- | Thrown when either a compilation or linking error occurs.
 data ShaderBuildingError = forall e. Exception e => ShaderBuildingError e
@@ -196,9 +196,9 @@ newShader source_code stage = liftIO $ T.withCStringLen source_code $ \(cstr, le
 -- DELETES the shader if there were errors.
 checkCompilationErrors :: GLuint -> IO ()
 checkCompilationErrors shader_name = do
-    status <- gget $ glGetShaderiv shader_name gl_COMPILE_STATUS
-    when (status == fromIntegral gl_FALSE) $ do
-        log_len <- gget $ glGetShaderiv shader_name gl_INFO_LOG_LENGTH
+    status <- gget $ glGetShaderiv shader_name GL_COMPILE_STATUS
+    when (status == GL_FALSE) $ do
+        log_len <- gget $ glGetShaderiv shader_name GL_INFO_LOG_LENGTH
         allocaBytes (safeFromIntegral log_len) $ \str -> do
             glGetShaderInfoLog shader_name log_len nullPtr str
             log <- T.peekCStringLen ( str
@@ -211,9 +211,9 @@ checkCompilationErrors shader_name = do
 -- DELETES the program if there were errors.
 checkLinkingErrors :: GLuint -> IO ()
 checkLinkingErrors program_name = do
-    status <- gget $ glGetProgramiv program_name gl_LINK_STATUS
-    when (status == fromIntegral gl_FALSE) $ do
-        log_len <- gget $ glGetProgramiv program_name gl_INFO_LOG_LENGTH
+    status <- gget $ glGetProgramiv program_name GL_LINK_STATUS
+    when (status == GL_FALSE) $ do
+        log_len <- gget $ glGetProgramiv program_name GL_INFO_LOG_LENGTH
         allocaBytes (safeFromIntegral log_len) $ \str -> do
             glGetProgramInfoLog program_name log_len nullPtr str
             log <- T.peekCStringLen ( str
@@ -424,76 +424,70 @@ instance Uniformable (Integer, Integer, Integer, Integer) where
     setUniform_ = setI4
 instance Uniformable Float where
     setUniform_ program loc f1 =
-        mglProgramUniform1f program loc (CFloat f1)
+        mglProgramUniform1f program loc f1
 instance Uniformable (Float, Float) where
     setUniform_ program loc (f1, f2) =
-        mglProgramUniform2f program loc (CFloat f1) (CFloat f2)
+        mglProgramUniform2f program loc f1 f2
 instance Uniformable (Float, Float, Float) where
     setUniform_ program loc (f1, f2, f3) =
-        mglProgramUniform3f program loc
-                            (CFloat f1)
-                            (CFloat f2)
-                            (CFloat f3)
+        mglProgramUniform3f program loc f1 f2 f3
 instance Uniformable (Float, Float, Float, Float) where
     setUniform_ program loc (f1, f2, f3, f4) =
-        mglProgramUniform4f program loc
-                            (CFloat f1)
-                            (CFloat f2)
-                            (CFloat f3)
-                            (CFloat f4)
+        mglProgramUniform4f program loc f1 f2 f3 f4
 instance Uniformable Color where
     setUniform_ program loc (viewRgba -> tuple) =
         setUniform_ program loc tuple
 instance Uniformable CFloat where
-    setUniform_ = mglProgramUniform1f
+    setUniform_ program loc (CFloat f1) =
+        mglProgramUniform1f program loc f1
 instance Uniformable (CFloat, CFloat) where
-    setUniform_ program loc (f1, f2) =
+    setUniform_ program loc (CFloat f1, CFloat f2) =
         mglProgramUniform2f program loc f1 f2
 instance Uniformable (CFloat, CFloat, CFloat) where
-    setUniform_ program loc (f1, f2, f3) =
+    setUniform_ program loc (CFloat f1, CFloat f2, CFloat f3) =
         mglProgramUniform3f program loc f1 f2 f3
 instance Uniformable (CFloat, CFloat, CFloat, CFloat) where
-    setUniform_ program loc (f1, f2, f3, f4) =
+    setUniform_ program loc (CFloat f1, CFloat f2, CFloat f3, CFloat f4) =
         mglProgramUniform4f program loc f1 f2 f3 f4
 
 instance Uniformable Double where
     setUniform_ program loc f1 =
-        mglProgramUniform1f program loc (double2CFloat f1)
+        mglProgramUniform1f program loc (double2Float f1)
 instance Uniformable (Double, Double) where
     setUniform_ program loc (f1, f2) =
-        mglProgramUniform2f program loc (double2CFloat f1) (double2CFloat f2)
+        mglProgramUniform2f program loc (double2Float f1) (double2Float f2)
 instance Uniformable (Double, Double, Double) where
     setUniform_ program loc (f1, f2, f3) =
         mglProgramUniform3f program loc
-                            (double2CFloat f1)
-                            (double2CFloat f2)
-                            (double2CFloat f3)
+                            (double2Float f1)
+                            (double2Float f2)
+                            (double2Float f3)
 instance Uniformable (Double, Double, Double, Double) where
     setUniform_ program loc (f1, f2, f3, f4) =
         mglProgramUniform4f program loc
-                            (double2CFloat f1)
-                            (double2CFloat f2)
-                            (double2CFloat f3)
-                            (double2CFloat f4)
+                            (double2Float f1)
+                            (double2Float f2)
+                            (double2Float f3)
+                            (double2Float f4)
 instance Uniformable CDouble where
     setUniform_ program loc f1 =
-        mglProgramUniform1f program loc (cdouble2CFloat f1)
+        mglProgramUniform1f program loc (cdouble2Float f1)
 instance Uniformable (CDouble, CDouble) where
     setUniform_ program loc (f1, f2) =
-        mglProgramUniform2f program loc (cdouble2CFloat f1) (cdouble2CFloat f2)
+        mglProgramUniform2f program loc (cdouble2Float f1) (cdouble2Float f2)
 instance Uniformable (CDouble, CDouble, CDouble) where
     setUniform_ program loc (f1, f2, f3) =
         mglProgramUniform3f program loc
-                            (cdouble2CFloat f1)
-                            (cdouble2CFloat f2)
-                            (cdouble2CFloat f3)
+                            (cdouble2Float f1)
+                            (cdouble2Float f2)
+                            (cdouble2Float f3)
 instance Uniformable (CDouble, CDouble, CDouble, CDouble) where
     setUniform_ program loc (f1, f2, f3, f4) =
         mglProgramUniform4f program loc
-                            (cdouble2CFloat f1)
-                            (cdouble2CFloat f2)
-                            (cdouble2CFloat f3)
-                            (cdouble2CFloat f4)
+                            (cdouble2Float f1)
+                            (cdouble2Float f2)
+                            (cdouble2Float f3)
+                            (cdouble2Float f4)
 
 double2FloatMap :: Functor a => a Double -> a Float
 double2FloatMap = fmap double2Float
@@ -525,14 +519,14 @@ cdoubleToDoubleMapMap = fmap (fmap unwrap) where
 
 instance Uniformable (Quaternion Float) where
     setUniform_ program loc (Quaternion w (V3 x y z)) =
-        mglProgramUniform4f program loc (CFloat x) (CFloat y) (CFloat z) (CFloat w)
+        mglProgramUniform4f program loc x y z w
 
 instance Uniformable (Quaternion Double) where
     setUniform_ program loc (double2FloatMap -> Quaternion w (V3 x y z)) =
-        mglProgramUniform4f program loc (CFloat x) (CFloat y) (CFloat z) (CFloat w)
+        mglProgramUniform4f program loc x y z w
 
 instance Uniformable (Quaternion CFloat) where
-    setUniform_ program loc (Quaternion w (V3 x y z)) =
+    setUniform_ program loc (Quaternion (CFloat w) (V3 (CFloat x) (CFloat y) (CFloat z))) =
         mglProgramUniform4f program loc x y z w
 
 instance Uniformable (Quaternion CDouble) where
@@ -589,61 +583,58 @@ instance Uniformable (M44 CDouble) where
 
 instance Uniformable (V1 Double) where
     setUniform_ program loc (double2FloatMap -> V1 f1) =
-        mglProgramUniform1f program loc (CFloat f1)
+        mglProgramUniform1f program loc f1
 
 instance Uniformable (V2 Double) where
     setUniform_ program loc (double2FloatMap -> V2 f1 f2) =
-        mglProgramUniform2f program loc (CFloat f1) (CFloat f2)
+        mglProgramUniform2f program loc f1 f2
 
 instance Uniformable (V3 Double) where
     setUniform_ program loc (double2FloatMap -> V3 f1 f2 f3) =
-        mglProgramUniform3f program loc (CFloat f1) (CFloat f2) (CFloat f3)
+        mglProgramUniform3f program loc f1 f2 f3
 
 instance Uniformable (V4 Double) where
     setUniform_ program loc (double2FloatMap -> V4 f1 f2 f3 f4) =
-        mglProgramUniform4f program loc (CFloat f1) (CFloat f2) (CFloat f3) (CFloat f4)
+        mglProgramUniform4f program loc f1 f2 f3 f4
 
 instance Uniformable (M33 Double) where
     setUniform_ program loc (double2FloatMapMap -> m33) =
         with m33 $
-            mglProgramUniformMatrix3fv program loc 1 (fromIntegral gl_FALSE) . castPtr
+            mglProgramUniformMatrix3fv program loc 1 GL_FALSE . castPtr
 
 instance Uniformable (M44 Double) where
     setUniform_ program loc m44 =
         with (fmap (fmap double2Float) m44) $
-            mglProgramUniformMatrix4fv program loc 1 (fromIntegral gl_FALSE) . castPtr
+            mglProgramUniformMatrix4fv program loc 1 GL_FALSE . castPtr
 
 instance Uniformable (V1 Float) where
     setUniform_ program loc (V1 f1) =
-        mglProgramUniform1f program loc (CFloat f1)
+        mglProgramUniform1f program loc f1
 
 instance Uniformable (V2 Float) where
     setUniform_ program loc (V2 f1 f2) =
-        mglProgramUniform2f program loc (CFloat f1) (CFloat f2)
+        mglProgramUniform2f program loc f1 f2
 
 instance Uniformable (V3 Float) where
     setUniform_ program loc (V3 f1 f2 f3) =
-        mglProgramUniform3f program loc (CFloat f1) (CFloat f2) (CFloat f3)
+        mglProgramUniform3f program loc f1 f2 f3
 
 instance Uniformable (V4 Float) where
     setUniform_ program loc (V4 f1 f2 f3 f4) =
-        mglProgramUniform4f program loc (CFloat f1) (CFloat f2) (CFloat f3) (CFloat f4)
+        mglProgramUniform4f program loc f1 f2 f3 f4
 
 instance Uniformable (M33 Float) where
     setUniform_ program loc m33 =
         with m33 $
-            mglProgramUniformMatrix3fv program loc 1 (fromIntegral gl_FALSE) . castPtr
+            mglProgramUniformMatrix3fv program loc 1 GL_FALSE . castPtr
 
 instance Uniformable (M44 Float) where
     setUniform_ program loc m44 =
         with m44 $
-            mglProgramUniformMatrix4fv program loc 1 (fromIntegral gl_FALSE) . castPtr
+            mglProgramUniformMatrix4fv program loc 1 GL_FALSE . castPtr
 
-double2CFloat :: Double -> CFloat
-double2CFloat dbl = CFloat $ double2Float dbl
-
-cdouble2CFloat :: CDouble -> CFloat
-cdouble2CFloat (CDouble dbl) = CFloat $ double2Float dbl
+cdouble2Float :: CDouble -> Float
+cdouble2Float (CDouble dbl) = double2Float dbl
 
 -- | Returns a uniform location for a given name.
 --
