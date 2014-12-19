@@ -67,12 +67,3 @@ Some notable missing features:
 
 This library tries to avoid including obsolete or redundant features of OpenGL.
 
-One major flaw(?) of this library is that OpenGL resources cannot be easily
-released promptly. This may or may not be a problem for you. OpenGL resources
-may refer to each other behind the scenes so if we implement a mechanism to
-release resources early, this mechanism needs to take care of resources
-referring to each other.
-
-Expect bugs. While this library has been tested in some of the author's toy
-programs, the library currently lacks automatic tests.
-
