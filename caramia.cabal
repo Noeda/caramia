@@ -19,7 +19,7 @@ description:
     .
     Requirements:
     .
-        * GHC 7.6+
+        * GHC 7.8+
     .
         * OpenGL 3.3
     .
@@ -122,7 +122,7 @@ library
 
   ghc-options:         -Wall -fno-warn-name-shadowing
 
-  build-depends:       base >=4.6 && <5.0.0.0
+  build-depends:       base         >=4.7 && <5.0.0.0
                       ,bytestring   >=0.10 && <1.0
                       ,containers   >=0.5 && <1.0
                       ,exceptions   >=0.6 && <1.0

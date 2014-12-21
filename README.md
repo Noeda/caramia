@@ -5,7 +5,7 @@ OpenGL 3.3.
 
 Requirements:
 
-  * GHC 7.6+
+  * GHC 7.8+
   * OpenGL 3.3
 
 You need to use `-threaded` flag in executables that use this library.
