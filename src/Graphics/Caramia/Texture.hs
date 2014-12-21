@@ -57,10 +57,11 @@ import Graphics.Caramia.Internal.OpenGLCApi
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats.Internal
 import Graphics.Caramia.Resource
+import Graphics.GL.Ext.ARB.TextureStorage
+import Graphics.GL.Ext.EXT.TextureFilterAnisotropic
 import Control.Monad.IO.Class
 import Control.Monad.Catch
 import Foreign
-import Foreign.C.Types
 
 textureSpecification :: TextureSpecification
 textureSpecification = TextureSpecification {
@@ -202,8 +203,7 @@ newTexture spec = mask_ $ do
                 glGenTextures 1 name_ptr *> peek name_ptr)
             (deleter . Texture_ )
             (\name -> do
-                has_tex_storage <- has_GL_ARB_texture_storage
-                if has_tex_storage
+                if gl_ARB_texture_storage
                   then createByTopologyTexStorage name (topology spec)
                   else createByTopologyFakeTextureStorage name (topology spec)
                 return name)
@@ -212,20 +212,20 @@ newTexture spec = mask_ $ do
     createByTopologyFakeTextureStorage :: GLuint -> Topology -> IO ()
     createByTopologyFakeTextureStorage name (Tex1D {..}) =
         fakeTextureStorage1D name
-                             gl_TEXTURE_1D
+                             GL_TEXTURE_1D
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width1D)
     createByTopologyFakeTextureStorage name (Tex2D {..}) =
         fakeTextureStorage2D name
-                             gl_TEXTURE_2D
+                             GL_TEXTURE_2D
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width2D)
                              (safeFromIntegral height2D)
     createByTopologyFakeTextureStorage name (Tex3D {..}) =
         fakeTextureStorage3D name
-                             gl_TEXTURE_3D
+                             GL_TEXTURE_3D
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width3D)
@@ -233,14 +233,14 @@ newTexture spec = mask_ $ do
                              (safeFromIntegral depth3D)
     createByTopologyFakeTextureStorage name (Tex1DArray {..}) =
         fakeTextureStorage2D name
-                             gl_TEXTURE_1D_ARRAY
+                             GL_TEXTURE_1D_ARRAY
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width1DArray)
                              (safeFromIntegral layers1D)
     createByTopologyFakeTextureStorage name (Tex2DArray {..}) =
         fakeTextureStorage3D name
-                             gl_TEXTURE_2D_ARRAY
+                             GL_TEXTURE_2D_ARRAY
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral width2DArray)
@@ -252,7 +252,7 @@ newTexture spec = mask_ $ do
         createByTopologyTexStorage name tex
     createByTopologyFakeTextureStorage name (TexCube {..}) =
         fakeTextureStorage2D name
-                             gl_TEXTURE_CUBE_MAP
+                             GL_TEXTURE_CUBE_MAP
                              (safeFromIntegral num_mipmaps)
                              (toConstantIF (imageFormat spec))
                              (safeFromIntegral widthCube)
@@ -264,47 +264,47 @@ newTexture spec = mask_ $ do
     -- to Caramia.Internal.OpenGLCApi?
     createByTopologyTexStorage :: GLuint -> Topology -> IO ()
     createByTopologyTexStorage name (Tex1D {..}) =
-        withBinding gl_TEXTURE_1D gl_TEXTURE_BINDING_1D name $
-            glTexStorage1D gl_TEXTURE_1D
+        withBinding GL_TEXTURE_1D GL_TEXTURE_BINDING_1D name $
+            glTexStorage1D GL_TEXTURE_1D
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width1D)
     createByTopologyTexStorage name (Tex2D {..}) =
-        withBinding gl_TEXTURE_2D gl_TEXTURE_BINDING_2D name $
-            glTexStorage2D gl_TEXTURE_2D
+        withBinding GL_TEXTURE_2D GL_TEXTURE_BINDING_2D name $
+            glTexStorage2D GL_TEXTURE_2D
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width2D)
                            (safeFromIntegral height2D)
     createByTopologyTexStorage name (Tex3D {..}) =
-        withBinding gl_TEXTURE_3D gl_TEXTURE_BINDING_3D name $
-            glTexStorage3D gl_TEXTURE_3D
+        withBinding GL_TEXTURE_3D GL_TEXTURE_BINDING_3D name $
+            glTexStorage3D GL_TEXTURE_3D
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width3D)
                            (safeFromIntegral height3D)
                            (safeFromIntegral depth3D)
     createByTopologyTexStorage name (Tex1DArray {..}) =
-        withBinding gl_TEXTURE_1D_ARRAY gl_TEXTURE_BINDING_1D_ARRAY name $
-            glTexStorage2D gl_TEXTURE_1D_ARRAY
+        withBinding GL_TEXTURE_1D_ARRAY GL_TEXTURE_BINDING_1D_ARRAY name $
+            glTexStorage2D GL_TEXTURE_1D_ARRAY
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width1DArray)
                            (safeFromIntegral layers1D)
     createByTopologyTexStorage name (Tex2DArray {..}) =
-        withBinding gl_TEXTURE_2D_ARRAY gl_TEXTURE_BINDING_2D_ARRAY name $
-            glTexStorage3D gl_TEXTURE_2D_ARRAY
+        withBinding GL_TEXTURE_2D_ARRAY GL_TEXTURE_BINDING_2D_ARRAY name $
+            glTexStorage3D GL_TEXTURE_2D_ARRAY
                            (safeFromIntegral num_mipmaps)
                            (toConstantIF (imageFormat spec))
                            (safeFromIntegral width2DArray)
                            (safeFromIntegral height2DArray)
                            (safeFromIntegral layers2D)
     createByTopologyTexStorage name (Tex2DMultisample {..}) =
-        withBinding gl_TEXTURE_2D_MULTISAMPLE
-                    gl_TEXTURE_BINDING_2D_MULTISAMPLE
+        withBinding GL_TEXTURE_2D_MULTISAMPLE
+                    GL_TEXTURE_BINDING_2D_MULTISAMPLE
                     name $
             glTexImage2DMultisample
-                           gl_TEXTURE_2D_MULTISAMPLE
+                           GL_TEXTURE_2D_MULTISAMPLE
                            (safeFromIntegral samples2DMS)
                            (fromIntegral $ toConstantIF (imageFormat spec))
                            (safeFromIntegral width2DMS)
@@ -312,11 +312,11 @@ newTexture spec = mask_ $ do
                            (if fixedSampleLocations2DMS
                              then 1 else 0)
     createByTopologyTexStorage name (Tex2DMultisampleArray {..}) =
-        withBinding gl_TEXTURE_2D_MULTISAMPLE_ARRAY
-                    gl_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
+        withBinding GL_TEXTURE_2D_MULTISAMPLE_ARRAY
+                    GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
                     name $
             glTexImage3DMultisample
-                           gl_TEXTURE_2D_MULTISAMPLE_ARRAY
+                           GL_TEXTURE_2D_MULTISAMPLE_ARRAY
                            (safeFromIntegral samples2DMSArray)
                            (fromIntegral $ toConstantIF (imageFormat spec))
                            (safeFromIntegral width2DMSArray)
@@ -325,20 +325,20 @@ newTexture spec = mask_ $ do
                            (if fixedSampleLocations2DMSArray
                              then 1 else 0)
     createByTopologyTexStorage name (TexCube {..}) =
-        withBinding gl_TEXTURE_CUBE_MAP
-                    gl_TEXTURE_BINDING_CUBE_MAP
+        withBinding GL_TEXTURE_CUBE_MAP
+                    GL_TEXTURE_BINDING_CUBE_MAP
                     name $
-            glTexStorage2D gl_TEXTURE_CUBE_MAP
+            glTexStorage2D GL_TEXTURE_CUBE_MAP
                            (safeFromIntegral num_mipmaps)
                            (fromIntegral $ toConstantIF (imageFormat spec))
                            (safeFromIntegral widthCube)
                            (safeFromIntegral widthCube)
     createByTopologyTexStorage name (TexBuffer {..}) =
-        withBinding gl_TEXTURE_BUFFER
-                    gl_TEXTURE_BINDING_BUFFER
+        withBinding GL_TEXTURE_BUFFER
+                    GL_TEXTURE_BINDING_BUFFER
                     name $
             withResource (Buf.resource texBuffer) $ \(Buf.Buffer_ bufname) ->
-                glTexBuffer gl_TEXTURE_BUFFER
+                glTexBuffer GL_TEXTURE_BUFFER
                             (fromIntegral $ toConstantIF (imageFormat spec))
                             bufname
 
@@ -364,14 +364,14 @@ data UploadFormat =
 -- formats.
 
 toConstantUF :: UploadFormat -> GLenum
-toConstantUF UR = gl_RED
-toConstantUF URG = gl_RG
-toConstantUF URGB = gl_RGB
-toConstantUF URGBA = gl_RGBA
-toConstantUF UBGR = gl_BGR
-toConstantUF UBGRA = gl_BGRA
-toConstantUF UDEPTH_COMPONENT = gl_DEPTH_COMPONENT
-toConstantUF USTENCIL_INDEX = gl_STENCIL_INDEX
+toConstantUF UR = GL_RED
+toConstantUF URG = GL_RG
+toConstantUF URGB = GL_RGB
+toConstantUF URGBA = GL_RGBA
+toConstantUF UBGR = GL_BGR
+toConstantUF UBGRA = GL_BGRA
+toConstantUF UDEPTH_COMPONENT = GL_DEPTH_COMPONENT
+toConstantUF USTENCIL_INDEX = GL_STENCIL_INDEX
 
 -- | Used to specify how to move the data from a `Buffer` to a `Texture` in
 -- `uploadToTexture`.
@@ -430,12 +430,12 @@ data CubeSide =
     deriving ( Eq, Ord, Show, Read, Typeable )
 
 toConstantCS :: CubeSide -> GLenum
-toConstantCS PositiveX = gl_TEXTURE_CUBE_MAP_POSITIVE_X
-toConstantCS NegativeX = gl_TEXTURE_CUBE_MAP_NEGATIVE_X
-toConstantCS PositiveY = gl_TEXTURE_CUBE_MAP_POSITIVE_Y
-toConstantCS NegativeY = gl_TEXTURE_CUBE_MAP_NEGATIVE_Y
-toConstantCS PositiveZ = gl_TEXTURE_CUBE_MAP_POSITIVE_Z
-toConstantCS NegativeZ = gl_TEXTURE_CUBE_MAP_NEGATIVE_Z
+toConstantCS PositiveX = GL_TEXTURE_CUBE_MAP_POSITIVE_X
+toConstantCS NegativeX = GL_TEXTURE_CUBE_MAP_NEGATIVE_X
+toConstantCS PositiveY = GL_TEXTURE_CUBE_MAP_POSITIVE_Y
+toConstantCS NegativeY = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
+toConstantCS PositiveZ = GL_TEXTURE_CUBE_MAP_POSITIVE_Z
+toConstantCS NegativeZ = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
 
 -- | Constructs a common 1D uploading.
 uploading1D :: Buf.Buffer
@@ -524,34 +524,34 @@ uploadToTexture :: MonadIO m
 uploadToTexture uploading tex = liftIO $ mask_ $
     withResource (Buf.resource (fromBuffer uploading)) $ \(Buf.Buffer_ buf) ->
     withBoundPixelUnpackBuffer buf $ do
-        old_num_cols  <- fromIntegral <$> gi gl_UNPACK_ROW_LENGTH
-        old_num_rows  <- fromIntegral <$> gi gl_UNPACK_IMAGE_HEIGHT
-        old_alignment <- fromIntegral <$> gi gl_UNPACK_ALIGNMENT
-        glPixelStorei gl_UNPACK_ROW_LENGTH
+        old_num_cols  <- fromIntegral <$> gi GL_UNPACK_ROW_LENGTH
+        old_num_rows  <- fromIntegral <$> gi GL_UNPACK_IMAGE_HEIGHT
+        old_alignment <- fromIntegral <$> gi GL_UNPACK_ALIGNMENT
+        glPixelStorei GL_UNPACK_ROW_LENGTH
                       (safeFromIntegral $ numColumns uploading)
-        flip finally (glPixelStorei gl_UNPACK_ROW_LENGTH old_num_cols) $ do
-         glPixelStorei gl_UNPACK_IMAGE_HEIGHT
+        flip finally (glPixelStorei GL_UNPACK_ROW_LENGTH old_num_cols) $ do
+         glPixelStorei GL_UNPACK_IMAGE_HEIGHT
                        (safeFromIntegral $ numRows uploading)
-         flip finally (glPixelStorei gl_UNPACK_IMAGE_HEIGHT old_num_rows) $ do
-          glPixelStorei gl_UNPACK_ALIGNMENT
+         flip finally (glPixelStorei GL_UNPACK_IMAGE_HEIGHT old_num_rows) $ do
+          glPixelStorei GL_UNPACK_ALIGNMENT
                         (safeFromIntegral $ pixelAlignment uploading)
-          flip finally (glPixelStorei gl_UNPACK_ALIGNMENT old_alignment) $
+          flip finally (glPixelStorei GL_UNPACK_ALIGNMENT old_alignment) $
            withResource (resource tex) $ \(Texture_ texname) ->
             case topology $ viewSpecification tex of
                 Tex1D {..} ->
-                    upload1D gl_TEXTURE_1D gl_TEXTURE_BINDING_1D
+                    upload1D GL_TEXTURE_1D GL_TEXTURE_BINDING_1D
                              texname uploading
                 Tex2D {..} ->
-                    upload2D gl_TEXTURE_2D gl_TEXTURE_BINDING_2D
+                    upload2D GL_TEXTURE_2D GL_TEXTURE_BINDING_2D
                              texname uploading
                 Tex3D {..} ->
-                    upload3D gl_TEXTURE_3D gl_TEXTURE_BINDING_3D
+                    upload3D GL_TEXTURE_3D GL_TEXTURE_BINDING_3D
                              texname uploading
                 Tex1DArray {..} ->
-                    upload2D gl_TEXTURE_1D_ARRAY gl_TEXTURE_BINDING_1D_ARRAY
+                    upload2D GL_TEXTURE_1D_ARRAY GL_TEXTURE_BINDING_1D_ARRAY
                              texname uploading
                 Tex2DArray {..} ->
-                    upload3D gl_TEXTURE_2D_ARRAY gl_TEXTURE_BINDING_2D_ARRAY
+                    upload3D GL_TEXTURE_2D_ARRAY GL_TEXTURE_BINDING_2D_ARRAY
                              texname uploading
                 Tex2DMultisample {..} ->
                     error $ "uploadToTexture: cannot upload to " <>
@@ -560,8 +560,8 @@ uploadToTexture uploading tex = liftIO $ mask_ $
                     error $ "uploadToTexture: cannot upload to " <>
                             "multisampling array textures."
                 TexCube {..} ->
-                    uploadCube gl_TEXTURE_CUBE_MAP
-                               gl_TEXTURE_BINDING_CUBE_MAP
+                    uploadCube GL_TEXTURE_CUBE_MAP
+                               GL_TEXTURE_BINDING_CUBE_MAP
                                texname uploading
                 TexBuffer {..} ->
                     error $ "uploadToTexture: cannot upload to " <>
@@ -670,38 +670,38 @@ data CompareMode
  deriving ( Eq, Ord, Show, Read, Typeable )
 
 toConstantC :: CompareMode -> GLenum
-toConstantC NoCompare = gl_NONE
-toConstantC CompareRefToTexture = gl_COMPARE_REF_TO_TEXTURE
+toConstantC NoCompare = GL_NONE
+toConstantC CompareRefToTexture = GL_COMPARE_REF_TO_TEXTURE
 
 toConstantW :: Wrapping -> GLenum
-toConstantW Clamp = gl_CLAMP_TO_EDGE
-toConstantW Repeat = gl_REPEAT
+toConstantW Clamp = GL_CLAMP_TO_EDGE
+toConstantW Repeat = GL_REPEAT
 
 instance TexParam MinFilter where
-    tpEnum _ = gl_TEXTURE_MIN_FILTER
-    tpToConstant MiNearest = gl_NEAREST
-    tpToConstant MiLinear  = gl_LINEAR
-    tpToConstant MiNearestMipmapNearest = gl_NEAREST_MIPMAP_NEAREST
-    tpToConstant MiLinearMipmapNearest = gl_LINEAR_MIPMAP_NEAREST
-    tpToConstant MiNearestMipmapLinear = gl_NEAREST_MIPMAP_LINEAR
-    tpToConstant MiLinearMipmapLinear = gl_LINEAR_MIPMAP_LINEAR
+    tpEnum _ = GL_TEXTURE_MIN_FILTER
+    tpToConstant MiNearest = GL_NEAREST
+    tpToConstant MiLinear  = GL_LINEAR
+    tpToConstant MiNearestMipmapNearest = GL_NEAREST_MIPMAP_NEAREST
+    tpToConstant MiLinearMipmapNearest = GL_LINEAR_MIPMAP_NEAREST
+    tpToConstant MiNearestMipmapLinear = GL_NEAREST_MIPMAP_LINEAR
+    tpToConstant MiLinearMipmapLinear = GL_LINEAR_MIPMAP_LINEAR
     tpFromConstant c
-        | c == gl_NEAREST = MiNearest
-        | c == gl_LINEAR  = MiLinear
-        | c == gl_NEAREST_MIPMAP_NEAREST = MiNearestMipmapNearest
-        | c == gl_LINEAR_MIPMAP_NEAREST = MiLinearMipmapNearest
-        | c == gl_NEAREST_MIPMAP_LINEAR = MiNearestMipmapLinear
-        | c == gl_LINEAR_MIPMAP_LINEAR = MiLinearMipmapLinear
+        | c == GL_NEAREST = MiNearest
+        | c == GL_LINEAR  = MiLinear
+        | c == GL_NEAREST_MIPMAP_NEAREST = MiNearestMipmapNearest
+        | c == GL_LINEAR_MIPMAP_NEAREST = MiLinearMipmapNearest
+        | c == GL_NEAREST_MIPMAP_LINEAR = MiNearestMipmapLinear
+        | c == GL_LINEAR_MIPMAP_LINEAR = MiLinearMipmapLinear
         | otherwise = error "MinFilter: unexpected filtering value."
 
 instance TexParam MagFilter where
-    tpEnum _ = gl_TEXTURE_MAG_FILTER
-    tpToConstant MaNearest = gl_NEAREST
-    tpToConstant MaLinear = gl_LINEAR
+    tpEnum _ = GL_TEXTURE_MAG_FILTER
+    tpToConstant MaNearest = GL_NEAREST
+    tpToConstant MaLinear = GL_LINEAR
 
     tpFromConstant c
-        | c == gl_NEAREST = MaNearest
-        | c == gl_LINEAR  = MaLinear
+        | c == GL_NEAREST = MaNearest
+        | c == GL_LINEAR  = MaLinear
         | otherwise = error "MagFilter: unexpected filtering value."
 
 setMinFilter :: (MonadIO m, MonadMask m) => MinFilter -> Texture -> m ()
@@ -728,49 +728,47 @@ getTexParam tex = liftIO $ withBindingByTopology tex $ \target ->
 
 setWrapping :: (MonadIO m, MonadMask m) => Wrapping -> Texture -> m ()
 setWrapping wrapping tex = withBindingByTopology tex $ \target -> do
-    glTexParameteri target gl_TEXTURE_WRAP_S
+    glTexParameteri target GL_TEXTURE_WRAP_S
                            (fromIntegral $ toConstantW wrapping)
-    glTexParameteri target gl_TEXTURE_WRAP_T
+    glTexParameteri target GL_TEXTURE_WRAP_T
                            (fromIntegral $ toConstantW wrapping)
-    glTexParameteri target gl_TEXTURE_WRAP_R
+    glTexParameteri target GL_TEXTURE_WRAP_R
                            (fromIntegral $ toConstantW wrapping)
 
 setCompareMode :: (MonadIO m, MonadMask m) => CompareMode -> Texture -> m ()
 setCompareMode cmp_mode tex = withBindingByTopology tex $ \target ->
-    glTexParameteri target gl_TEXTURE_COMPARE_MODE
+    glTexParameteri target GL_TEXTURE_COMPARE_MODE
                     (fromIntegral $ toConstantC cmp_mode)
 
 getCompareMode :: (MonadIO m, MonadMask m) => Texture -> m CompareMode
 getCompareMode tex = liftIO $ withBindingByTopology tex $ \target ->
     alloca $ \result_ptr -> do
-        glGetTexParameteriv target gl_TEXTURE_COMPARE_MODE result_ptr
-        result <- fromIntegral <$> peek result_ptr
+        glGetTexParameteriv target GL_TEXTURE_COMPARE_MODE result_ptr
+        result <- peek result_ptr
         return $ if
-            | result == gl_NONE -> NoCompare
-            | result == gl_COMPARE_REF_TO_TEXTURE -> CompareRefToTexture
+            | result == GL_NONE -> NoCompare
+            | result == GL_COMPARE_REF_TO_TEXTURE -> CompareRefToTexture
             | otherwise -> error "getCompareMode: unexpected comparing mode."
 
 getWrapping :: (MonadIO m, MonadMask m) => Texture -> m Wrapping
 getWrapping tex = liftIO $ withBindingByTopology tex $ \target ->
     alloca $ \result_ptr -> do
-        glGetTexParameteriv target gl_TEXTURE_WRAP_S result_ptr
-        result <- fromIntegral <$> peek result_ptr
+        glGetTexParameteriv target GL_TEXTURE_WRAP_S result_ptr
+        result <- peek result_ptr
         return $ if
-            | result == gl_CLAMP_TO_EDGE -> Clamp
-            | result == gl_REPEAT -> Repeat
+            | result == GL_CLAMP_TO_EDGE -> Clamp
+            | result == GL_REPEAT -> Repeat
             | otherwise -> error "getWrapping: unexpected wrapping mode."
 
 setAnisotropy :: (MonadIO m, MonadMask m) => Float -> Texture -> m ()
 setAnisotropy ani tex = withBindingByTopology tex $ \target ->
-    glTexParameterf target gl_TEXTURE_MAX_ANISOTROPY_EXT (CFloat ani)
+    glTexParameterf target GL_TEXTURE_MAX_ANISOTROPY_EXT ani
 
 getAnisotropy :: (MonadIO m, MonadMask m) => Texture -> m Float
 getAnisotropy tex = liftIO $ withBindingByTopology tex $ \target ->
     alloca $ \ani_ptr -> do
-        glGetTexParameterfv target gl_TEXTURE_MAX_ANISOTROPY_EXT ani_ptr
-        unwrap <$> peek ani_ptr
-  where
-    unwrap (CFloat f) = f
+        glGetTexParameterfv target GL_TEXTURE_MAX_ANISOTROPY_EXT ani_ptr
+        peek ani_ptr
 
 {-
 nextMipmapLevel :: Int -> Int

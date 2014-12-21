@@ -44,7 +44,7 @@ fence = mask_ $ do
     return $ Fence { resource = resource
                    , ordIndex = unique }
   where
-    createFence = glFenceSync gl_SYNC_GPU_COMMANDS_COMPLETE 0
+    createFence = glFenceSync GL_SYNC_GPU_COMMANDS_COMPLETE 0
 
 -- | Waits for a fence to signal.
 --
@@ -56,12 +56,12 @@ waitFence :: MonadIO m
                           --   `False` if waiting timed out.
 waitFence useconds (Fence{ resource = resource }) =
     withResource resource $ \fencesync -> do
-        ret <- glClientWaitSync fencesync gl_SYNC_FLUSH_COMMANDS_BIT
+        ret <- glClientWaitSync fencesync GL_SYNC_FLUSH_COMMANDS_BIT
                                 (fromIntegral actual_seconds)
-        if | ret == gl_ALREADY_SIGNALED -> return True
-           | ret == gl_TIMEOUT_EXPIRED -> return False
-           | ret == gl_CONDITION_SATISFIED -> return True
-           | ret == gl_WAIT_FAILED -> return True -- should we throw an error?
+        if | ret == GL_ALREADY_SIGNALED -> return True
+           | ret == GL_TIMEOUT_EXPIRED -> return False
+           | ret == GL_CONDITION_SATISFIED -> return True
+           | ret == GL_WAIT_FAILED -> return True -- should we throw an error?
   where
     actual_seconds :: Word64
     actual_seconds =

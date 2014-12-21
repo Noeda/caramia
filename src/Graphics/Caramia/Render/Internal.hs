@@ -27,14 +27,14 @@ data ComparisonFunc =
   deriving ( Eq, Ord, Show, Read, Typeable )
 
 comparisonFuncToConstant :: ComparisonFunc -> GLenum
-comparisonFuncToConstant Never = gl_NEVER
-comparisonFuncToConstant Less = gl_LESS
-comparisonFuncToConstant Equal = gl_EQUAL
-comparisonFuncToConstant LEqual = gl_LEQUAL
-comparisonFuncToConstant Greater = gl_GREATER
-comparisonFuncToConstant NotEqual = gl_NOTEQUAL
-comparisonFuncToConstant GEqual = gl_GEQUAL
-comparisonFuncToConstant Always = gl_ALWAYS
+comparisonFuncToConstant Never = GL_NEVER
+comparisonFuncToConstant Less = GL_LESS
+comparisonFuncToConstant Equal = GL_EQUAL
+comparisonFuncToConstant LEqual = GL_LEQUAL
+comparisonFuncToConstant Greater = GL_GREATER
+comparisonFuncToConstant NotEqual = GL_NOTEQUAL
+comparisonFuncToConstant GEqual = GL_GEQUAL
+comparisonFuncToConstant Always = GL_ALWAYS
 
 -- | Stencil buffer operations.
 --
@@ -53,14 +53,14 @@ data StencilOp =
   deriving ( Eq, Ord, Show, Read, Typeable )
 
 stencilOpToConstant :: StencilOp -> GLenum
-stencilOpToConstant Keep = gl_KEEP
-stencilOpToConstant Zero = gl_ZERO
-stencilOpToConstant Replace = gl_REPLACE
-stencilOpToConstant Increment = gl_INCR
-stencilOpToConstant IncrementAndWrap = gl_INCR_WRAP
-stencilOpToConstant Decrease = gl_DECR
-stencilOpToConstant DecreaseAndWrap = gl_DECR_WRAP
-stencilOpToConstant Invert = gl_INVERT
+stencilOpToConstant Keep = GL_KEEP
+stencilOpToConstant Zero = GL_ZERO
+stencilOpToConstant Replace = GL_REPLACE
+stencilOpToConstant Increment = GL_INCR
+stencilOpToConstant IncrementAndWrap = GL_INCR_WRAP
+stencilOpToConstant Decrease = GL_DECR
+stencilOpToConstant DecreaseAndWrap = GL_DECR_WRAP
+stencilOpToConstant Invert = GL_INVERT
 
 setStencilFunc :: MonadIO m
                => ComparisonFunc
@@ -89,12 +89,12 @@ withStencilFunc :: (MonadIO m, MonadMask m)
                 -> m a
                 -> m a
 withStencilFunc func op1 op2 op3 ref mask action = do
-    old_func <- gi gl_STENCIL_FUNC
-    old_ref <- gi gl_STENCIL_REF
-    old_mask <- gi gl_STENCIL_VALUE_MASK
-    old_op1 <- gi gl_STENCIL_FAIL
-    old_op2 <- gi gl_STENCIL_PASS_DEPTH_FAIL
-    old_op3 <- gi gl_STENCIL_PASS_DEPTH_PASS
+    old_func <- gi GL_STENCIL_FUNC
+    old_ref <- gi GL_STENCIL_REF
+    old_mask <- gi GL_STENCIL_VALUE_MASK
+    old_op1 <- gi GL_STENCIL_FAIL
+    old_op2 <- gi GL_STENCIL_PASS_DEPTH_FAIL
+    old_op3 <- gi GL_STENCIL_PASS_DEPTH_PASS
     finally (setStencilFunc func op1 op2 op3 ref mask >> action)
             (do
                  glStencilFunc old_func (fromIntegral old_ref) old_mask
@@ -102,30 +102,30 @@ withStencilFunc func op1 op2 op3 ref mask action = do
 
 withCulling :: (MonadIO m, MonadMask m) => Culling -> m a -> m a
 withCulling culling action = do
-    old_culling <- gi gl_CULL_FACE_MODE
-    was_enabled <- glIsEnabled gl_CULL_FACE
+    old_culling <- gi GL_CULL_FACE_MODE
+    was_enabled <- glIsEnabled GL_CULL_FACE
     finally (setCulling culling >> action)
             (liftIO $ do
-                 if was_enabled == fromIntegral gl_TRUE
-                     then glEnable gl_CULL_FACE
-                     else glDisable gl_CULL_FACE
+                 if was_enabled == GL_TRUE
+                     then glEnable GL_CULL_FACE
+                     else glDisable GL_CULL_FACE
                  glCullFace old_culling)
 
 setCulling :: (MonadIO m, MonadMask m) => Culling -> m ()
-setCulling NoCulling = glDisable gl_CULL_FACE
+setCulling NoCulling = glDisable GL_CULL_FACE
 setCulling x = mask_ $
-    glEnable gl_CULL_FACE >>
+    glEnable GL_CULL_FACE >>
     glCullFace (cullingToConstant x)
 
 setDepthFunc :: MonadIO m => ComparisonFunc -> Bool -> m ()
 setDepthFunc func write_depth = do
     glDepthFunc (comparisonFuncToConstant func)
-    glDepthMask (fromIntegral $ if write_depth then gl_TRUE else gl_FALSE)
+    glDepthMask (if write_depth then GL_TRUE else GL_FALSE)
 
 withDepthFunc :: (MonadIO m, MonadMask m) => ComparisonFunc -> Bool -> m a -> m a
 withDepthFunc func write_depth action = do
-    old_depth_func <- gi gl_DEPTH_FUNC
-    old_depth_write <- gi gl_DEPTH_WRITEMASK
+    old_depth_func <- gi GL_DEPTH_FUNC
+    old_depth_write <- gi GL_DEPTH_WRITEMASK
     finally (setDepthFunc func write_depth >> action)
             (do
                  glDepthFunc old_depth_func
@@ -134,12 +134,12 @@ withDepthFunc func write_depth action = do
 setFragmentPassTests :: (MonadIO m, MonadMask m) => FragmentPassTests -> m ()
 setFragmentPassTests (FragmentPassTests {..}) = do
     case depthTest of
-        Nothing -> glDisable gl_DEPTH_TEST
-        Just dt -> glEnable gl_DEPTH_TEST >>
+        Nothing -> glDisable GL_DEPTH_TEST
+        Just dt -> glEnable GL_DEPTH_TEST >>
                    setDepthFunc dt writeDepth
     case stencilTest of
-        Nothing -> glDisable gl_STENCIL_TEST
-        Just st -> glEnable gl_STENCIL_TEST >>
+        Nothing -> glDisable GL_STENCIL_TEST
+        Just st -> glEnable GL_STENCIL_TEST >>
                    setStencilFunc st
                                   failStencilOp
                                   depthFailStencilOp
@@ -150,22 +150,22 @@ setFragmentPassTests (FragmentPassTests {..}) = do
 
 withFragmentPassTests :: (MonadIO m, MonadMask m) => FragmentPassTests -> m a -> m a
 withFragmentPassTests (FragmentPassTests {..}) action = do
-    was_it_enabled <- glIsEnabled gl_DEPTH_TEST
+    was_it_enabled <- glIsEnabled GL_DEPTH_TEST
     finally
         (case depthTest of
-             Nothing -> glDisable gl_DEPTH_TEST >> next
-             Just dt -> glEnable gl_DEPTH_TEST >>
+             Nothing -> glDisable GL_DEPTH_TEST >> next
+             Just dt -> glEnable GL_DEPTH_TEST >>
                         withDepthFunc dt writeDepth next) $
-        if was_it_enabled == fromIntegral gl_TRUE
-          then glEnable gl_DEPTH_TEST
-          else glDisable gl_DEPTH_TEST
+        if was_it_enabled == GL_TRUE
+          then glEnable GL_DEPTH_TEST
+          else glDisable GL_DEPTH_TEST
   where
     next = do
-        was_it_enabled <- glIsEnabled gl_STENCIL_TEST
+        was_it_enabled <- glIsEnabled GL_STENCIL_TEST
         finally
             (case stencilTest of
-                 Nothing -> glDisable gl_STENCIL_TEST >> next'
-                 Just st -> glEnable gl_STENCIL_TEST >>
+                 Nothing -> glDisable GL_STENCIL_TEST >> next'
+                 Just st -> glEnable GL_STENCIL_TEST >>
                             withStencilFunc st
                                             failStencilOp
                                             depthFailStencilOp
@@ -173,9 +173,9 @@ withFragmentPassTests (FragmentPassTests {..}) action = do
                                             stencilReference
                                             stencilMask
                                             next') $
-            if was_it_enabled == fromIntegral gl_TRUE
-              then glEnable gl_STENCIL_TEST
-              else glDisable gl_STENCIL_TEST
+            if was_it_enabled == GL_TRUE
+              then glEnable GL_STENCIL_TEST
+              else glDisable GL_STENCIL_TEST
 
     next' = withCulling cullFace action
 
@@ -188,9 +188,9 @@ data Culling =
   deriving ( Eq, Ord, Show, Read, Typeable )
 
 cullingToConstant :: Culling -> GLenum
-cullingToConstant Back = gl_BACK
-cullingToConstant Front = gl_FRONT
-cullingToConstant FrontAndBack = gl_FRONT_AND_BACK
+cullingToConstant Back = GL_BACK
+cullingToConstant Front = GL_FRONT
+cullingToConstant FrontAndBack = GL_FRONT_AND_BACK
 cullingToConstant NoCulling = 0
 
 -- | Specifies the tests that are run on a fragment to decide if it should be

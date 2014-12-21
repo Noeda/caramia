@@ -49,28 +49,28 @@ data TextureTarget = TextureTarget
 setBinding :: MonadIO m => Framebuffer -> m ()
 setBinding ScreenFramebuffer = do
     (w, h) <- getDimensions ScreenFramebuffer
-    glBindFramebuffer gl_FRAMEBUFFER 0
+    glBindFramebuffer GL_FRAMEBUFFER 0
     glViewport 0 0 (fromIntegral w) (fromIntegral h)
 setBinding fbuf = liftIO $ setter fbuf
 
 withBinding :: (MonadIO m, MonadMask m) => Framebuffer -> m a -> m a
 withBinding ScreenFramebuffer action = do
     (ox, oy, ow, oh) <- liftIO $ allocaArray 4 $ \viewport_ptr -> do
-        glGetIntegerv gl_VIEWPORT viewport_ptr
+        glGetIntegerv GL_VIEWPORT viewport_ptr
         ox <- peekElemOff viewport_ptr 0
         oy <- peekElemOff viewport_ptr 1
         ow <- peekElemOff viewport_ptr 2
         oh <- peekElemOff viewport_ptr 3
         return (ox, oy, ow, oh)
     (w, h) <- getDimensions ScreenFramebuffer
-    old_draw <- gi gl_DRAW_FRAMEBUFFER_BINDING
-    old_read <- gi gl_READ_FRAMEBUFFER_BINDING
-    finally (glBindFramebuffer gl_FRAMEBUFFER 0 >>
+    old_draw <- gi GL_DRAW_FRAMEBUFFER_BINDING
+    old_read <- gi GL_READ_FRAMEBUFFER_BINDING
+    finally (glBindFramebuffer GL_FRAMEBUFFER 0 >>
              glViewport 0 0 (fromIntegral w) (fromIntegral h) >>
              action) $ do
             glViewport ox oy ow oh
-            glBindFramebuffer gl_DRAW_FRAMEBUFFER old_draw
-            glBindFramebuffer gl_READ_FRAMEBUFFER old_read
+            glBindFramebuffer GL_DRAW_FRAMEBUFFER old_draw
+            glBindFramebuffer GL_READ_FRAMEBUFFER old_read
 withBinding fbuf action = binder fbuf action
 
 -- | Returns the size of a framebuffer.
@@ -79,7 +79,7 @@ withBinding fbuf action = binder fbuf action
 getDimensions :: MonadIO m => Framebuffer -> m (Int, Int)
 getDimensions ScreenFramebuffer =
     liftIO $ allocaArray 4 $ \vptr -> do
-        glGetIntegerv gl_VIEWPORT vptr
+        glGetIntegerv GL_VIEWPORT vptr
         w <- peekElemOff vptr 2
         h <- peekElemOff vptr 3
         return (fromIntegral w, fromIntegral h)

@@ -96,13 +96,13 @@ instance QueryResultType Bool where
     fromInt64 _ = True
 
 numericQueryTypeToConstant :: NumericQueryType -> GLenum
-numericQueryTypeToConstant SamplesPassed = gl_SAMPLES_PASSED
-numericQueryTypeToConstant PrimitivesGenerated = gl_PRIMITIVES_GENERATED
-numericQueryTypeToConstant TransformFeedbackPrimitivesWritten = gl_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN
-numericQueryTypeToConstant TimeElapsed = gl_TIME_ELAPSED
+numericQueryTypeToConstant SamplesPassed = GL_SAMPLES_PASSED
+numericQueryTypeToConstant PrimitivesGenerated = GL_PRIMITIVES_GENERATED
+numericQueryTypeToConstant TransformFeedbackPrimitivesWritten = GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN
+numericQueryTypeToConstant TimeElapsed = GL_TIME_ELAPSED
 
 booleanQueryTypeToConstant :: BooleanQueryType -> GLenum
-booleanQueryTypeToConstant AnySamplesPassed = gl_ANY_SAMPLES_PASSED
+booleanQueryTypeToConstant AnySamplesPassed = GL_ANY_SAMPLES_PASSED
 
 eitherQueryTypeToConstant :: SomeQuery -> GLenum
 eitherQueryTypeToConstant (Left qt) = numericQueryTypeToConstant qt
@@ -269,9 +269,9 @@ tryGetResults :: (MonadIO m, QueryResultType a)
 tryGetResults (Query { resource = resource }) =
     liftIO $ withResource resource $ \(Query_ queryname) -> do
         is_it_available <- alloca $ \av -> do
-            glGetQueryObjectiv queryname gl_QUERY_RESULT_AVAILABLE av
+            glGetQueryObjectiv queryname GL_QUERY_RESULT_AVAILABLE av
             peek av
-        if fromIntegral is_it_available == gl_FALSE
+        if is_it_available == GL_FALSE
           then return Nothing
           else fmap Just $ actuallyGetResults queryname
 
@@ -287,7 +287,7 @@ getResults (Query { resource = resource }) =
 actuallyGetResults :: QueryResultType a => GLuint -> IO a
 actuallyGetResults queryname = do
     result <- alloca $ \v64 -> do
-        glGetQueryObjecti64v queryname gl_QUERY_RESULT v64
+        glGetQueryObjecti64v queryname GL_QUERY_RESULT v64
         peek v64
     return $ fromInt64 result
 

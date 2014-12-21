@@ -15,6 +15,9 @@ module Graphics.Caramia.Internal.TexStorage
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Texture.Internal
+import Graphics.GL.Ext.EXT.DirectStateAccess
+import Graphics.GL.Ext.EXT.TextureCompressionS3tc
+import Graphics.GL.Ext.EXT.TextureSRGB
 import Control.Exception
 import Foreign.Ptr
 
@@ -25,10 +28,10 @@ fakeTextureStorage1D :: GLuint
                      -> GLenum
                      -> GLsizei
                      -> IO ()
-fakeTextureStorage1D texture target levels internalformat width = mask_ $ do
-    has_ext <- has_GL_EXT_direct_state_access
-    if has_ext then dsaFakeTextureStorage1D
-               else nodsaFakeTextureStorage1D
+fakeTextureStorage1D texture target levels internalformat width =
+    mask_ $ if gl_EXT_direct_state_access
+            then dsaFakeTextureStorage1D
+            else nodsaFakeTextureStorage1D
   where
     rec fun i w | i < levels = fun i w >>
                                rec fun (i+1) (max 1 $ w `div` 2)
@@ -45,7 +48,7 @@ fakeTextureStorage1D texture target levels internalformat width = mask_ $ do
                                 (formatFromInternalFormat internalformat)
                                 (typeFromInternalFormat internalformat)
                                 nullPtr) 0 width
-        glTextureParameteriEXT texture target gl_TEXTURE_MAX_LEVEL (levels-1)
+        glTextureParameteriEXT texture target GL_TEXTURE_MAX_LEVEL (levels-1)
 
     nodsaFakeTextureStorage1D = do
         old_tex <- gi $ bindingQueryPoint target
@@ -59,7 +62,7 @@ fakeTextureStorage1D texture target levels internalformat width = mask_ $ do
                              (formatFromInternalFormat internalformat)
                              (typeFromInternalFormat internalformat)
                              nullPtr) 0 width
-        glTexParameteri target gl_TEXTURE_MAX_LEVEL (levels-1)
+        glTexParameteri target GL_TEXTURE_MAX_LEVEL (levels-1)
         glBindTexture target old_tex
 
 -- | glTextureStorage2D
@@ -71,10 +74,9 @@ fakeTextureStorage2D :: GLuint
                      -> GLsizei
                      -> IO ()
 fakeTextureStorage2D texture target levels internalformat width height =
-    mask_ $ do
-        has_ext <- has_GL_EXT_direct_state_access
-        if has_ext then dsaFakeTextureStorage2D
-                   else nodsaFakeTextureStorage2D
+    mask_ $ if gl_EXT_direct_state_access
+            then dsaFakeTextureStorage2D
+            else nodsaFakeTextureStorage2D
   where
     rec fun i w h | i < levels = fun i w h >>
                                  rec fun
@@ -85,7 +87,7 @@ fakeTextureStorage2D texture target levels internalformat width height =
 
     dsaFakeTextureStorage2D = do
         rec (\i w h ->
-            if target /= gl_TEXTURE_CUBE_MAP
+            if target /= GL_TEXTURE_CUBE_MAP
               then glTextureImage2DEXT texture
                                     target
                                     i
@@ -107,12 +109,12 @@ fakeTextureStorage2D texture target levels internalformat width height =
                                     (formatFromInternalFormat internalformat)
                                     (typeFromInternalFormat internalformat)
                                     nullPtr) 0 width height
-        glTextureParameteriEXT texture target gl_TEXTURE_MAX_LEVEL (levels-1)
+        glTextureParameteriEXT texture target GL_TEXTURE_MAX_LEVEL (levels-1)
 
     nodsaFakeTextureStorage2D = do
         old_tex <- gi $ bindingQueryPoint target
         glBindTexture target texture
-        rec (\i w h -> if target /= gl_TEXTURE_CUBE_MAP
+        rec (\i w h -> if target /= GL_TEXTURE_CUBE_MAP
                          then glTexImage2D target
                                 i
                                 (fromIntegral internalformat)
@@ -133,16 +135,16 @@ fakeTextureStorage2D texture target levels internalformat width height =
                                     (typeFromInternalFormat internalformat)
                                     nullPtr)
                                     0 width height
-        glTexParameteri target gl_TEXTURE_MAX_LEVEL (levels-1)
+        glTexParameteri target GL_TEXTURE_MAX_LEVEL (levels-1)
         glBindTexture target old_tex
 
 cubeSides :: [GLenum]
-cubeSides = [gl_TEXTURE_CUBE_MAP_POSITIVE_X
-            ,gl_TEXTURE_CUBE_MAP_POSITIVE_Y
-            ,gl_TEXTURE_CUBE_MAP_POSITIVE_Z
-            ,gl_TEXTURE_CUBE_MAP_NEGATIVE_X
-            ,gl_TEXTURE_CUBE_MAP_NEGATIVE_Y
-            ,gl_TEXTURE_CUBE_MAP_NEGATIVE_Z]
+cubeSides = [GL_TEXTURE_CUBE_MAP_POSITIVE_X
+            ,GL_TEXTURE_CUBE_MAP_POSITIVE_Y
+            ,GL_TEXTURE_CUBE_MAP_POSITIVE_Z
+            ,GL_TEXTURE_CUBE_MAP_NEGATIVE_X
+            ,GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
+            ,GL_TEXTURE_CUBE_MAP_NEGATIVE_Z]
 
 -- | glTextureStorage3D
 fakeTextureStorage3D :: GLuint
@@ -154,10 +156,9 @@ fakeTextureStorage3D :: GLuint
                      -> GLsizei
                      -> IO ()
 fakeTextureStorage3D texture target levels internalformat width height depth =
-    mask_ $ do
-        has_ext <- has_GL_EXT_direct_state_access
-        if has_ext then dsaFakeTextureStorage3D
-                   else nodsaFakeTextureStorage3D
+    mask_ $ if gl_EXT_direct_state_access
+            then dsaFakeTextureStorage3D
+            else nodsaFakeTextureStorage3D
   where
     rec fun i w h z | i < levels = fun i w h z >>
                                    rec fun
@@ -180,7 +181,7 @@ fakeTextureStorage3D texture target levels internalformat width height depth =
                                 (formatFromInternalFormat internalformat)
                                 (typeFromInternalFormat internalformat)
                                 nullPtr) 0 width height depth
-        glTextureParameteriEXT texture target gl_TEXTURE_MAX_LEVEL (levels-1)
+        glTextureParameteriEXT texture target GL_TEXTURE_MAX_LEVEL (levels-1)
 
     nodsaFakeTextureStorage3D = do
         old_tex <- gi $ bindingQueryPoint target
@@ -196,73 +197,73 @@ fakeTextureStorage3D texture target levels internalformat width height depth =
                              (formatFromInternalFormat internalformat)
                              (typeFromInternalFormat internalformat)
                              nullPtr) 0 width height depth
-        glTexParameteri target gl_TEXTURE_MAX_LEVEL (levels-1)
+        glTexParameteri target GL_TEXTURE_MAX_LEVEL (levels-1)
         glBindTexture target old_tex
 
 typeFromInternalFormat :: GLenum -> GLenum
 typeFromInternalFormat x =
-    if | x == gl_R8     -> gl_UNSIGNED_BYTE
-       | x == gl_R8I    -> gl_BYTE
-       | x == gl_R8UI   -> gl_UNSIGNED_BYTE
-       | x == gl_R16    -> gl_UNSIGNED_SHORT
-       | x == gl_R16I   -> gl_SHORT
-       | x == gl_R16UI  -> gl_UNSIGNED_SHORT
-       | x == gl_R16F   -> gl_FLOAT
-       | x == gl_R32F   -> gl_FLOAT
-       | x == gl_R32I   -> gl_INT
-       | x == gl_R32UI  -> gl_UNSIGNED_INT
-       | x == gl_RG8    -> gl_UNSIGNED_BYTE
-       | x == gl_RG8I   -> gl_BYTE
-       | x == gl_RG8UI  -> gl_UNSIGNED_BYTE
-       | x == gl_RG16   -> gl_UNSIGNED_SHORT
-       | x == gl_RG16I  -> gl_SHORT
-       | x == gl_RG16UI -> gl_UNSIGNED_SHORT
-       | x == gl_RG16F  -> gl_FLOAT
-       | x == gl_RG32F  -> gl_FLOAT
-       | x == gl_RG32I  -> gl_INT
-       | x == gl_RG32UI -> gl_UNSIGNED_INT
-       | x == gl_R11F_G11F_B10F -> gl_FLOAT
-       | x == gl_RGBA32F -> gl_FLOAT
-       | x == gl_RGBA32I -> gl_INT
-       | x == gl_RGBA32UI -> gl_UNSIGNED_INT
-       | x == gl_RGBA16 -> gl_UNSIGNED_SHORT
-       | x == gl_RGBA16F -> gl_FLOAT
-       | x == gl_RGBA16I -> gl_SHORT
-       | x == gl_RGBA16UI -> gl_UNSIGNED_SHORT
-       | x == gl_RGBA8 -> gl_UNSIGNED_BYTE
-       | x == gl_RGBA8UI -> gl_UNSIGNED_BYTE
-       | x == gl_SRGB8_ALPHA8 -> gl_UNSIGNED_BYTE
-       | x == gl_RGB10_A2 -> gl_FLOAT
-       | x == gl_RGB32F -> gl_FLOAT
-       | x == gl_RGB32I -> gl_INT
-       | x == gl_RGB32UI -> gl_UNSIGNED_INT
-       | x == gl_RGB16F -> gl_FLOAT
-       | x == gl_RGB16I -> gl_SHORT
-       | x == gl_RGB16UI -> gl_UNSIGNED_SHORT
-       | x == gl_RGB16 -> gl_UNSIGNED_SHORT
-       | x == gl_RGB8 -> gl_UNSIGNED_BYTE
-       | x == gl_RGB8I -> gl_BYTE
-       | x == gl_RGB8UI -> gl_UNSIGNED_BYTE
-       | x == gl_SRGB8 -> gl_UNSIGNED_BYTE
-       | x == gl_RGB9_E5 -> gl_FLOAT
-       | x == gl_COMPRESSED_RG_RGTC2 -> gl_FLOAT
-       | x == gl_COMPRESSED_SIGNED_RG_RGTC2 -> gl_FLOAT
-       | x == gl_COMPRESSED_RED_RGTC1 -> gl_FLOAT
-       | x == gl_COMPRESSED_SIGNED_RED_RGTC1_EXT -> gl_FLOAT
-       | x == gl_COMPRESSED_RGB_S3TC_DXT1_EXT -> gl_FLOAT
-       | x == gl_COMPRESSED_RGBA_S3TC_DXT1_EXT -> gl_FLOAT
-       | x == gl_COMPRESSED_RGBA_S3TC_DXT3_EXT -> gl_FLOAT
-       | x == gl_COMPRESSED_RGBA_S3TC_DXT5_EXT -> gl_FLOAT
-       | x == gl_COMPRESSED_SRGB_S3TC_DXT1_EXT -> gl_FLOAT
-       | x == gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT -> gl_FLOAT
-       | x == gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT -> gl_FLOAT
-       | x == gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT -> gl_FLOAT
-       | x == gl_DEPTH_COMPONENT32 -> gl_FLOAT
-       | x == gl_DEPTH_COMPONENT32F -> gl_FLOAT
-       | x == gl_DEPTH_COMPONENT24 -> gl_FLOAT
-       | x == gl_DEPTH_COMPONENT16 -> gl_FLOAT
-       | x == gl_DEPTH32F_STENCIL8 -> gl_FLOAT_32_UNSIGNED_INT_24_8_REV
-       | x == gl_DEPTH24_STENCIL8 -> gl_UNSIGNED_INT_24_8
+    if | x == GL_R8     -> GL_UNSIGNED_BYTE
+       | x == GL_R8I    -> GL_BYTE
+       | x == GL_R8UI   -> GL_UNSIGNED_BYTE
+       | x == GL_R16    -> GL_UNSIGNED_SHORT
+       | x == GL_R16I   -> GL_SHORT
+       | x == GL_R16UI  -> GL_UNSIGNED_SHORT
+       | x == GL_R16F   -> GL_FLOAT
+       | x == GL_R32F   -> GL_FLOAT
+       | x == GL_R32I   -> GL_INT
+       | x == GL_R32UI  -> GL_UNSIGNED_INT
+       | x == GL_RG8    -> GL_UNSIGNED_BYTE
+       | x == GL_RG8I   -> GL_BYTE
+       | x == GL_RG8UI  -> GL_UNSIGNED_BYTE
+       | x == GL_RG16   -> GL_UNSIGNED_SHORT
+       | x == GL_RG16I  -> GL_SHORT
+       | x == GL_RG16UI -> GL_UNSIGNED_SHORT
+       | x == GL_RG16F  -> GL_FLOAT
+       | x == GL_RG32F  -> GL_FLOAT
+       | x == GL_RG32I  -> GL_INT
+       | x == GL_RG32UI -> GL_UNSIGNED_INT
+       | x == GL_R11F_G11F_B10F -> GL_FLOAT
+       | x == GL_RGBA32F -> GL_FLOAT
+       | x == GL_RGBA32I -> GL_INT
+       | x == GL_RGBA32UI -> GL_UNSIGNED_INT
+       | x == GL_RGBA16 -> GL_UNSIGNED_SHORT
+       | x == GL_RGBA16F -> GL_FLOAT
+       | x == GL_RGBA16I -> GL_SHORT
+       | x == GL_RGBA16UI -> GL_UNSIGNED_SHORT
+       | x == GL_RGBA8 -> GL_UNSIGNED_BYTE
+       | x == GL_RGBA8UI -> GL_UNSIGNED_BYTE
+       | x == GL_SRGB8_ALPHA8 -> GL_UNSIGNED_BYTE
+       | x == GL_RGB10_A2 -> GL_FLOAT
+       | x == GL_RGB32F -> GL_FLOAT
+       | x == GL_RGB32I -> GL_INT
+       | x == GL_RGB32UI -> GL_UNSIGNED_INT
+       | x == GL_RGB16F -> GL_FLOAT
+       | x == GL_RGB16I -> GL_SHORT
+       | x == GL_RGB16UI -> GL_UNSIGNED_SHORT
+       | x == GL_RGB16 -> GL_UNSIGNED_SHORT
+       | x == GL_RGB8 -> GL_UNSIGNED_BYTE
+       | x == GL_RGB8I -> GL_BYTE
+       | x == GL_RGB8UI -> GL_UNSIGNED_BYTE
+       | x == GL_SRGB8 -> GL_UNSIGNED_BYTE
+       | x == GL_RGB9_E5 -> GL_FLOAT
+       | x == GL_COMPRESSED_RG_RGTC2 -> GL_FLOAT
+       | x == GL_COMPRESSED_SIGNED_RG_RGTC2 -> GL_FLOAT
+       | x == GL_COMPRESSED_RED_RGTC1 -> GL_FLOAT
+       | x == GL_COMPRESSED_SIGNED_RED_RGTC1 -> GL_FLOAT
+       | x == GL_COMPRESSED_RGB_S3TC_DXT1_EXT -> GL_FLOAT
+       | x == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT -> GL_FLOAT
+       | x == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT -> GL_FLOAT
+       | x == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT -> GL_FLOAT
+       | x == GL_COMPRESSED_SRGB_S3TC_DXT1_EXT -> GL_FLOAT
+       | x == GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT -> GL_FLOAT
+       | x == GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT -> GL_FLOAT
+       | x == GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT -> GL_FLOAT
+       | x == GL_DEPTH_COMPONENT32 -> GL_FLOAT
+       | x == GL_DEPTH_COMPONENT32F -> GL_FLOAT
+       | x == GL_DEPTH_COMPONENT24 -> GL_FLOAT
+       | x == GL_DEPTH_COMPONENT16 -> GL_FLOAT
+       | x == GL_DEPTH32F_STENCIL8 -> GL_FLOAT_32_UNSIGNED_INT_24_8_REV
+       | x == GL_DEPTH24_STENCIL8 -> GL_UNSIGNED_INT_24_8
        | otherwise ->
            error $ "typeFromInternalFormat: unknown internal format " <>
                    show x
@@ -270,68 +271,68 @@ typeFromInternalFormat x =
 
 formatFromInternalFormat :: GLenum -> GLenum
 formatFromInternalFormat x =
-    if | x == gl_R8     -> gl_RED
-       | x == gl_R8I    -> gl_RED_INTEGER
-       | x == gl_R8UI   -> gl_RED_INTEGER
-       | x == gl_R16    -> gl_RED
-       | x == gl_R16I   -> gl_RED_INTEGER
-       | x == gl_R16UI  -> gl_RED_INTEGER
-       | x == gl_R16F   -> gl_RED
-       | x == gl_R32F   -> gl_RED
-       | x == gl_R32I   -> gl_RED_INTEGER
-       | x == gl_R32UI  -> gl_RED_INTEGER
-       | x == gl_RG8    -> gl_RG
-       | x == gl_RG8I   -> gl_RG_INTEGER
-       | x == gl_RG8UI  -> gl_RG_INTEGER
-       | x == gl_RG16   -> gl_RG
-       | x == gl_RG16I  -> gl_RG_INTEGER
-       | x == gl_RG16UI -> gl_RG_INTEGER
-       | x == gl_RG16F  -> gl_RG
-       | x == gl_RG32F  -> gl_RG
-       | x == gl_RG32I  -> gl_RG_INTEGER
-       | x == gl_RG32UI -> gl_RG_INTEGER
-       | x == gl_R11F_G11F_B10F -> gl_RGB
-       | x == gl_RGBA32F -> gl_RGBA
-       | x == gl_RGBA32I -> gl_RGBA_INTEGER
-       | x == gl_RGBA32UI -> gl_RGBA_INTEGER
-       | x == gl_RGBA16 -> gl_RGBA
-       | x == gl_RGBA16F -> gl_RGBA
-       | x == gl_RGBA16I -> gl_RGBA_INTEGER
-       | x == gl_RGBA16UI -> gl_RGBA_INTEGER
-       | x == gl_RGBA8 -> gl_RGBA
-       | x == gl_RGBA8UI -> gl_RGBA_INTEGER
-       | x == gl_SRGB8_ALPHA8 -> gl_RGBA
-       | x == gl_RGB10_A2 -> gl_RGBA
-       | x == gl_RGB32F -> gl_RGB
-       | x == gl_RGB32I -> gl_RGB_INTEGER
-       | x == gl_RGB32UI -> gl_RGB_INTEGER
-       | x == gl_RGB16F -> gl_RGB
-       | x == gl_RGB16I -> gl_RGB_INTEGER
-       | x == gl_RGB16UI -> gl_RGB_INTEGER
-       | x == gl_RGB16 -> gl_RGB
-       | x == gl_RGB8 -> gl_RGB
-       | x == gl_RGB8I -> gl_RGB_INTEGER
-       | x == gl_RGB8UI -> gl_RGB_INTEGER
-       | x == gl_SRGB8 -> gl_RGB
-       | x == gl_RGB9_E5 -> gl_RGB
-       | x == gl_COMPRESSED_RG_RGTC2 -> gl_RG
-       | x == gl_COMPRESSED_SIGNED_RG_RGTC2 -> gl_RG
-       | x == gl_COMPRESSED_RED_RGTC1 -> gl_RED
-       | x == gl_COMPRESSED_SIGNED_RED_RGTC1 -> gl_RED
-       | x == gl_COMPRESSED_RGB_S3TC_DXT1_EXT -> gl_RGB
-       | x == gl_COMPRESSED_RGBA_S3TC_DXT1_EXT -> gl_RGBA
-       | x == gl_COMPRESSED_RGBA_S3TC_DXT3_EXT -> gl_RGBA
-       | x == gl_COMPRESSED_RGBA_S3TC_DXT5_EXT -> gl_RGBA
-       | x == gl_COMPRESSED_SRGB_S3TC_DXT1_EXT -> gl_RGB
-       | x == gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT -> gl_RGBA
-       | x == gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT -> gl_RGBA
-       | x == gl_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT -> gl_RGBA
-       | x == gl_DEPTH_COMPONENT32 -> gl_DEPTH_COMPONENT
-       | x == gl_DEPTH_COMPONENT32F -> gl_DEPTH_COMPONENT
-       | x == gl_DEPTH_COMPONENT24 -> gl_DEPTH_COMPONENT
-       | x == gl_DEPTH_COMPONENT16 -> gl_DEPTH_COMPONENT
-       | x == gl_DEPTH32F_STENCIL8 -> gl_DEPTH_STENCIL
-       | x == gl_DEPTH24_STENCIL8 -> gl_DEPTH_STENCIL
+    if | x == GL_R8     -> GL_RED
+       | x == GL_R8I    -> GL_RED_INTEGER
+       | x == GL_R8UI   -> GL_RED_INTEGER
+       | x == GL_R16    -> GL_RED
+       | x == GL_R16I   -> GL_RED_INTEGER
+       | x == GL_R16UI  -> GL_RED_INTEGER
+       | x == GL_R16F   -> GL_RED
+       | x == GL_R32F   -> GL_RED
+       | x == GL_R32I   -> GL_RED_INTEGER
+       | x == GL_R32UI  -> GL_RED_INTEGER
+       | x == GL_RG8    -> GL_RG
+       | x == GL_RG8I   -> GL_RG_INTEGER
+       | x == GL_RG8UI  -> GL_RG_INTEGER
+       | x == GL_RG16   -> GL_RG
+       | x == GL_RG16I  -> GL_RG_INTEGER
+       | x == GL_RG16UI -> GL_RG_INTEGER
+       | x == GL_RG16F  -> GL_RG
+       | x == GL_RG32F  -> GL_RG
+       | x == GL_RG32I  -> GL_RG_INTEGER
+       | x == GL_RG32UI -> GL_RG_INTEGER
+       | x == GL_R11F_G11F_B10F -> GL_RGB
+       | x == GL_RGBA32F -> GL_RGBA
+       | x == GL_RGBA32I -> GL_RGBA_INTEGER
+       | x == GL_RGBA32UI -> GL_RGBA_INTEGER
+       | x == GL_RGBA16 -> GL_RGBA
+       | x == GL_RGBA16F -> GL_RGBA
+       | x == GL_RGBA16I -> GL_RGBA_INTEGER
+       | x == GL_RGBA16UI -> GL_RGBA_INTEGER
+       | x == GL_RGBA8 -> GL_RGBA
+       | x == GL_RGBA8UI -> GL_RGBA_INTEGER
+       | x == GL_SRGB8_ALPHA8 -> GL_RGBA
+       | x == GL_RGB10_A2 -> GL_RGBA
+       | x == GL_RGB32F -> GL_RGB
+       | x == GL_RGB32I -> GL_RGB_INTEGER
+       | x == GL_RGB32UI -> GL_RGB_INTEGER
+       | x == GL_RGB16F -> GL_RGB
+       | x == GL_RGB16I -> GL_RGB_INTEGER
+       | x == GL_RGB16UI -> GL_RGB_INTEGER
+       | x == GL_RGB16 -> GL_RGB
+       | x == GL_RGB8 -> GL_RGB
+       | x == GL_RGB8I -> GL_RGB_INTEGER
+       | x == GL_RGB8UI -> GL_RGB_INTEGER
+       | x == GL_SRGB8 -> GL_RGB
+       | x == GL_RGB9_E5 -> GL_RGB
+       | x == GL_COMPRESSED_RG_RGTC2 -> GL_RG
+       | x == GL_COMPRESSED_SIGNED_RG_RGTC2 -> GL_RG
+       | x == GL_COMPRESSED_RED_RGTC1 -> GL_RED
+       | x == GL_COMPRESSED_SIGNED_RED_RGTC1 -> GL_RED
+       | x == GL_COMPRESSED_RGB_S3TC_DXT1_EXT -> GL_RGB
+       | x == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT -> GL_RGBA
+       | x == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT -> GL_RGBA
+       | x == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT -> GL_RGBA
+       | x == GL_COMPRESSED_SRGB_S3TC_DXT1_EXT -> GL_RGB
+       | x == GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT -> GL_RGBA
+       | x == GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT -> GL_RGBA
+       | x == GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT -> GL_RGBA
+       | x == GL_DEPTH_COMPONENT32 -> GL_DEPTH_COMPONENT
+       | x == GL_DEPTH_COMPONENT32F -> GL_DEPTH_COMPONENT
+       | x == GL_DEPTH_COMPONENT24 -> GL_DEPTH_COMPONENT
+       | x == GL_DEPTH_COMPONENT16 -> GL_DEPTH_COMPONENT
+       | x == GL_DEPTH32F_STENCIL8 -> GL_DEPTH_STENCIL
+       | x == GL_DEPTH24_STENCIL8 -> GL_DEPTH_STENCIL
        | otherwise ->
            error $ "formatFromInternalFormat: unknown internal format " <>
                    show x
