@@ -6,7 +6,6 @@ import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Color
-import Graphics.GL.Ext.EXT.BlendColor
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Foreign
@@ -103,7 +102,7 @@ withBlendings spec@(BlendSpec {..}) action = do
     old_dst_color <- gi GL_BLEND_DST_RGB
     old_dst_alpha <- gi GL_BLEND_DST_ALPHA
     (r, g, b, a) <- liftIO $ allocaArray 4 $ \color_ptr -> do
-        glGetFloatv GL_BLEND_COLOR_EXT color_ptr
+        glGetFloatv GL_BLEND_COLOR color_ptr
         r <- peekElemOff color_ptr 0
         g <- peekElemOff color_ptr 1
         b <- peekElemOff color_ptr 2
