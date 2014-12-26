@@ -1,6 +1,6 @@
 name:                caramia
 version:             0.6.0.0
-synopsis:            Less painful OpenGL 3.3 rendering
+synopsis:            Less painful OpenGL rendering
 homepage:            https://github.com/Noeda/caramia/
 license:             MIT
 license-file:        LICENSE
@@ -15,13 +15,18 @@ extra-source-files:  README.md
 
 description:
     This is a highish-level OpenGL bindings library for real-time graphics for
-    Haskell, using OpenGL 3.3.
+    Haskell, with minimum OpenGL version being 2.1.
     .
     Requirements:
     .
-        * GHC 7.8+
+    * GHC 7.8+
+    * OpenGL 2.1 (with some extensions)
     .
-        * OpenGL 3.3
+    If the target system has OpenGL 3.3, then all features in this library should
+    be available unless stated otherwise. This library provides functions to check
+    if some particular feature is supported on the platform at run-time. OpenGL
+    contexts with 3.x or later versions can be a core profile; this library does
+    not care.
     .
     You need to use `-threaded` flag in executables that use this library.
     .
@@ -30,11 +35,8 @@ description:
     * Safe and automatic finalization of OpenGL resources
     .
     * No implicit state (that is, no glBind* mess or equivalent). There is a
-    monad for mass-rendering that has implicit state but the state is localized
-    to running of that monad. (see Caramia.Render).
-    .
-    * Only vanilla OpenGL 3.3 required. Some extensions will be used if they are
-      available.
+        monad for mass-rendering that has implicit state but the state is localized
+        to running of that monad. (see Caramia.Render).
     .
     Here are some curious features that you might find useful.
     .
@@ -43,11 +45,12 @@ description:
     .
     * This library does not create an OpenGL context. You can use whatever
         library you want to create an OpenGL context as long as it can get an
-        OpenGL 3.3 context. You may be interested at looking at the tests in
-        this package to see how to use this with the `sdl2` package.
+        OpenGL 2.1 (or any later version) context. You may be interested at looking
+        at the tests in this package to see how to use this with the `sdl2`
+        package.
     .
     * Operations are generalized over `MonadIO`. Works on top of pure `IO` and
-      also in your custom monad stacks, if they have `MonadIO` at bottom.
+        also in your custom monad stacks, if they have `MonadIO` at bottom.
     .
     (At least) the following OpenGL concepts are present in this library:
     .

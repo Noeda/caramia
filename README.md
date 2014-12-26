@@ -1,12 +1,18 @@
 [![Build Status](https://travis-ci.org/Noeda/caramia.svg?branch=master)](https://travis-ci.org/Noeda/caramia)
 
 This is a highish-level OpenGL bindings library for real-time graphics for
-Haskell, using OpenGL 3.3.
+Haskell, with minimum OpenGL version being 2.1.
 
 Requirements:
 
   * GHC 7.8+
-  * OpenGL 3.3
+  * OpenGL 2.1 (with some extensions)
+
+If the target system has OpenGL 3.3, then all features in this library should
+be available unless stated otherwise. This library provides functions to check
+if some particular feature is supported on the platform at run-time. OpenGL
+contexts with 3.x or later versions can be a core profile; this library does
+not care.
 
 You need to use `-threaded` flag in executables that use this library.
 
@@ -28,8 +34,9 @@ Here are some curious features that you might find useful.
 
   * This library does not create an OpenGL context. You can use whatever
     library you want to create an OpenGL context as long as it can get an
-    OpenGL 3.3 context. You may be interested at looking at the tests in this
-    package to see how to use this with the `sdl2` package.
+    OpenGL 2.1 (or any later version) context. You may be interested at looking
+    at the tests in this package to see how to use this with the `sdl2`
+    package.
 
   * Operations are generalized over `MonadIO`. Works on top of pure `IO` and
     also in your custom monad stacks, if they have `MonadIO` at bottom.
