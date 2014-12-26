@@ -5,6 +5,11 @@
 --
 -- <https://www.opengl.org/wiki/Vertex_Array_Object>
 --
+-- Either OpenGL 3.0 or @ GL_ARB_vertex_array_object @ extension is required to
+-- use operations from this module.
+--
+
+{-# LANGUAGE OverloadedStrings #-}
 
 module Graphics.Caramia.VAO
     ( -- * Creation
@@ -25,10 +30,12 @@ import Control.Monad.IO.Class
 import Control.Monad.Catch
 import Data.Unique
 import qualified Graphics.Caramia.Buffer.Internal as Buf
+import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
 import Graphics.Caramia.VAO.Internal
+import Graphics.GL.Ext.ARB.VertexArrayObject
 
 -- | Creates a vertex array object.
 --
@@ -36,14 +43,17 @@ import Graphics.Caramia.VAO.Internal
 -- program.
 newVAO :: MonadIO m => m VAO
 newVAO = liftIO $ mask_ $ do
-    res <- newResource create
-                       (\(VAO_ vao) -> mglDeleteVertexArray vao)
-                       (return ())
-    ref <- newIORef []
-    unique <- newUnique
-    return VAO { resource = res
-               , boundBuffers = ref
-               , vaoIndex = unique }
+    checkOpenGLOrExtensionM (OpenGLVersion 3 0)
+                            "GL_ARB_vertex_array_object"
+                            gl_ARB_vertex_array_object $ do
+        res <- newResource create
+                        (\(VAO_ vao) -> mglDeleteVertexArray vao)
+                        (return ())
+        ref <- newIORef []
+        unique <- newUnique
+        return VAO { resource = res
+                , boundBuffers = ref
+                , vaoIndex = unique }
   where
     create = VAO_ <$> mglGenVertexArray
 
