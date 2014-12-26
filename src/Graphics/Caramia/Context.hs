@@ -83,7 +83,7 @@ instance Exception TooOldOpenGL
 -- OpenGL's side to automatically detect if size has changed.
 --
 -- Throws `TooOldOpenGL` if the code detects a context that does not provide
--- OpenGL 3.3.
+-- at least OpenGL 2.1.
 giveContext :: (MonadIO m, MonadMask m)
             => m a -> m a
 giveContext action = mask $ \restore -> do

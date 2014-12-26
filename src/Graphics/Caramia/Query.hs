@@ -11,15 +11,14 @@
 
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Graphics.Caramia.Query
     (
-    -- * Hardware support
-      areAdvancedQueriesSupported
     -- * Main query operations
-    , withNumericQuery
+      withNumericQuery
     , withNumericQuery'
     , withBooleanQuery
     , withBooleanQuery'
@@ -51,18 +50,23 @@ import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
+import Graphics.GL.Ext.ARB.OcclusionQuery
+import Graphics.GL.Ext.ARB.OcclusionQuery2
+import Graphics.GL.Ext.ARB.TimerQuery
 
 -- | What kind of query to make? These queries return integer results.
 data NumericQueryType
     = SamplesPassed
     | PrimitivesGenerated
     | TransformFeedbackPrimitivesWritten
-    | TimeElapsed
+    | TimeElapsed  -- | Requires OpenGL 3.3 or @ GL_ARB_timer_query @.
     deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 -- | What of query to make? These queries return boolean results.
 data BooleanQueryType
-    = AnySamplesPassed
+    = AnySamplesPassed   -- ^ If @ GL_ARB_occlusion_query2 @ or OpenGL 3.3 is
+                         --   not available, this is implemented with
+                         --   `SamplesPassed` behind the scenes.
     deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 -- | Which queries cannot be used together?
@@ -113,15 +117,13 @@ eitherQueryTypeToConstant :: SomeQuery -> GLenum
 eitherQueryTypeToConstant (Left qt) = numericQueryTypeToConstant qt
 eitherQueryTypeToConstant (Right qt) = booleanQueryTypeToConstant qt
 
--- | If this returns true, then all features in this module can be used.
-areAdvancedQueriesSupported :: MonadIO m -> m Bool
-areAdvancedQueriesSupported = liftIO $ return gl_ARB_occlusion_query2
-
 -- | Creates a query, runs some actions in it and then returns an
 -- `Query` value.
 --
 -- There can be only one active query for each query type. An user error will
 -- be thrown if this is violated.
+--
+-- `AnySamplesPassed` cannot be used at the same time as `SamplesPassed`.
 --
 -- You can query the returned `Query` for results. However, because using the
 -- GPU is typically asynchronous, results may not be (and often are not)
@@ -235,12 +237,20 @@ newBooleanQuery = newQuery . Right
 newQuery :: MonadIO m
          => SomeQuery
          -> m (Query a)
-newQuery qt =
+newQuery qt' =
     liftIO $ mask_ $ do
-        case qt of
-            Left SamplesPassed -> return ()
-            Left _ -> checkExtension "GL_ARB_occlusion_query" gl_ARB_occlusion_query
-            Right AnySamplesPassed -> checkExtension "GL_ARB_occlusion_query2" gl_ARB_occlusion_query2
+        qt <- case qt' of
+            Left SamplesPassed -> return qt'
+            Left TimeElapsed ->
+                checkOpenGLOrExtensionM (OpenGLVersion 3 3)
+                                        "GL_ARB_timer_query"
+                                        gl_ARB_timer_query $ return qt'
+            Left _ -> checkExtensionM "GL_ARB_occlusion_query"
+                                      gl_ARB_occlusion_query $ return qt'
+            Right AnySamplesPassed
+                | openGLVersion < OpenGLVersion 3 3 &&
+                  not gl_ARB_occlusion_query2 -> return (Left SamplesPassed)
+                | otherwise -> return qt'
 
         unique <- newUnique
         resource <- newResource (Query_ <$> mglGenQuery)

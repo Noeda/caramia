@@ -72,6 +72,7 @@ import Graphics.Caramia.Prelude
 
 import Graphics.GL.Standard21 as GLCore
 import qualified Graphics.GL.Core33 as GL33
+import Graphics.GL.Core33 as GLCore
 import qualified Graphics.GL.Ext.EXT.GpuShader4 as EXT
 import qualified Graphics.GL.Ext.ARB.InstancedArrays as ARB
 import Graphics.GL.Ext.ARB.FramebufferObject ( gl_ARB_framebuffer_object )
@@ -79,7 +80,6 @@ import Graphics.GL.Ext.ARB.VertexArrayObject ( gl_ARB_vertex_array_object )
 import Graphics.GL.Types as GLTypes
 import Graphics.GL.Ext.ARB.BufferStorage
 import Graphics.GL.Ext.ARB.CopyBuffer ( gl_ARB_copy_buffer )
-import Graphics.GL.Ext.ARB.MapBufferRange
 import Graphics.GL.Ext.ARB.SeparateShaderObjects
 import Graphics.GL.Ext.ARB.DirectStateAccess
 import Foreign.Ptr
