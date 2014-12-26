@@ -423,6 +423,8 @@ uploadVector vec offset buffer =
 --
 -- You can use the same buffer for both destination and source but the copying
 -- area may not overlap.
+--
+-- Requires either OpenGL 3.1 or @ GL_ARB_copy_buffer @.
 copy :: MonadIO m
      => Buffer      -- ^ Destination buffer.
      -> Int         -- ^ Offset in destination buffer.

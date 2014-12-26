@@ -9,6 +9,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 
 module Graphics.Caramia.Internal.OpenGLCApi
     ( module GLCore
@@ -66,10 +67,17 @@ module Graphics.Caramia.Internal.OpenGLCApi
     )
     where
 
+import Control.Monad.IO.Class
+import Control.Monad.Catch
+import Data.Bits
+import Foreign.C.Types
+import Foreign.Marshal.Alloc
+import Foreign.Marshal.Utils
+import Foreign.Ptr
+import Foreign.Storable
 import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLVersion
 import Graphics.Caramia.Prelude
-
 import Graphics.GL.Standard21 as GLCore
 import qualified Graphics.GL.Core33 as GL33
 import Graphics.GL.Core33 as GLCore
@@ -77,18 +85,12 @@ import qualified Graphics.GL.Ext.EXT.GpuShader4 as EXT
 import qualified Graphics.GL.Ext.ARB.InstancedArrays as ARB
 import Graphics.GL.Ext.ARB.FramebufferObject ( gl_ARB_framebuffer_object )
 import Graphics.GL.Ext.ARB.VertexArrayObject ( gl_ARB_vertex_array_object )
-import Graphics.GL.Types as GLTypes
 import Graphics.GL.Ext.ARB.BufferStorage
 import Graphics.GL.Ext.ARB.CopyBuffer ( gl_ARB_copy_buffer )
 import Graphics.GL.Ext.ARB.SeparateShaderObjects
 import Graphics.GL.Ext.ARB.DirectStateAccess
-import Foreign.Ptr
-import Foreign.C.Types
-import Foreign.Storable
-import Foreign.Marshal.Alloc
-import Foreign.Marshal.Utils
-import Control.Monad.IO.Class
-import Control.Monad.Catch
+import Graphics.GL.Ext.ARB.MapBufferRange
+import Graphics.GL.Types as GLTypes
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -367,7 +369,30 @@ mglMapNamedBufferRange :: GLuint -> GLintptr
                        -> GLsizeiptr -> GLbitfield -> IO (Ptr ())
 mglMapNamedBufferRange buffer offset length access =
     withBoundBuffer buffer $
-        glMapBufferRange GL_ARRAY_BUFFER offset length access
+        if | openGLVersion >= OpenGLVersion 3 0 ||
+             gl_ARB_map_buffer_range
+             -> glMapBufferRange GL_ARRAY_BUFFER offset length access
+           | otherwise
+             -- it is time to be sneaky. We only have the plain glMapBuffer. We
+             -- can't specify offset or how much to map. What do we do??? We
+             -- map the whole thing but return pointer to the offset. It's
+             -- horrible but at least it works.
+             -> case oldwayflags of
+                    Just flags -> do
+                        ptr <- glMapBuffer GL_ARRAY_BUFFER flags
+                        return $ ptr `plusPtr` (fromIntegral offset)
+                    -- return just some arbitrary pointer. Client specified
+                    -- they don't read or write to it so does it matter?
+                    Nothing -> return $ nullPtr `plusPtr` 1
+  where
+    oldwayflags =
+        let can_read = access .&. GL_MAP_READ_BIT /= 0
+            can_write = access .&. GL_MAP_WRITE_BIT /= 0
+         in if | can_read && can_write -> Just GL_READ_WRITE
+               | can_read -> Just GL_READ_ONLY
+               | can_write -> Just GL_WRITE_ONLY
+               | otherwise -> Nothing
+
 
 mglUnmapNamedBuffer :: GLuint -> IO GLboolean
 mglUnmapNamedBuffer buffer =
