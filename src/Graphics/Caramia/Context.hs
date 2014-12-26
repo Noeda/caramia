@@ -34,6 +34,7 @@ import Graphics.Caramia.Prelude
 import Graphics.Caramia.Internal.ContextLocalData
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Internal.OpenGLDebug
+import qualified Graphics.GL.Core33 as GL33
 
 import Control.Concurrent
 import Control.Monad.IO.Class
@@ -89,7 +90,7 @@ giveContext action = mask $ \restore -> do
             error $ "giveContext: current thread is not bound. How can it have " <>
                    "an OpenGL context?"
 
-        v@(major, minor) <- getGLVersion
+        let v@(major, minor) = openGLVersion
         unless (major > 3 ||
                 (major == 3 && minor >= 3)) $
             throwM
@@ -110,19 +111,8 @@ giveContext action = mask $ \restore -> do
         -- Enable sRGB framebuffers
         -- There seems to be no reason not to enable it; you can turn off sRGB
         -- handling in other ways.
-        glEnable GL_FRAMEBUFFER_SRGB
+        glEnable GL33.GL_FRAMEBUFFER_SRGB
         glEnable GL_BLEND
-
-    getGLVersion = alloca $ \major_ptr -> alloca $ \minor_ptr -> do
-        -- in case glGetIntegerv is completely broken, set initial values for
-        -- major and minor pointers
-        poke major_ptr 0
-        poke minor_ptr 0
-        glGetIntegerv GL_MAJOR_VERSION major_ptr
-        glGetIntegerv GL_MINOR_VERSION minor_ptr
-        major <- fromIntegral <$> peek major_ptr
-        minor <- fromIntegral <$> peek minor_ptr
-        return (major, minor)
 
 -- | Sets the new viewport size. You should call this if the display size has
 -- changed; otherwise your rendering may look twisted and stretched.

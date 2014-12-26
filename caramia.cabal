@@ -103,6 +103,7 @@ library
                        Graphics.Caramia.ImageFormats
                        Graphics.Caramia.ImageFormats.Internal
                        Graphics.Caramia.Internal.ContextLocalData
+                       Graphics.Caramia.Internal.Exception
                        Graphics.Caramia.Internal.OpenGLCApi
                        Graphics.Caramia.Internal.OpenGLDebug
                        Graphics.Caramia.Internal.TexStorage

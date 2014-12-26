@@ -6,6 +6,8 @@
 --
 -- <https://www.opengl.org/wiki/Query_Object>
 --
+-- Most features in this module require either OpenGL 3.3 or an extension.
+--
 
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -14,8 +16,10 @@
 
 module Graphics.Caramia.Query
     (
+    -- * Hardware support
+      areAdvancedQueriesSupported
     -- * Main query operations
-      withNumericQuery
+    , withNumericQuery
     , withNumericQuery'
     , withBooleanQuery
     , withBooleanQuery'
@@ -43,6 +47,7 @@ import Data.Unique
 import Foreign.Marshal.Alloc
 import Foreign.Storable
 import Graphics.Caramia.Internal.ContextLocalData
+import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
@@ -107,6 +112,10 @@ booleanQueryTypeToConstant AnySamplesPassed = GL_ANY_SAMPLES_PASSED
 eitherQueryTypeToConstant :: SomeQuery -> GLenum
 eitherQueryTypeToConstant (Left qt) = numericQueryTypeToConstant qt
 eitherQueryTypeToConstant (Right qt) = booleanQueryTypeToConstant qt
+
+-- | If this returns true, then all features in this module can be used.
+areAdvancedQueriesSupported :: MonadIO m -> m Bool
+areAdvancedQueriesSupported = liftIO $ return gl_ARB_occlusion_query2
 
 -- | Creates a query, runs some actions in it and then returns an
 -- `Query` value.
@@ -228,6 +237,11 @@ newQuery :: MonadIO m
          -> m (Query a)
 newQuery qt =
     liftIO $ mask_ $ do
+        case qt of
+            Left SamplesPassed -> return ()
+            Left _ -> checkExtension "GL_ARB_occlusion_query" gl_ARB_occlusion_query
+            Right AnySamplesPassed -> checkExtension "GL_ARB_occlusion_query2" gl_ARB_occlusion_query2
+
         unique <- newUnique
         resource <- newResource (Query_ <$> mglGenQuery)
                                 (\(Query_ queryname) -> do
