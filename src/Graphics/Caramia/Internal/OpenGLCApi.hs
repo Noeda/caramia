@@ -15,6 +15,7 @@ module Graphics.Caramia.Internal.OpenGLCApi
     , module GLTypes
 
     , openGLVersion
+    , OpenGLVersion(..)
 
     , gi
     , gf
@@ -66,6 +67,7 @@ module Graphics.Caramia.Internal.OpenGLCApi
     where
 
 import Graphics.Caramia.Internal.Exception
+import Graphics.Caramia.Internal.OpenGLVersion
 import Graphics.Caramia.Prelude
 
 import Graphics.GL.Standard21 as GLCore
@@ -80,7 +82,6 @@ import Graphics.GL.Ext.ARB.CopyBuffer ( gl_ARB_copy_buffer )
 import Graphics.GL.Ext.ARB.MapBufferRange
 import Graphics.GL.Ext.ARB.SeparateShaderObjects
 import Graphics.GL.Ext.ARB.DirectStateAccess
-
 import Foreign.Ptr
 import Foreign.C.Types
 import Foreign.Storable
@@ -89,24 +90,7 @@ import Foreign.Marshal.Utils
 import Control.Monad.IO.Class
 import Control.Monad.Catch
 
-import System.IO.Unsafe ( unsafePerformIO )
-
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
--- a DIRTY hack to hold OpenGL version.
-openGLVersion :: (Int, Int)
-openGLVersion = unsafePerformIO $ do
-    alloca $ \major_ptr -> alloca $ \minor_ptr -> do
-        -- in case glGetIntegerv is completely broken, set initial values for
-        -- major and minor pointers
-        poke major_ptr 0
-        poke minor_ptr 0
-        glGetIntegerv GL33.GL_MAJOR_VERSION major_ptr
-        glGetIntegerv GL33.GL_MINOR_VERSION minor_ptr
-        major <- fromIntegral <$> peek major_ptr
-        minor <- fromIntegral <$> peek minor_ptr
-        return (major, minor)
-{-# NOINLINE openGLVersion #-}
 
 mglDeleteBuffer :: GLuint -> IO ()
 mglDeleteBuffer x = with x $ \x_ptr -> glDeleteBuffers 1 x_ptr
@@ -119,23 +103,20 @@ mglGenBuffer = alloca $ \x_ptr -> glGenBuffers 1 x_ptr *> peek x_ptr
 
 mglGenVertexArray :: IO GLuint
 mglGenVertexArray =
-    if major >= 3
-      then do_it
-      else do checkExtension "GL_ARB_vertex_array_object" gl_ARB_vertex_array_object
-              do_it
+    checkOpenGLOrExtensionM (OpenGLVersion 3 0)
+                            "GL_ARB_vertex_array_object"
+                            gl_ARB_vertex_array_object
+                            do_it
   where
-    (major, _) = openGLVersion
-
     do_it = alloca $ \x_ptr -> GL33.glGenVertexArrays 1 x_ptr *> peek x_ptr
 
 mglGenFramebuffer :: IO GLuint
-mglGenFramebuffer = do
-    if major >= 3
-      then do_it
-      else do checkExtension "GL_ARB_framebuffer_object" gl_ARB_framebuffer_object
-              do_it
+mglGenFramebuffer =
+    checkOpenGLOrExtensionM (OpenGLVersion 3 0)
+                            "GL_ARB_framebuffer_object"
+                            gl_ARB_framebuffer_object
+                            do_it
   where
-    (major, _) = openGLVersion
     do_it = alloca $ \x_ptr -> GL33.glGenFramebuffers 1 x_ptr *> peek x_ptr
 
 mglDeleteFramebuffer :: GLuint -> IO ()
@@ -149,13 +130,11 @@ mglDeleteQuery x = with x $ \x_ptr -> glDeleteQueries 1 x_ptr
 
 withBoundDrawFramebuffer :: (MonadIO m, MonadMask m) => GLuint -> m a -> m a
 withBoundDrawFramebuffer x action = do
-    if major >= 3
-      then do_it
-      else do checkExtension "GL_ARB_framebuffer_object" gl_ARB_framebuffer_object
-              do_it
+    checkOpenGLOrExtensionM (OpenGLVersion 3 0)
+                            "GL_ARB_framebuffer_object"
+                            gl_ARB_framebuffer_object
+                            do_it
   where
-    (major, _) = openGLVersion
-
     do_it = do
         old <- gi GL33.GL_DRAW_FRAMEBUFFER_BINDING
         finally (GL33.glBindFramebuffer GL33.GL_DRAW_FRAMEBUFFER x >> action)
@@ -201,13 +180,11 @@ withBoundPixelUnpackBuffer buf action = do
 
 withBoundVAO :: (MonadIO m, MonadMask m) => GLuint -> m a -> m a
 withBoundVAO vao action = do
-    if major >= 3
-      then do_it
-      else do checkExtension "GL_ARB_vertex_array_object" gl_ARB_vertex_array_object
-              do_it
+    checkOpenGLOrExtensionM (OpenGLVersion 3 0)
+                            "GL_ARB_vertex_array_object"
+                            gl_ARB_vertex_array_object
+                            do_it
   where
-    (major, _) = openGLVersion
-
     do_it = do
         old <- gi GL33.GL_VERTEX_ARRAY_BINDING
         finally (GL33.glBindVertexArray vao >> action)
@@ -217,12 +194,12 @@ mglVertexArrayVertexAttribDivisor ::
     GLuint -> GLuint -> GLuint -> IO ()
 mglVertexArrayVertexAttribDivisor vaobj index divisor = mask_ $
     withBoundVAO vaobj $
-        if major >= 3 || (major == 3 && minor >= 3)
+        if ver >= OpenGLVersion 3 3
           then GL33.glVertexAttribDivisor index divisor
           else do checkExtension "GL_ARB_instanced_arrays" ARB.gl_ARB_instanced_arrays
                   ARB.glVertexAttribDivisorARB index divisor
   where
-    (major, minor) = openGLVersion
+    ver = openGLVersion
 
 mglVertexArrayVertexAttribOffsetAndEnable ::
         GLuint -> GLuint -> GLuint -> GLint -> GLenum
@@ -245,13 +222,13 @@ mglVertexArrayVertexAttribIOffsetAndEnable
     withBoundVAO vaobj $
         withBoundBuffer buffer $ do
             glEnableVertexAttribArray index
-            if major >= 3
-              then GL33.glVertexAttribIPointer index size dtype stride
-                                               (intPtrToPtr $ fromIntegral offset)
-              else throwM $ NoSupport $
-                   "OpenGL 3.0 required for integer attribute mapping."
+            unless (ver >= OpenGLVersion 3 0) $
+                throwM $ NoSupport $
+                "OpenGL 3.0 required for integer attribute mapping."
+            GL33.glVertexAttribIPointer index size dtype stride
+                                        (intPtrToPtr $ fromIntegral offset)
   where
-    (major, _) = openGLVersion
+    ver = openGLVersion
 
 mglNamedBufferStorage :: GLuint
                       -> GLsizeiptr
@@ -278,36 +255,36 @@ mglProgramUniform1ui program loc v1 =
     if gl_ARB_separate_shader_objects
     then glProgramUniform1ui program loc v1
     else withBoundProgram program $
-             if major >= 3
+             if ver >= OpenGLVersion 3 0
                then GL33.glUniform1ui loc v1
                else do checkExtension "GL_EXT_gpu_shader4" EXT.gl_EXT_gpu_shader4
                        EXT.glUniform1uiEXT loc v1
   where
-    (major, _) = openGLVersion
+    ver = openGLVersion
 
 mglProgramUniform2ui :: GLuint -> GLint -> GLuint -> GLuint -> IO ()
 mglProgramUniform2ui program loc v1 v2 =
     if gl_ARB_separate_shader_objects
     then glProgramUniform2ui program loc v1 v2
     else withBoundProgram program $
-             if major >= 3
+             if ver >= OpenGLVersion 3 0
                then GL33.glUniform2ui loc v1 v2
                else do checkExtension "GL_EXT_gpu_shader4" EXT.gl_EXT_gpu_shader4
                        EXT.glUniform2uiEXT loc v1 v2
   where
-    (major, _) = openGLVersion
+    ver = openGLVersion
 
 mglProgramUniform3ui :: GLuint -> GLint -> GLuint -> GLuint -> GLuint -> IO ()
 mglProgramUniform3ui program loc v1 v2 v3 =
     if gl_ARB_separate_shader_objects
     then glProgramUniform3ui program loc v1 v2 v3
     else withBoundProgram program $
-             if major >= 3
+             if ver >= OpenGLVersion 3 0
                then GL33.glUniform3ui loc v1 v2 v3
                else do checkExtension "GL_EXT_gpu_shader4" EXT.gl_EXT_gpu_shader4
                        EXT.glUniform3uiEXT loc v1 v2 v3
   where
-    (major, _) = openGLVersion
+    ver = openGLVersion
 
 mglProgramUniform4ui :: GLuint -> GLint -> GLuint -> GLuint -> GLuint
                      -> GLuint -> IO ()
@@ -315,12 +292,12 @@ mglProgramUniform4ui program loc v1 v2 v3 v4 =
     if gl_ARB_separate_shader_objects
     then glProgramUniform4ui program loc v1 v2 v3 v4
     else withBoundProgram program $
-             if major >= 3
+             if ver >= OpenGLVersion 3 0
                then GL33.glUniform4ui loc v1 v2 v3 v4
                else do checkExtension "GL_EXT_gpu_shader4" EXT.gl_EXT_gpu_shader4
                        EXT.glUniform4uiEXT loc v1 v2 v3 v4
   where
-    (major, _) = openGLVersion
+    ver = openGLVersion
 
 mglProgramUniform1i :: GLuint -> GLint -> GLint -> IO ()
 mglProgramUniform1i program loc v1 =
@@ -401,16 +378,14 @@ mglNamedCopyBufferSubData :: GLuint -> GLuint
 mglNamedCopyBufferSubData src dst src_offset dst_offset num_bytes =
     withBoundElementBuffer src $
         withBoundBuffer dst $ do
-            (if major > 3 || (major == 3 && minor >= 1)
-               then return ()
-               else checkExtension "GL_ARB_copy_buffer" gl_ARB_copy_buffer)
-            GL33.glCopyBufferSubData GL_ELEMENT_ARRAY_BUFFER
-                                     GL_ARRAY_BUFFER
-                                     src_offset
-                                     dst_offset
-                                     num_bytes
-  where
-    (major, minor) = openGLVersion
+            checkOpenGLOrExtensionM (OpenGLVersion 3 1)
+                                    "GL_ARB_copy_buffer"
+                                    gl_ARB_copy_buffer $
+                GL33.glCopyBufferSubData GL_ELEMENT_ARRAY_BUFFER
+                                         GL_ARRAY_BUFFER
+                                         src_offset
+                                         dst_offset
+                                         num_bytes
 
 -- | Shortcut to `glGetIntegerv` when you query only one integer.
 gi :: MonadIO m => GLenum -> m GLuint

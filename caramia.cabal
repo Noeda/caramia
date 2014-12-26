@@ -109,6 +109,7 @@ library
                        Graphics.Caramia.Internal.Exception
                        Graphics.Caramia.Internal.OpenGLCApi
                        Graphics.Caramia.Internal.OpenGLDebug
+                       Graphics.Caramia.Internal.OpenGLVersion
                        Graphics.Caramia.Internal.TexStorage
                        Graphics.Caramia.Memory
                        Graphics.Caramia.Prelude

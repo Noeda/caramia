@@ -27,11 +27,14 @@ module Graphics.Caramia.Context
     , storeContextLocalData
     , retrieveContextLocalData
     -- * Exceptions
-    , TooOldOpenGL(..) )
+    , NoSupport(..)
+    , TooOldOpenGL(..)
+    , OpenGLVersion(..) )
     where
 
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Internal.ContextLocalData
+import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Internal.OpenGLDebug
 import qualified Graphics.GL.Core33 as GL33
@@ -50,9 +53,9 @@ import qualified Data.IntMap.Strict as IM
 -- | An exception that is thrown when the OpenGL version is too old for this
 -- library.
 data TooOldOpenGL = TooOldOpenGL
-                    { wantedVersion :: (Int, Int) -- ^ The OpenGL version this
-                                                  --   library needs.
-                    , reportedVersion :: (Int, Int)
+                    { wantedVersion :: OpenGLVersion -- ^ The OpenGL version this
+                                                     --   library needs.
+                    , reportedVersion :: OpenGLVersion
                     -- ^ The OpenGL version reported by current OpenGL
                     --   context.
                     }
@@ -90,13 +93,10 @@ giveContext action = mask $ \restore -> do
             error $ "giveContext: current thread is not bound. How can it have " <>
                    "an OpenGL context?"
 
-        let v@(major, minor) = openGLVersion
-        unless (major > 3 ||
-                (major == 3 && minor >= 3)) $
-            throwM
-                TooOldOpenGL { wantedVersion = (3, 3)
-                             , reportedVersion = v
-                             }
+        unless (openGLVersion >= OpenGLVersion 2 1) $
+            throwM TooOldOpenGL { wantedVersion = OpenGLVersion 2 1
+                                , reportedVersion = openGLVersion
+                                }
 
         cid <- newContextID
         tid <- myThreadId
