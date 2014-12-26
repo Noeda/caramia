@@ -6,8 +6,12 @@
 --
 -- <https://www.opengl.org/wiki/Framebuffer_Object>
 --
+-- Either OpenGL 3.0 or @ GL_ARB_framebuffer_object @ is required for this
+-- module.
+--
 
 {-# LANGUAGE NoImplicitPrelude, ViewPatterns, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Graphics.Caramia.Framebuffer
     (
@@ -47,11 +51,13 @@ import Graphics.Caramia.Color
 import Graphics.Caramia.Context
 import Graphics.Caramia.Framebuffer.Internal
 import Graphics.Caramia.ImageFormats
+import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
 import Graphics.Caramia.Texture
 import qualified Graphics.Caramia.Texture.Internal as Tex
+import Graphics.GL.Ext.ARB.FramebufferObject
 
 -- | Returns the screen framebuffer.
 --
@@ -122,20 +128,23 @@ newFramebuffer targets
         error "newFramebuffer: no texture targets specified."
     | nub (fmap fst targets) /= fmap fst targets =
         error "newFramebuffer: there are duplicate attachments."
-    | otherwise = liftIO $ mask_ $ do
-        max_bufs <- getMaximumDrawBuffers
-        targetsSanityCheck max_bufs
+    | otherwise = liftIO $ mask_ $
+        checkOpenGLOrExtensionM (OpenGLVersion 3 0)
+                                "GL_ARB_framebuffer_object"
+                                gl_ARB_framebuffer_object $ do
+            max_bufs <- getMaximumDrawBuffers
+            targetsSanityCheck max_bufs
 
-        res <- newResource (creator max_bufs)
-                           deleter
-                           (return ())
-        index <- newUnique
-        return Framebuffer { resource = res
-                           , ordIndex = index
-                           , viewTargets = targets
-                           , dimensions = calculatedDimensions
-                           , binder = withThisFramebuffer res
-                           , setter = setThisFramebuffer res }
+            res <- newResource (creator max_bufs)
+                               deleter
+                               (return ())
+            index <- newUnique
+            return Framebuffer { resource = res
+                               , ordIndex = index
+                               , viewTargets = targets
+                               , dimensions = calculatedDimensions
+                               , binder = withThisFramebuffer res
+                               , setter = setThisFramebuffer res }
   where
     calculatedDimensions@(fw, fh) =
         foldl' (\(lowest_w, lowest_h) (w, h) ->
