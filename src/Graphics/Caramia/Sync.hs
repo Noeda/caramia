@@ -6,8 +6,11 @@
 -- At the moment, the only place where these objects are useful in Caramia is
 -- unsynchronized buffer mapping.
 --
+-- Operations in this module require @ GL_ARB_sync @ extension or OpenGL 3.2.
+--
 
 {-# LANGUAGE NoImplicitPrelude, DeriveDataTypeable, MultiWayIf #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Graphics.Caramia.Sync
@@ -22,9 +25,11 @@ module Graphics.Caramia.Sync
 
 import Control.Monad.Catch
 import Control.Monad.IO.Class
+import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
+import Graphics.GL.Ext.ARB.Sync ( gl_ARB_sync )
 
 data Fence = Fence { resource :: !(Resource GLsync)
                    , ordIndex :: !Unique }
@@ -34,15 +39,15 @@ instance Ord Fence where
     (ordIndex -> o1) `compare` (ordIndex -> o2) = o1 `compare` o2
 
 -- | Create a fence.
-fence :: (MonadIO m, MonadMask m) => m Fence
-fence = mask_ $ do
-    resource <-
-        newResource createFence
-                    glDeleteSync
-                    (return ())
-    unique <- liftIO newUnique
-    return $ Fence { resource = resource
-                   , ordIndex = unique }
+fence :: MonadIO m => m Fence
+fence = liftIO $ mask_ $ do
+    checkOpenGLOrExtensionM (OpenGLVersion 3 2)
+                            "GL_ARB_sync"
+                            gl_ARB_sync $ do
+        resource <- newResource createFence glDeleteSync (return ())
+        unique <- liftIO newUnique
+        return $ Fence { resource = resource
+                       , ordIndex = unique }
   where
     createFence = glFenceSync GL_SYNC_GPU_COMMANDS_COMPLETE 0
 
