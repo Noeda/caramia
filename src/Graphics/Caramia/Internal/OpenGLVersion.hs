@@ -11,16 +11,13 @@
 -- this file is stolen from Edward's quine project
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE CPP #-}
 
 module Graphics.Caramia.Internal.OpenGLVersion
-  ( vendor
-  , renderer
-  , version
-  , openGLVersion
+  ( openGLVersion
   , OpenGLVersion(..)
   , shadingLanguageVersion
   , shadingLanguageVersions
-  , gles
   ) where
 
 
@@ -95,9 +92,13 @@ instance Ord OpenGLVersion where
            | otherwise -> EQ
 
 openGLVersion :: OpenGLVersion
+#ifndef FIXED_OPENGL_MAJOR_VERSION
 openGLVersion = OpenGLVersion (head ver) (head $ tail ver)
   where
     ver = versionBranch version
+#else
+openGLVersion = OpenGLVersion FIXED_OPENGL_MAJOR_VERSION FIXED_OPENGL_MINOR_VERSION
+#endif
 
 shadingLanguageVersionString :: String
 shadingLanguageVersionString = unsafePerformIO $ getString GL_SHADING_LANGUAGE_VERSION

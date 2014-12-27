@@ -89,6 +89,11 @@ flag build-toys
     default:         False
     description:     Build some toy programs to test and play with.
 
+flag fix-opengl21
+    default:         False
+    description:     Makes the library think only OpenGL 2.1 is available. This
+                     can be useful for debugging.
+
 source-repository head
     type:            git
     location:        https://github.com/Noeda/caramia.git
@@ -138,6 +143,10 @@ library
                       ,transformers >=0.4 && <1.0
                       ,vector       >=0.10 && <1.0
                       ,gl           >=0.6.2 && <0.7
+
+  if flag(fix-opengl21)
+    cpp-options:       -DFIXED_OPENGL_MAJOR_VERSION=2
+                       -DFIXED_OPENGL_MINOR_VERSION=1
 
   if !os(windows)
     build-depends:     unix >=2.7 && <3.0
