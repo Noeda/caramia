@@ -52,6 +52,7 @@ import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude hiding ( map )
 import Graphics.Caramia.Resource
 import Graphics.GL.Ext.ARB.BufferStorage
+import Graphics.GL.Ext.ARB.CopyBuffer
 import Graphics.GL.Ext.ARB.InvalidateSubdata
 
 -- | The frequency of access to a buffer.
@@ -419,9 +420,16 @@ uploadVector vec offset buffer =
 
 -- | Copies bytes from one buffer to another.
 --
+-- This will use @ GL_ARB_copy_buffer @ extension if it is available (this
+-- became available in OpenGL 3.1).
+--
 -- The buffers must not be mapped; however this call can bypass the access
--- flags set in `newBuffer`. That is, you can copy data even to a buffer that
--- was set as not writable or copy from a buffer that was set as not readable.
+-- flags set in `newBuffer`, if the above extension is available. That is, you
+-- can copy data even to a buffer that was set as not writable or copy from a
+-- buffer that was set as not readable.
+--
+-- When @ GL_ARB_copy_buffer @ is not available, this is implemented in terms
+-- of `withMapping` and is subject to mapping restrictions.
 --
 -- This is faster than mapping both buffers and then doing a memcpy() style
 -- copying in system memory because this call does not require a round-trip to
@@ -429,8 +437,6 @@ uploadVector vec offset buffer =
 --
 -- You can use the same buffer for both destination and source but the copying
 -- area may not overlap.
---
--- Requires either OpenGL 3.1 or @ GL_ARB_copy_buffer @.
 copy :: MonadIO m
      => Buffer      -- ^ Destination buffer.
      -> Int         -- ^ Offset in destination buffer.
@@ -457,12 +463,18 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
                     error "copy: source buffer is mapped."
 
                 when (num_bytes > 0) $
-                    mglNamedCopyBufferSubData
-                        src
-                        dst
-                        (safeFromIntegral src_offset)
-                        (safeFromIntegral dst_offset)
-                        (safeFromIntegral num_bytes)
+                    if openGLVersion >= OpenGLVersion 3 1 ||
+                       gl_ARB_copy_buffer
+                     then mglNamedCopyBufferSubData
+                          src
+                          dst
+                          (safeFromIntegral src_offset)
+                          (safeFromIntegral dst_offset)
+                          (safeFromIntegral num_bytes)
+                     else withMapping src_offset num_bytes ReadAccess src_buffer $ \src_ptr ->
+                          withMapping dst_offset num_bytes WriteAccess dst_buffer $ \dst_ptr ->
+                              copyBytes dst_ptr src_ptr num_bytes
+
 
   where
     overlaps

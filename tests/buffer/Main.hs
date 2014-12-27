@@ -57,7 +57,55 @@ tests = [
   , testCase "What I write I can get back" writeReadBackTest
   , testCase "Mapping with offset works" offsetMappingTest
   , testCase "Mapping with unsynchronized flag set doesn't crash" unsyncTest
+  , testCase "Buffer copying works" copyBuffersTest
     ]
+
+copyBuffersTest :: IO ()
+copyBuffersTest = setup $ do
+    buf <- newBufferFromList (take 10000 $ repeat (77 :: Word8))
+                             (\old -> old { accessFlags = ReadWriteAccess })
+    buf2 <- newBufferFromList (take 20000 $ repeat (99 :: Word8))
+                              (\old -> old { accessFlags = ReadWriteAccess })
+    buf3 <- newBufferFromList (replicate 300 111 ++ replicate 300 222 :: [Word8])
+                              (\old -> old { accessFlags = ReadWriteAccess })
+    -- copy from another to another
+    copy buf 11 buf2 13 5
+    -- copying inside the same buffer
+    copy buf3 3 buf3 311 5
+
+    withMapping 0 100 ReadAccess buf $ \ptr -> do
+        let cptr = castPtr ptr :: Ptr Word8
+            ass = assertEqual "bytes copied look correct"
+            assM x off = do v <- peekElemOff cptr off
+                            ass x v
+        assM 77 0
+        assM 77 1
+        assM 77 2
+        assM 77 3
+        assM 77 4
+        assM 77 10
+        assM 99 11
+        assM 99 12
+        assM 99 13
+        assM 99 14
+        assM 99 15
+        assM 77 16
+    withMapping 0 600 ReadAccess buf3 $ \ptr -> do
+        let cptr = castPtr ptr :: Ptr Word8
+            ass = assertEqual "bytes copied look correct"
+            assM x off = do v <- peekElemOff cptr off
+                            ass x v
+        assM 111 0
+        assM 111 1
+        assM 111 2
+        assM 222 3
+        assM 222 4
+        assM 222 5
+        assM 222 6
+        assM 222 7
+        assM 111 8
+        assM 111 9
+        assM 111 10
 
 offsetMappingTest :: IO ()
 offsetMappingTest = setup $ do
