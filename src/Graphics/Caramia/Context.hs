@@ -44,8 +44,6 @@ import Control.Monad.IO.Class
 import Control.Monad.Catch
 import System.IO.Unsafe
 import System.Environment
-import Foreign.Marshal.Alloc
-import Foreign.Storable
 
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap.Strict as IM
