@@ -266,20 +266,26 @@ bufferMap2 map_flags offset num_bytes access_flags buffer
     | offset < 0 || offset >= viewSize buffer ||
       num_bytes <= 0 ||
       offset + num_bytes > viewSize buffer =
-          error $ "map: requested mapping has invalid offset " <>
+          error $ "bufferMap2: requested mapping has invalid offset " <>
                   "and/or range. " <>
                   "Buffer size is " <> show (viewSize buffer) <> ", " <>
                   "requested mapping was [" <> show offset <> ".." <>
                   show (offset + num_bytes - 1) <> "]."
+    | access_flags == NoAccess =
+          error "bufferMap2: cannot map with NoAccess access flags."
+    | S.member UnSynchronized map_flags &&
+      (access_flags == ReadWriteAccess ||
+       access_flags == ReadAccess) =
+          error "bufferMap2: cannot map for reading with unsynchronized flag."
     | otherwise =
     liftIO $ withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
         bufstatus <- readIORef (status buffer)
         -- make sure buffer has not been already mapped
         when (mapped bufstatus) $
-            error "map: buffer is already mapped."
+            error "bufferMap2: buffer is already mapped."
         -- can we really map with these access flags
         unless (canMapWith (viewAllowedMappings buffer) access_flags) $
-            error $ "map: attempted to map buffer with " <> show access_flags
+            error $ "bufferMap2: attempted to map buffer with " <> show access_flags
                  <> ", allowed mappings are: " <>
                  show (viewAllowedMappings buffer)
 
@@ -294,7 +300,7 @@ bufferMap2 map_flags offset num_bytes access_flags buffer
         -- depending on external factors. I hope.
         when (ptr == nullPtr) $
             -- I am so sorry for any user who sees this error message.
-            error $ "map: for some reason, mapping a buffer failed. " <>
+            error $ "bufferMap2: for some reason, mapping a buffer failed. " <>
                     "You might want to check OpenGL debug log."
 
         atomicModifyIORef' (status buffer) $ \old ->

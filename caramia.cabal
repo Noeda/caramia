@@ -157,6 +157,20 @@ library
   if os(darwin)
     frameworks:        OpenGL
 
+test-suite buffer
+  type:                exitcode-stdio-1.0
+  main-is:             Main.hs
+  ghc-options:         -Wall -fno-warn-name-shadowing -threaded -rtsopts -with-rtsopts=-N
+  hs-source-dirs:      tests/buffer
+  build-depends:       base, caramia
+                      ,containers >=0.5.5 && <1.0
+                      ,HUnit >=1.2.5.2 && <2.0
+                      ,linear >=1.15 && <2.0
+                      ,sdl2 >= 2.0 && <3.0
+                      ,test-framework >=0.8.1 && <1.0
+                      ,test-framework-hunit >=0.3.0.1 && <1.0
+  default-language:    Haskell2010
+
 -- This is just a dumping ground test that does stupid things. It's used to
 -- check if things work at all.
 executable smoke-test
