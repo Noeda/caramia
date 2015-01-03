@@ -6,7 +6,8 @@ module Graphics.Caramia.Internal.Exception
     ( NoSupport(..)
     , checkExtension
     , checkExtensionM
-    , checkOpenGLOrExtensionM )
+    , checkOpenGLOrExtensionM
+    , checkOpenGLM )
     where
 
 import Control.Monad.Catch
@@ -52,4 +53,9 @@ checkOpenGLOrExtensionM ver ext test action =
       then action
       else checkExtensionM ext test action
 
-
+checkOpenGLM :: MonadIO m
+             => OpenGLVersion -> m a -> m a
+checkOpenGLM ver action =
+    if openGLVersion >= ver
+      then action
+      else liftIO $ throwM $ NoSupport $ "This operation requires " <> showT openGLVersion
