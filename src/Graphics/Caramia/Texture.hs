@@ -3,6 +3,7 @@
 
 {-# LANGUAGE RecordWildCards, ScopedTypeVariables, NoImplicitPrelude #-}
 {-# LANGUAGE MultiWayIf, ViewPatterns, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Graphics.Caramia.Texture
     (
@@ -52,12 +53,15 @@ module Graphics.Caramia.Texture
 import Graphics.Caramia.Prelude
 
 import Graphics.Caramia.Texture.Internal
+import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.TexStorage
 import Graphics.Caramia.Internal.OpenGLCApi
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats.Internal
 import Graphics.Caramia.Resource
+import Graphics.GL.Ext.ARB.TextureBufferObject
 import Graphics.GL.Ext.ARB.TextureStorage
+import Graphics.GL.Ext.ARB.TextureMultisample
 import Graphics.GL.Ext.EXT.TextureFilterAnisotropic
 import Control.Monad.IO.Class
 import Control.Monad.Catch
@@ -300,6 +304,9 @@ newTexture spec = mask_ $ do
                            (safeFromIntegral height2DArray)
                            (safeFromIntegral layers2D)
     createByTopologyTexStorage name (Tex2DMultisample {..}) =
+        checkOpenGLOrExtensionM (OpenGLVersion 3 2)
+                                "GL_ARB_texture_multisample"
+                                gl_ARB_texture_multisample $
         withBinding GL_TEXTURE_2D_MULTISAMPLE
                     GL_TEXTURE_BINDING_2D_MULTISAMPLE
                     name $
@@ -312,6 +319,9 @@ newTexture spec = mask_ $ do
                            (if fixedSampleLocations2DMS
                              then 1 else 0)
     createByTopologyTexStorage name (Tex2DMultisampleArray {..}) =
+        checkOpenGLOrExtensionM (OpenGLVersion 3 2)
+                                "GL_ARB_texture_multisample"
+                                gl_ARB_texture_multisample $
         withBinding GL_TEXTURE_2D_MULTISAMPLE_ARRAY
                     GL_TEXTURE_BINDING_2D_MULTISAMPLE_ARRAY
                     name $
@@ -334,6 +344,9 @@ newTexture spec = mask_ $ do
                            (safeFromIntegral widthCube)
                            (safeFromIntegral widthCube)
     createByTopologyTexStorage name (TexBuffer {..}) =
+        checkOpenGLOrExtensionM (OpenGLVersion 3 1)
+                                "GL_ARB_texture_buffer_object"
+                                gl_ARB_texture_buffer_object $
         withBinding GL_TEXTURE_BUFFER
                     GL_TEXTURE_BINDING_BUFFER
                     name $

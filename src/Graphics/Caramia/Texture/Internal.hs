@@ -67,6 +67,8 @@ data Topology =
           , height2DMS :: !Int
           , samples2DMS :: !Int
           , fixedSampleLocations2DMS :: !Bool }
+  -- ^ Multisampling is available if OpenGL version >= 3.2 or
+  -- `GL_ARB_texture_multisample` is available.
   | Tex2DMultisampleArray
           { width2DMSArray :: !Int
           , height2DMSArray :: !Int
@@ -77,6 +79,9 @@ data Topology =
   | TexBuffer { texBuffer :: !Buf.Buffer }
     -- ^ Buffer textures, see
     -- <https://www.opengl.org/wiki/Buffer_Texture>
+    --
+    -- Available if OpenGL version >= 3.1 or
+    -- `GL_ARB_texture_buffer_object` is available.
   deriving ( Eq, Show, Typeable )
 
 withBinding :: (MonadIO m, MonadMask m) => GLenum -> GLenum -> GLuint -> m a -> m a
