@@ -1,5 +1,8 @@
 {-# LANGUAGE RecordWildCards, NoImplicitPrelude, LambdaCase #-}
 {-# LANGUAGE DeriveDataTypeable, MultiWayIf #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Graphics.Caramia.Texture.Internal where
 
@@ -8,6 +11,7 @@ import Control.Monad.IO.Class
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.ImageFormats
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.OpenGLResource
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
 
@@ -16,6 +20,12 @@ data Texture = Texture
     , ordIndex :: !Unique
     , viewSpecification :: !TextureSpecification }
     deriving ( Typeable )
+
+instance OpenGLResource GLuint Texture where
+    getRaw tex = do
+        Texture_ name <- getRaw (WrappedOpenGLResource $ resource tex)
+        return name
+    touch tex = touch (WrappedOpenGLResource $ resource tex)
 
 newtype Texture_ = Texture_ GLuint
 

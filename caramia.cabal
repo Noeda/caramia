@@ -107,6 +107,7 @@ library
                        Graphics.Caramia.Internal.OpenGLVersion
                        Graphics.Caramia.Internal.TexStorage
                        Graphics.Caramia.Memory
+                       Graphics.Caramia.OpenGLResource
                        Graphics.Caramia.Prelude
                        Graphics.Caramia.Query
                        Graphics.Caramia.Render

@@ -9,7 +9,10 @@
 -- Most features in this module require either OpenGL 3.3 or an extension.
 --
 
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -48,6 +51,7 @@ import Foreign.Storable
 import Graphics.Caramia.Internal.ContextLocalData
 import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.OpenGLResource
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
 import Graphics.GL.Ext.ARB.OcclusionQuery
@@ -59,7 +63,7 @@ data NumericQueryType
     = SamplesPassed
     | PrimitivesGenerated
     | TransformFeedbackPrimitivesWritten
-    | TimeElapsed  -- | Requires OpenGL 3.3 or @ GL_ARB_timer_query @.
+    | TimeElapsed  -- ^ Requires OpenGL 3.3 or @ GL_ARB_timer_query @.
     deriving ( Eq, Ord, Show, Read, Typeable, Enum )
 
 -- | What of query to make? These queries return boolean results.
@@ -85,6 +89,12 @@ data Query a = Query
     , queryType :: !SomeQuery
     , isActive :: !(IORef Bool) }
     deriving ( Typeable )
+
+instance OpenGLResource GLuint (Query a) where
+    getRaw query = do
+        Query_ name <- getRaw (WrappedOpenGLResource $ resource query)
+        return name
+    touch query = touch (WrappedOpenGLResource $ resource query)
 
 newtype Query_ = Query_ GLuint
 

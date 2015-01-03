@@ -1,12 +1,16 @@
 {-# LANGUAGE RankNTypes, NoImplicitPrelude, DeriveDataTypeable #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Graphics.Caramia.Framebuffer.Internal where
 
-import Data.Unique
 import Control.Monad.IO.Class
 import Control.Monad.Catch
+import Data.Unique
 import Foreign
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.OpenGLResource
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
 import qualified Graphics.Caramia.Texture.Internal as Tex
@@ -23,6 +27,12 @@ data Framebuffer =
       , setter :: IO ()
     }
     deriving ( Typeable )
+
+instance OpenGLResource GLuint Framebuffer where
+    getRaw fbuf = do
+        Framebuffer_ name <- getRaw (WrappedOpenGLResource $ resource fbuf)
+        return name
+    touch fbuf = touch (WrappedOpenGLResource $ resource fbuf)
 
 data Attachment = ColorAttachment !Int
                 | DepthAttachment

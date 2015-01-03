@@ -10,6 +10,9 @@
 --
 
 {-# LANGUAGE NoImplicitPrelude, DeriveDataTypeable, MultiWayIf #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -27,6 +30,7 @@ import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.OpenGLResource
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
 import Graphics.GL.Ext.ARB.Sync ( gl_ARB_sync )
@@ -34,6 +38,10 @@ import Graphics.GL.Ext.ARB.Sync ( gl_ARB_sync )
 data Fence = Fence { resource :: !(Resource GLsync)
                    , ordIndex :: !Unique }
                    deriving ( Eq, Typeable )
+
+instance OpenGLResource GLsync Fence where
+    getRaw (Fence r _) = getRaw $ WrappedOpenGLResource r
+    touch (Fence r _) = touch $ WrappedOpenGLResource r
 
 instance Ord Fence where
     (ordIndex -> o1) `compare` (ordIndex -> o2) = o1 `compare` o2

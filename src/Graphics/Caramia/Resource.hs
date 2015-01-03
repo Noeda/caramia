@@ -15,17 +15,22 @@
 --
 
 {-# LANGUAGE BangPatterns, DeriveDataTypeable #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Graphics.Caramia.Resource
     ( Resource()
     , newResource
-    , withResource )
+    , withResource
+    , WrappedOpenGLResource(..) )
     where
 
-import Graphics.Caramia.Prelude
-import Graphics.Caramia.Context
-import Control.Monad.IO.Class
 import Control.Monad.Catch
+import Control.Monad.IO.Class
+import Graphics.Caramia.Context
+import Graphics.Caramia.OpenGLResource
+import Graphics.Caramia.Prelude
 
 -- | The data type of a Caramia resource.
 data Resource a = Resource
@@ -36,6 +41,20 @@ data Resource a = Resource
     , nativeCid    :: !ContextID
     }
     deriving ( Typeable )
+
+-- | Wrap a `Resource` to a `WrappedOpenGLResource`. The wrapped resource has
+-- `OpenGLResource` implementation.
+newtype WrappedOpenGLResource a = WrappedOpenGLResource (Resource a)
+                                  deriving ( Eq, Typeable )
+
+instance OpenGLResource a (WrappedOpenGLResource a) where
+    getRaw (WrappedOpenGLResource managed) =
+        liftIO $ readIORef (rawResource managed) >>= \case
+            Nothing -> error "getRaw (WrappedOpenGLResource): resource has been finalized."
+            Just (r, _, _) -> return r
+
+    touch (WrappedOpenGLResource managed) =
+        liftIO $ touchIORef (rawResource managed)
 
 instance Eq (Resource a) where
     res1 == res2 = rawResource res1 == rawResource res2
@@ -144,5 +163,7 @@ withResource resource action =
           liftIO (readIORef ref)
   where
     ref = rawResource resource
-    touchIORef !_ = return ()
+
+touchIORef :: IORef a -> IO ()
+touchIORef !_ = return ()
 

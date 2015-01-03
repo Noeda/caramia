@@ -1,9 +1,13 @@
 {-# LANGUAGE NoImplicitPrelude, ViewPatterns, DeriveDataTypeable #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Graphics.Caramia.Buffer.Internal where
 
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.OpenGLResource
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
 
@@ -16,6 +20,12 @@ data Buffer = Buffer
     , ordIndex   :: !Unique
     }
     deriving ( Typeable )
+
+instance OpenGLResource GLuint Buffer where
+    getRaw buf = do
+        Buffer_ name <- getRaw (WrappedOpenGLResource $ resource buf)
+        return name
+    touch buf = touch (WrappedOpenGLResource $ resource buf)
 
 instance Ord Buffer where
     (ordIndex -> o1) `compare` (ordIndex -> o2) = o1 `compare` o2
