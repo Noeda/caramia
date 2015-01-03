@@ -20,6 +20,9 @@ import Graphics.Caramia.Prelude
 -- not supported by the driver, hardware or platform.
 --
 -- Caramia cannot detect all attempts to use non-supported features.
+--
+-- If the platform supports at least OpenGL 3.3, then this exception is
+-- guaranteed to never be thrown.
 data NoSupport = NoSupport { info :: Text }
                  -- ^ The text contains human-readable string that may tell
                  -- what exactly is missing and where.
