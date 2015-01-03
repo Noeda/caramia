@@ -22,7 +22,9 @@
 {-# LANGUAGE ExistentialQuantification, ViewPatterns, OverloadedStrings #-}
 
 module Graphics.Caramia.Shader
-    ( newShader
+    (
+    -- * Creating new shaders.
+      newShader
     , newShaderB
     , newShaderBL
     , newPipeline
@@ -683,7 +685,18 @@ nopPipeline =
     cr = do
         vsh <- newShader vsh_src Vertex
         fsh <- newShader fsh_src Fragment
-        newPipeline [vsh, fsh] >>= return . CLNopPipeline
+        newPipeline [vsh, fsh] mempty >>= return . CLNopPipeline
       where
-        vsh_src = "#version 330\nvoid main() { }\n"
-        fsh_src = "#version 330\nvoid main() { }\n"
+        (vsh_src, fsh_src) =
+            (nopsrc, nopsrc)
+          where
+            nopsrc = case openGLVersion of
+                OpenGLVersion 3 2 -> "#version 150\nvoid main() { }\n"
+                OpenGLVersion 3 1 -> "#version 140\nvoid main() { }\n"
+                OpenGLVersion 3 0 -> "#version 130\nvoid main() { }\n"
+                OpenGLVersion 2 1 -> "#version 120\nvoid main() { }\n"
+                OpenGLVersion 2 0 -> "#version 110\nvoid main() { }\n"
+                OpenGLVersion maj min ->
+                    "#version " <> showT maj <> showT min <> "0\n" <>
+                    "void main() { }\n"
+
