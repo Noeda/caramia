@@ -1,6 +1,6 @@
 name:                caramia
 version:             0.7.0.0
-synopsis:            Less painful OpenGL rendering
+synopsis:            High-level OpenGL bindings
 homepage:            https://github.com/Noeda/caramia/
 license:             MIT
 license-file:        LICENSE
