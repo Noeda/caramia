@@ -27,21 +27,23 @@ module Graphics.Caramia.Context
     , storeContextLocalData
     , retrieveContextLocalData
     -- * Exceptions
-    , TooOldOpenGL(..) )
+    , NoSupport(..)
+    , TooOldOpenGL(..)
+    , OpenGLVersion(..) )
     where
 
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Internal.ContextLocalData
+import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Internal.OpenGLDebug
+import qualified Graphics.GL.Core33 as GL33
 
 import Control.Concurrent
 import Control.Monad.IO.Class
 import Control.Monad.Catch
 import System.IO.Unsafe
 import System.Environment
-import Foreign.Marshal.Alloc
-import Foreign.Storable
 
 import qualified Data.Map.Strict as M
 import qualified Data.IntMap.Strict as IM
@@ -49,9 +51,9 @@ import qualified Data.IntMap.Strict as IM
 -- | An exception that is thrown when the OpenGL version is too old for this
 -- library.
 data TooOldOpenGL = TooOldOpenGL
-                    { wantedVersion :: (Int, Int) -- ^ The OpenGL version this
-                                                  --   library needs.
-                    , reportedVersion :: (Int, Int)
+                    { wantedVersion :: OpenGLVersion -- ^ The OpenGL version this
+                                                     --   library needs.
+                    , reportedVersion :: OpenGLVersion
                     -- ^ The OpenGL version reported by current OpenGL
                     --   context.
                     }
@@ -79,7 +81,7 @@ instance Exception TooOldOpenGL
 -- OpenGL's side to automatically detect if size has changed.
 --
 -- Throws `TooOldOpenGL` if the code detects a context that does not provide
--- OpenGL 3.3.
+-- at least OpenGL 2.1.
 giveContext :: (MonadIO m, MonadMask m)
             => m a -> m a
 giveContext action = mask $ \restore -> do
@@ -89,13 +91,10 @@ giveContext action = mask $ \restore -> do
             error $ "giveContext: current thread is not bound. How can it have " <>
                    "an OpenGL context?"
 
-        v@(major, minor) <- getGLVersion
-        unless (major > 3 ||
-                (major == 3 && minor >= 3)) $
-            throwM
-                TooOldOpenGL { wantedVersion = (3, 3)
-                             , reportedVersion = v
-                             }
+        unless (openGLVersion >= OpenGLVersion 2 1) $
+            throwM TooOldOpenGL { wantedVersion = OpenGLVersion 2 1
+                                , reportedVersion = openGLVersion
+                                }
 
         cid <- newContextID
         tid <- myThreadId
@@ -110,19 +109,8 @@ giveContext action = mask $ \restore -> do
         -- Enable sRGB framebuffers
         -- There seems to be no reason not to enable it; you can turn off sRGB
         -- handling in other ways.
-        glEnable GL_FRAMEBUFFER_SRGB
+        glEnable GL33.GL_FRAMEBUFFER_SRGB
         glEnable GL_BLEND
-
-    getGLVersion = alloca $ \major_ptr -> alloca $ \minor_ptr -> do
-        -- in case glGetIntegerv is completely broken, set initial values for
-        -- major and minor pointers
-        poke major_ptr 0
-        poke minor_ptr 0
-        glGetIntegerv GL_MAJOR_VERSION major_ptr
-        glGetIntegerv GL_MINOR_VERSION minor_ptr
-        major <- fromIntegral <$> peek major_ptr
-        minor <- fromIntegral <$> peek minor_ptr
-        return (major, minor)
 
 -- | Sets the new viewport size. You should call this if the display size has
 -- changed; otherwise your rendering may look twisted and stretched.

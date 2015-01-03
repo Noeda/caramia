@@ -3,6 +3,8 @@
 
 {-# LANGUAGE RecordWildCards, GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns, NoImplicitPrelude, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE CPP #-}
 
 module Graphics.Caramia.Render
@@ -38,29 +40,31 @@ module Graphics.Caramia.Render
     , Culling(..) )
     where
 
-import Graphics.Caramia.Prelude
-
-import qualified Graphics.Caramia.VAO.Internal as VAO
-import qualified Graphics.Caramia.Shader.Internal as Shader
-import qualified Graphics.Caramia.Framebuffer as FBuf
-import qualified Graphics.Caramia.Framebuffer.Internal as FBuf
-import qualified Graphics.Caramia.Texture.Internal as Texture
-import qualified Data.IntMap.Strict as IM
-import Graphics.Caramia.Render.Internal hiding ( setFragmentPassTests )
-import qualified Graphics.Caramia.Render.Internal as I
-import Graphics.Caramia.Blend
-import Graphics.Caramia.Blend.Internal
-import Graphics.Caramia.Texture
-import Graphics.Caramia.Texture.Internal ( withTextureBinding )
-import Graphics.Caramia.Resource
-import Graphics.Caramia.Buffer.Internal
-import Graphics.Caramia.Internal.OpenGLCApi
 import Control.Monad.Trans.Class
 import Control.Monad.IO.Class
 import Control.Monad.Catch
 import Control.Monad.Trans.State.Strict
+import qualified Data.IntMap.Strict as IM
 import Foreign
 import Foreign.C.Types
+import Graphics.Caramia.Blend
+import Graphics.Caramia.Blend.Internal
+import Graphics.Caramia.Buffer.Internal
+import qualified Graphics.Caramia.Framebuffer as FBuf
+import qualified Graphics.Caramia.Framebuffer.Internal as FBuf
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Internal.Exception
+import Graphics.Caramia.Prelude
+import Graphics.Caramia.Render.Internal hiding ( setFragmentPassTests )
+import qualified Graphics.Caramia.Render.Internal as I
+import Graphics.Caramia.Resource
+import qualified Graphics.Caramia.Shader.Internal as Shader
+import Graphics.Caramia.Texture
+import qualified Graphics.Caramia.Texture.Internal as Texture
+import Graphics.Caramia.Texture.Internal ( withTextureBinding )
+import qualified Graphics.Caramia.VAO.Internal as VAO
+import Graphics.GL.Ext.NV.PrimitiveRestart
+import Graphics.GL.Ext.ARB.DrawInstanced
 
 -- | The different types of primitives you can use for rendering.
 --
@@ -255,23 +259,43 @@ drawR (DrawCommand {..})
         withBoundVAO vao_name $
             case sourceData of
                 Primitives {..} ->
-                    glDrawArraysInstanced
-                         (toConstant primitiveType)
-                         (safeFromIntegral firstIndex)
-                         (safeFromIntegral numIndices)
-                         (safeFromIntegral numInstances)
+                    if gl_ARB_draw_instanced
+                     then glDrawArraysInstancedARB
+                           (toConstant primitiveType)
+                           (safeFromIntegral firstIndex)
+                           (safeFromIntegral numIndices)
+                           (safeFromIntegral numInstances)
+                     else if numInstances == 1
+                            then glDrawArrays
+                                 (toConstant primitiveType)
+                                 (safeFromIntegral firstIndex)
+                                 (safeFromIntegral numIndices)
+                            else nosupport
                 PrimitivesWithIndices {..} ->
                     withResource (resource indexBuffer) $
                             \(Buffer_ buf_name) -> do
                         when (buf_name /= boundEbo state) $
                             setBoundElementBuffer buf_name
-                        glDrawElementsInstanced
+                        if gl_ARB_draw_instanced
+                          then glDrawElementsInstanced
                                 (toConstant primitiveType)
                                 (safeFromIntegral numIndices)
                                 (toConstantIT indexType)
                                 (intPtrToPtr $
                                 fromIntegral indexOffset)
                                 (safeFromIntegral numInstances)
+                          else if numInstances == 1
+                                 then glDrawElements
+                                        (toConstant primitiveType)
+                                        (safeFromIntegral numIndices)
+                                        (toConstantIT indexType)
+                                        (intPtrToPtr $
+                                        fromIntegral indexOffset)
+                                 else nosupport
+  where
+    nosupport = throwM $ NoSupport $
+                "Instanced rendering requires GL_ARB_draw_instanced."
+
 -- inline `draw` because it's probably quite common to directly construct
 -- `DrawCommand` right there, so we can avoid all sorts of boxing and checking
 -- that happens.
@@ -293,11 +317,7 @@ data DrawState = DrawState
     deriving ( Eq, Ord, Typeable )
 
 newtype DrawT m a = DrawT (StateT DrawState m a)
-#if __GLASGOW_HASKELL__ < 708
-                  deriving ( Monad, Applicative, Functor )
-#else
-                  deriving ( Monad, Applicative, Functor, Typeable )
-#endif
+                    deriving ( Monad, Applicative, Functor, Typeable )
 
 type Draw = DrawT IO
 
@@ -364,21 +384,44 @@ withParams (DrawParams {..}) action =
                     glActiveTexture old_active
                     glViewport ox oy ow oh
 
-withPrimitiveRestart :: (MonadIO m, MonadMask m) => Maybe Word32 -> m a -> m a
-withPrimitiveRestart pr action = do
-    old_primitive_restart_enabled <- liftIO $ glIsEnabled GL_PRIMITIVE_RESTART
-    old_i <- gi GL_PRIMITIVE_RESTART_INDEX
-    finally (activate >> action)
-            (do if old_primitive_restart_enabled /= 0
-                  then glEnable GL_PRIMITIVE_RESTART
-                  else glDisable GL_PRIMITIVE_RESTART
-                glPrimitiveRestartIndex old_i)
+data PrimitiveRestartFuns = PrimitiveRestartFuns {
+    prIndex :: !GLenum
+  , prRestart :: !GLenum
+  , prPrimitiveRestartIndex :: !(GLuint -> IO ()) }
+
+withPrimitiveRestartFuns :: (Monad m, MonadIO m)
+                         => Bool -> m a -> (PrimitiveRestartFuns -> m a) -> m a
+withPrimitiveRestartFuns do_backup backup_action action =
+    if | gl_NV_primitive_restart -> action nvfuns
+       | openGLVersion >= OpenGLVersion 3 1 -> action o31funs
+       | do_backup -> backup_action
+       | otherwise ->
+           liftIO $ throwM $ NoSupport "Primitive restart requires OpenGL 3.1 or GL_NV_primitive_restart."
   where
-    activate = case pr of
-        Nothing -> glDisable GL_PRIMITIVE_RESTART
+    nvfuns = PrimitiveRestartFuns GL_PRIMITIVE_RESTART_INDEX_NV
+                                  GL_PRIMITIVE_RESTART_NV
+                                  glPrimitiveRestartIndexNV
+
+    o31funs = PrimitiveRestartFuns GL_PRIMITIVE_RESTART_INDEX
+                                   GL_PRIMITIVE_RESTART
+                                   glPrimitiveRestartIndex
+
+withPrimitiveRestart :: (MonadIO m, MonadMask m) => Maybe Word32 -> m a -> m a
+withPrimitiveRestart pr action =
+    withPrimitiveRestartFuns (isNothing pr) action $ \funs@(PrimitiveRestartFuns{..}) -> do
+        old_primitive_restart_enabled <- liftIO $ glIsEnabled prRestart
+        old_i <- gi prIndex
+        finally (activate funs >> action)
+                (do if old_primitive_restart_enabled /= 0
+                        then glEnable prRestart
+                        else glDisable prRestart
+                    liftIO $ prPrimitiveRestartIndex old_i)
+  where
+    activate (PrimitiveRestartFuns{..}) = case pr of
+        Nothing -> glDisable prRestart
         Just value -> do
-            glEnable GL_PRIMITIVE_RESTART
-            glPrimitiveRestartIndex (fromIntegral value)
+            glEnable prRestart
+            liftIO $ prPrimitiveRestartIndex (fromIntegral value)
 
 withPolygonOffset :: (MonadIO m, MonadMask m) => (Float, Float) -> m a -> m a
 withPolygonOffset (factor, units) action = do
@@ -399,18 +442,19 @@ setActiveTexture unit = DrawT $ do
 
 -- | Sets new primitive restart mode.
 setPrimitiveRestart :: MonadIO m => Maybe Word32 -> DrawT m ()
-setPrimitiveRestart restart = DrawT $ do
-    pr <- return . boundPrimitiveRestart =<< get
-    liftIO $ case (pr, restart) of
-        (Nothing, Just x) -> do
-            glEnable GL_PRIMITIVE_RESTART
-            glPrimitiveRestartIndex (fromIntegral x)
-        (Just _, Nothing) -> do
-            glDisable GL_PRIMITIVE_RESTART
-        (Just y, Just x) | y /= x ->
-            glPrimitiveRestartIndex (fromIntegral x)
-        _ -> return ()
-    modify (\old -> old { boundPrimitiveRestart = restart })
+setPrimitiveRestart restart = DrawT $
+    withPrimitiveRestartFuns (isNothing restart) (return ()) $ \PrimitiveRestartFuns{..} -> do
+        pr <- return . boundPrimitiveRestart =<< get
+        liftIO $ case (pr, restart) of
+            (Nothing, Just x) -> do
+                glEnable prRestart
+                prPrimitiveRestartIndex (fromIntegral x)
+            (Just _, Nothing) -> do
+                glDisable prRestart
+            (Just y, Just x) | y /= x ->
+                prPrimitiveRestartIndex (fromIntegral x)
+            _ -> return ()
+        modify (\old -> old { boundPrimitiveRestart = restart })
 
 -- | Sets new texture bindings.
 setTextureBindings :: MonadIO m => IM.IntMap Texture -> DrawT m ()

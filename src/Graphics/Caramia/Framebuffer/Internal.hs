@@ -10,6 +10,7 @@ import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
 import qualified Graphics.Caramia.Texture.Internal as Tex
+import Graphics.GL.Ext.ARB.FramebufferObject
 
 data Framebuffer =
     ScreenFramebuffer
@@ -65,12 +66,16 @@ withBinding ScreenFramebuffer action = do
     (w, h) <- getDimensions ScreenFramebuffer
     old_draw <- gi GL_DRAW_FRAMEBUFFER_BINDING
     old_read <- gi GL_READ_FRAMEBUFFER_BINDING
-    finally (glBindFramebuffer GL_FRAMEBUFFER 0 >>
+    finally (extcheck (glBindFramebuffer GL_FRAMEBUFFER 0) >>
              glViewport 0 0 (fromIntegral w) (fromIntegral h) >>
              action) $ do
             glViewport ox oy ow oh
-            glBindFramebuffer GL_DRAW_FRAMEBUFFER old_draw
-            glBindFramebuffer GL_READ_FRAMEBUFFER old_read
+            extcheck $ do
+                glBindFramebuffer GL_DRAW_FRAMEBUFFER old_draw
+                glBindFramebuffer GL_READ_FRAMEBUFFER old_read
+  where
+    extcheck = when (openGLVersion >= OpenGLVersion 3 0 ||
+                     gl_ARB_framebuffer_object)
 withBinding fbuf action = binder fbuf action
 
 -- | Returns the size of a framebuffer.

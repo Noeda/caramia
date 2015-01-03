@@ -52,6 +52,7 @@ import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude hiding ( map )
 import Graphics.Caramia.Resource
 import Graphics.GL.Ext.ARB.BufferStorage
+import Graphics.GL.Ext.ARB.CopyBuffer
 import Graphics.GL.Ext.ARB.InvalidateSubdata
 
 -- | The frequency of access to a buffer.
@@ -266,20 +267,26 @@ bufferMap2 map_flags offset num_bytes access_flags buffer
     | offset < 0 || offset >= viewSize buffer ||
       num_bytes <= 0 ||
       offset + num_bytes > viewSize buffer =
-          error $ "map: requested mapping has invalid offset " <>
+          error $ "bufferMap2: requested mapping has invalid offset " <>
                   "and/or range. " <>
                   "Buffer size is " <> show (viewSize buffer) <> ", " <>
                   "requested mapping was [" <> show offset <> ".." <>
                   show (offset + num_bytes - 1) <> "]."
+    | access_flags == NoAccess =
+          error "bufferMap2: cannot map with NoAccess access flags."
+    | S.member UnSynchronized map_flags &&
+      (access_flags == ReadWriteAccess ||
+       access_flags == ReadAccess) =
+          error "bufferMap2: cannot map for reading with unsynchronized flag."
     | otherwise =
     liftIO $ withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
         bufstatus <- readIORef (status buffer)
         -- make sure buffer has not been already mapped
         when (mapped bufstatus) $
-            error "map: buffer is already mapped."
+            error "bufferMap2: buffer is already mapped."
         -- can we really map with these access flags
         unless (canMapWith (viewAllowedMappings buffer) access_flags) $
-            error $ "map: attempted to map buffer with " <> show access_flags
+            error $ "bufferMap2: attempted to map buffer with " <> show access_flags
                  <> ", allowed mappings are: " <>
                  show (viewAllowedMappings buffer)
 
@@ -294,7 +301,7 @@ bufferMap2 map_flags offset num_bytes access_flags buffer
         -- depending on external factors. I hope.
         when (ptr == nullPtr) $
             -- I am so sorry for any user who sees this error message.
-            error $ "map: for some reason, mapping a buffer failed. " <>
+            error $ "bufferMap2: for some reason, mapping a buffer failed. " <>
                     "You might want to check OpenGL debug log."
 
         atomicModifyIORef' (status buffer) $ \old ->
@@ -413,9 +420,16 @@ uploadVector vec offset buffer =
 
 -- | Copies bytes from one buffer to another.
 --
+-- This will use @ GL_ARB_copy_buffer @ extension if it is available (this
+-- became available in OpenGL 3.1).
+--
 -- The buffers must not be mapped; however this call can bypass the access
--- flags set in `newBuffer`. That is, you can copy data even to a buffer that
--- was set as not writable or copy from a buffer that was set as not readable.
+-- flags set in `newBuffer`, if the above extension is available. That is, you
+-- can copy data even to a buffer that was set as not writable or copy from a
+-- buffer that was set as not readable.
+--
+-- When @ GL_ARB_copy_buffer @ is not available, this is implemented in terms
+-- of `withMapping` and is subject to mapping restrictions.
 --
 -- This is faster than mapping both buffers and then doing a memcpy() style
 -- copying in system memory because this call does not require a round-trip to
@@ -449,12 +463,18 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
                     error "copy: source buffer is mapped."
 
                 when (num_bytes > 0) $
-                    mglNamedCopyBufferSubData
-                        src
-                        dst
-                        (safeFromIntegral src_offset)
-                        (safeFromIntegral dst_offset)
-                        (safeFromIntegral num_bytes)
+                    if openGLVersion >= OpenGLVersion 3 1 ||
+                       gl_ARB_copy_buffer
+                     then mglNamedCopyBufferSubData
+                          src
+                          dst
+                          (safeFromIntegral src_offset)
+                          (safeFromIntegral dst_offset)
+                          (safeFromIntegral num_bytes)
+                     else withMapping src_offset num_bytes ReadAccess src_buffer $ \src_ptr ->
+                          withMapping dst_offset num_bytes WriteAccess dst_buffer $ \dst_ptr ->
+                              copyBytes dst_ptr src_ptr num_bytes
+
 
   where
     overlaps

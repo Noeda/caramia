@@ -1,6 +1,6 @@
 name:                caramia
 version:             0.7.0.0
-synopsis:            Less painful OpenGL 3.3 rendering
+synopsis:            Less painful OpenGL rendering
 homepage:            https://github.com/Noeda/caramia/
 license:             MIT
 license-file:        LICENSE
@@ -15,13 +15,16 @@ extra-source-files:  README.md
 
 description:
     This is a highish-level OpenGL bindings library for real-time graphics for
-    Haskell, using OpenGL 3.3.
+    Haskell, with minimum OpenGL version being 2.1.
     .
     Requirements:
     .
-        * GHC 7.8+
+    * GHC 7.8+
+    * OpenGL 2.1 (with some extensions)
     .
-        * OpenGL 3.3
+    If the target system has OpenGL 3.3, then all features in this library should
+    be available unless stated otherwise. OpenGL contexts with 3.x or later
+    versions can be a core profile; this library does not care.
     .
     You need to use `-threaded` flag in executables that use this library.
     .
@@ -30,11 +33,8 @@ description:
     * Safe and automatic finalization of OpenGL resources
     .
     * No implicit state (that is, no glBind* mess or equivalent). There is a
-    monad for mass-rendering that has implicit state but the state is localized
-    to running of that monad. (see Caramia.Render).
-    .
-    * Only vanilla OpenGL 3.3 required. Some extensions will be used if they are
-      available.
+        monad for mass-rendering that has implicit state but the state is localized
+        to running of that monad. (see Caramia.Render).
     .
     Here are some curious features that you might find useful.
     .
@@ -43,11 +43,12 @@ description:
     .
     * This library does not create an OpenGL context. You can use whatever
         library you want to create an OpenGL context as long as it can get an
-        OpenGL 3.3 context. You may be interested at looking at the tests in
-        this package to see how to use this with the `sdl2` package.
+        OpenGL 2.1 (or any later version) context. You may be interested at looking
+        at the tests in this package to see how to use this with the `sdl2`
+        package.
     .
     * Operations are generalized over `MonadIO`. Works on top of pure `IO` and
-      also in your custom monad stacks, if they have `MonadIO` at bottom.
+        also in your custom monad stacks, as long as they implement `MonadIO`.
     .
     (At least) the following OpenGL concepts are present in this library:
     .
@@ -72,19 +73,16 @@ description:
     .
     * Query objects
     .
-    Some notable missing features:
-    .
-    * Tesselation shaders. This is an OpenGL 4.x feature but we could add it.
-    .
-    * Using shaders with transform feedback.
-    .
-    * Multi-threaded rendering.
-    .
     This library tries to avoid including obsolete or redundant features of OpenGL.
 
 flag build-toys
     default:         False
     description:     Build some toy programs to test and play with.
+
+flag fix-opengl21
+    default:         False
+    description:     Makes the library think only OpenGL 2.1 is available. This
+                     can be useful for debugging.
 
 source-repository head
     type:            git
@@ -103,8 +101,10 @@ library
                        Graphics.Caramia.ImageFormats
                        Graphics.Caramia.ImageFormats.Internal
                        Graphics.Caramia.Internal.ContextLocalData
+                       Graphics.Caramia.Internal.Exception
                        Graphics.Caramia.Internal.OpenGLCApi
                        Graphics.Caramia.Internal.OpenGLDebug
+                       Graphics.Caramia.Internal.OpenGLVersion
                        Graphics.Caramia.Internal.TexStorage
                        Graphics.Caramia.Memory
                        Graphics.Caramia.Prelude
@@ -134,6 +134,10 @@ library
                       ,vector       >=0.10 && <1.0
                       ,gl           >=0.6.2 && <0.7
 
+  if flag(fix-opengl21)
+    cpp-options:       -DFIXED_OPENGL_MAJOR_VERSION=2
+                       -DFIXED_OPENGL_MINOR_VERSION=1
+
   if !os(windows)
     build-depends:     unix >=2.7 && <3.0
 
@@ -142,6 +146,20 @@ library
 
   if os(darwin)
     frameworks:        OpenGL
+
+test-suite buffer
+  type:                exitcode-stdio-1.0
+  main-is:             Main.hs
+  ghc-options:         -Wall -fno-warn-name-shadowing -threaded -rtsopts -with-rtsopts=-N
+  hs-source-dirs:      tests/buffer
+  build-depends:       base, caramia
+                      ,containers >=0.5.5 && <1.0
+                      ,HUnit >=1.2.5.2 && <2.0
+                      ,linear >=1.15 && <2.0
+                      ,sdl2 >= 2.0 && <3.0
+                      ,test-framework >=0.8.1 && <1.0
+                      ,test-framework-hunit >=0.3.0.1 && <1.0
+  default-language:    Haskell2010
 
 -- This is just a dumping ground test that does stupid things. It's used to
 -- check if things work at all.

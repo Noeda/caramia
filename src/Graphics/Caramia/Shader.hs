@@ -22,13 +22,17 @@
 {-# LANGUAGE ExistentialQuantification, ViewPatterns, OverloadedStrings #-}
 
 module Graphics.Caramia.Shader
-    ( newShader
+    (
+    -- * Creating new shaders.
+      newShader
     , newShaderB
     , newShaderBL
     , newPipeline
     , newPipelineVF
     , Shader()
     , Pipeline()
+    -- ** Attribute bindings
+    , AttributeBindings
       -- * Uniforms
     , setUniform
     , getUniformLocation
@@ -47,14 +51,16 @@ module Graphics.Caramia.Shader
     )
     where
 
+import Control.Lens ( ifor_ )
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Foreign as T
-import Control.Monad.Catch
-import Control.Monad.IO.Class
 import Foreign
 import Foreign.C.Types
 import GHC.Float ( double2Float )
@@ -227,15 +233,30 @@ checkLinkingErrors program_name = do
 newPipelineVF :: MonadIO m
               => T.Text      -- ^ Vertex shader source.
               -> T.Text      -- ^ Fragment shader source.
+              -> AttributeBindings -- ^ Attribute bindings.
               -> m Pipeline
-newPipelineVF vert_src frag_src = liftIO $ do
+newPipelineVF vert_src frag_src bindings = liftIO $ do
     vsh <- newShader vert_src Vertex
     fsh <- newShader frag_src Fragment
-    newPipeline [vsh, fsh]
+    newPipeline [vsh, fsh] bindings
+
+-- | Binds attribute names to specific attribute indices.
+--
+-- See `glBindAttribLocation` from OpenGL documentation.
+--
+-- The `Map` is from containers and is a member of `Monoid` so you can use
+-- `mempty` if you are not doing any special binding.
+--
+-- You can use `mapKeys` or `mapKeysMonotonic` to change the key and `fmap` to
+-- map indices.
+type AttributeBindings = M.Map B.ByteString GLuint
 
 -- | Creates a pipeline composed of different shaders.
-newPipeline :: MonadIO m => [Shader] -> m Pipeline
-newPipeline shaders = liftIO $ mask_ $ do
+newPipeline :: MonadIO m
+            => [Shader]
+            -> AttributeBindings
+            -> m Pipeline
+newPipeline shaders attribute_bindings = liftIO $ mask_ $ do
     res <- newResource creator
                        deleter
                        (return ())
@@ -249,6 +270,9 @@ newPipeline shaders = liftIO $ mask_ $ do
         for_ shaders $ \shader ->
             withResource (resource shader) $ \(CompiledShader sname) ->
                 glAttachShader program sname
+        ifor_ attribute_bindings $ \key binding ->
+            B.useAsCString key $ \key_cstr ->
+                glBindAttribLocation program binding key_cstr
         glLinkProgram program
         checkLinkingErrors program
         return $ Pipeline_ program
@@ -661,7 +685,18 @@ nopPipeline =
     cr = do
         vsh <- newShader vsh_src Vertex
         fsh <- newShader fsh_src Fragment
-        newPipeline [vsh, fsh] >>= return . CLNopPipeline
+        newPipeline [vsh, fsh] mempty >>= return . CLNopPipeline
       where
-        vsh_src = "#version 330\nvoid main() { }\n"
-        fsh_src = "#version 330\nvoid main() { }\n"
+        (vsh_src, fsh_src) =
+            (nopsrc, nopsrc)
+          where
+            nopsrc = case openGLVersion of
+                OpenGLVersion 3 2 -> "#version 150\nvoid main() { }\n"
+                OpenGLVersion 3 1 -> "#version 140\nvoid main() { }\n"
+                OpenGLVersion 3 0 -> "#version 130\nvoid main() { }\n"
+                OpenGLVersion 2 1 -> "#version 120\nvoid main() { }\n"
+                OpenGLVersion 2 0 -> "#version 110\nvoid main() { }\n"
+                OpenGLVersion maj min ->
+                    "#version " <> showT maj <> showT min <> "0\n" <>
+                    "void main() { }\n"
+
