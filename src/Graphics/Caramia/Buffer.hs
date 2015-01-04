@@ -252,7 +252,7 @@ newBufferFromBS bs modifier = liftIO $
 
 -- | Same as `bufferMap` but allows more control over mapping.
 --
--- @ bufferMap = bufferMap2 [] @
+-- @ bufferMap = bufferMap2 mempty @
 bufferMap2 :: MonadIO m
            => S.Set MapFlag
            -> Int
