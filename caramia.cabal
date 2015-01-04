@@ -74,6 +74,9 @@ description:
     * Query objects
     .
     This library tries to avoid including obsolete or redundant features of OpenGL.
+    .
+    Note that the library is in flux and API-breaking changes tend to happen
+    often.
 
 flag build-toys
     default:         False

@@ -64,3 +64,6 @@ Here are some curious features that you might find useful.
 
 This library tries to avoid including obsolete or redundant features of OpenGL.
 
+Note that the library is in flux and API-breaking changes tend to happen
+often.
+
