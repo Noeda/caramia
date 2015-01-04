@@ -20,6 +20,7 @@ description:
     Requirements:
     .
     * GHC 7.8+
+    .
     * OpenGL 2.1 (with some extensions)
     .
     If the target system has OpenGL 3.3, then all features in this library should
