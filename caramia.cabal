@@ -1,5 +1,5 @@
 name:                caramia
-version:             0.7.0.0
+version:             0.8.0.0
 synopsis:            High-level OpenGL bindings
 homepage:            https://github.com/Noeda/caramia/
 license:             MIT
