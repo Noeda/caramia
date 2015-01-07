@@ -1,12 +1,14 @@
 -- | Color handling.
 --
 
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
 
 module Graphics.Caramia.Color
     (
     -- * Types
       Color()
+    , v4
     -- * Constructing colors
     , rgba
     -- * Conversion to `Word8` colors.
@@ -29,20 +31,30 @@ module Graphics.Caramia.Color
 import Control.Lens
 import Graphics.Caramia.Prelude
 import Foreign.Storable
-import Foreign.Ptr
+import Linear.V4
 
 -- | The color data type.
 --
 -- This data type says nothing about the color space these values are in. The
 -- color space depends on the usage; for example, a framebuffer with sRGB
 -- textures attached uses sRGB color space in these color values.
-data Color = Color
-    { viewRed   :: !Float
-    , viewGreen :: !Float
-    , viewBlue  :: !Float
-    , viewAlpha :: !Float
-    }
-    deriving ( Eq, Ord, Show, Read, Typeable )
+newtype Color = Color { toV4 :: (V4 Float) }
+                deriving ( Eq, Ord, Show, Read, Typeable, Storable )
+
+v4 :: Lens' Color (V4 Float)
+v4 = lens toV4 (\_ new -> Color new)
+
+viewRed :: Color -> Float
+viewRed (Color (V4 r _ _ _)) = r
+
+viewGreen :: Color -> Float
+viewGreen (Color (V4 _ g _ _)) = g
+
+viewBlue :: Color -> Float
+viewBlue (Color (V4 _ _ b _)) = b
+
+viewAlpha :: Color -> Float
+viewAlpha (Color (V4 _ _ _ a)) = a
 
 -- | A convenience function to turn a `Float` color value to a `Word8`.
 --
@@ -59,58 +71,31 @@ word8ToFloat w = fromIntegral w / 255.0
 
 -- | Construct a color from rgba values.
 rgba :: Float -> Float -> Float -> Float -> Color
-rgba = Color
+rgba r g b a = Color $ V4 r g b a
 {-# INLINE rgba #-}
 
 -- | View rgba in a tuple.
 viewRgba :: Color -> (Float, Float, Float, Float)
-viewRgba (Color r g b a) = (r, g, b, a)
+viewRgba (Color (V4 r g b a)) = (r, g, b, a)
 {-# INLINE viewRgba #-}
 
 -- | Lens to all components.
 rgbaL :: Lens' Color (Float, Float, Float, Float)
-rgbaL = lens viewRgba (\old (r, g, b, a) ->
-    old { viewRed = r
-        , viewGreen = g
-        , viewBlue = b
-        , viewAlpha = a })
+rgbaL = lens viewRgba (\_ (r, g, b, a) -> Color $ V4 r g b a)
 
 -- | Lens to red component.
 redL :: Lens' Color Float
-redL = lens viewRed (\old new -> old { viewRed = new })
+redL = v4._x
 
 -- | Lens to green component.
 greenL :: Lens' Color Float
-greenL = lens viewGreen (\old new -> old { viewGreen = new })
+greenL = v4._y
 
 -- | Lens to blue component.
 blueL :: Lens' Color Float
-blueL = lens viewBlue (\old new -> old { viewBlue = new })
+blueL = v4._z
 
 -- | Lens to alpha component.
 alphaL :: Lens' Color Float
-alphaL = lens viewAlpha (\old new -> old { viewAlpha = new })
-
-instance Storable Color where
-    sizeOf _ = sizeOf (undefined :: Float) * 4
-    alignment _ = alignment (undefined :: Float) * 4
-    peek ptr = do
-        r <- peekElemOff cptr 0 :: IO Float
-        g <- peekElemOff cptr 1 :: IO Float
-        b <- peekElemOff cptr 2 :: IO Float
-        a <- peekElemOff cptr 3 :: IO Float
-        return $ Color r g b a
-      where
-        cptr = castPtr ptr :: Ptr Float
-    {-# INLINE peek #-}
-
-    poke ptr (Color r g b a) = do
-        pokeElemOff cptr 0 r
-        pokeElemOff cptr 1 g
-        pokeElemOff cptr 2 b
-        pokeElemOff cptr 3 a
-      where
-        cptr = castPtr ptr :: Ptr Float
-    {-# INLINE poke #-}
-
+alphaL = v4._w
 
