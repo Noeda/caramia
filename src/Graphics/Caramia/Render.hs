@@ -5,6 +5,7 @@
 {-# LANGUAGE ViewPatterns, NoImplicitPrelude, DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE CPP #-}
 
 module Graphics.Caramia.Render
@@ -23,6 +24,8 @@ module Graphics.Caramia.Render
     , setPrimitiveRestart
     , setTargetFramebuffer
     , setTextureBindings
+    -- ** Hoisting
+    , hoistDrawT
     -- * Specifying what to draw
     , DrawCommand(..)
     , drawCommand
@@ -330,6 +333,15 @@ instance MonadIO m => MonadIO (DrawT m) where
 
 instance MonadTrans DrawT where
   lift = DrawT . lift
+
+-- | Use to hoist the base monad in a `DrawT`.
+hoistDrawT :: Monad n => (forall a. m a -> n a) -> DrawT m a -> DrawT n a
+hoistDrawT changer (DrawT action) = DrawT $ do
+    old_st <- get
+    (result, new_st) <- lift $ changer $ runStateT action old_st
+    put new_st
+    return result
+{-# INLINEABLE hoistDrawT #-}
 
 -- | Runs a drawing specification.
 --
