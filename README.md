@@ -1,3 +1,4 @@
+[![Hackage](https://img.shields.io/hackage/v/caramia.svg)](https://hackage.haskell.org/package/caramia)
 [![Build Status](https://travis-ci.org/Noeda/caramia.svg?branch=master)](https://travis-ci.org/Noeda/caramia)
 
 This is a highish-level OpenGL bindings library for real-time graphics for
