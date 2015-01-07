@@ -9,6 +9,9 @@ module Graphics.Caramia.Color
       Color()
     -- * Constructing colors
     , rgba
+    -- * Conversion to `Word8` colors.
+    , floatToWord8
+    , word8ToFloat
     -- * Lenses
     , rgbaL
     , redL
@@ -40,6 +43,19 @@ data Color = Color
     , viewAlpha :: !Float
     }
     deriving ( Eq, Ord, Show, Read, Typeable )
+
+-- | A convenience function to turn a `Float` color value to a `Word8`.
+--
+-- The value is clamped between 0 and 255.
+floatToWord8 :: Float -> Word8
+floatToWord8 f = round $ max 0 $ min 255 $ f * 255.0
+{-# INLINE floatToWord8 #-}
+
+-- | Maps a `Word8` to a `Float`, so that 255 is mapped to 1.0 and 0 is mapped
+-- to 0.
+word8ToFloat :: Word8 -> Float
+word8ToFloat w = fromIntegral w / 255.0
+{-# INLINE word8ToFloat #-}
 
 -- | Construct a color from rgba values.
 rgba :: Float -> Float -> Float -> Float -> Color

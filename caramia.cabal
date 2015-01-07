@@ -179,6 +179,17 @@ test-suite shader
                       ,test-framework-hunit >=0.3.0.1 && <1.0
   default-language:    Haskell2010
 
+test-suite color
+  type:                exitcode-stdio-1.0
+  main-is:             Main.hs
+  ghc-options:         -Wall -fno-warn-name-shadowing -threaded -rtsopts -with-rtsopts=-N
+  hs-source-dirs:      tests/color
+  build-depends:       base, caramia
+                      ,linear >=1.15 && <2.0
+                      ,test-framework >=0.8.1 && <1.0
+                      ,test-framework-quickcheck2 >=0.3.0.3 && <1.0
+  default-language:    Haskell2010
+
 -- This is just a dumping ground test that does stupid things. It's used to
 -- check if things work at all.
 executable smoke-test
