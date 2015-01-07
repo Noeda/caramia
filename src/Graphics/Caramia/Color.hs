@@ -38,6 +38,9 @@ import Linear.V4
 -- This data type says nothing about the color space these values are in. The
 -- color space depends on the usage; for example, a framebuffer with sRGB
 -- textures attached uses sRGB color space in these color values.
+--
+-- `Color`'s `Storable` instance is equal to `V4` `Float`'s
+-- `Storable` instance, in the order \"r g b a\".
 newtype Color = Color { toV4 :: (V4 Float) }
                 deriving ( Eq, Ord, Show, Read, Typeable, Storable )
 
