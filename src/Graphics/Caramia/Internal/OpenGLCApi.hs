@@ -234,23 +234,23 @@ mglVertexArrayVertexAttribIOffsetAndEnable
 
 mglNamedBufferStorage :: GLuint
                       -> GLsizeiptr
-                      -> Ptr ()
+                      -> Ptr a
                       -> GLbitfield
                       -> IO ()
 mglNamedBufferStorage buf size ptr flags =
     if gl_ARB_direct_state_access
-    then glNamedBufferStorage buf (fromIntegral size) ptr flags
-    else withBoundBuffer buf $ glBufferStorage GL_ARRAY_BUFFER size ptr flags
+    then glNamedBufferStorage buf (fromIntegral size) (castPtr ptr) flags
+    else withBoundBuffer buf $ glBufferStorage GL_ARRAY_BUFFER size (castPtr ptr) flags
 
 mglNamedBufferData :: GLuint
                    -> GLsizeiptr
-                   -> Ptr ()
+                   -> Ptr a
                    -> GLenum
                    -> IO ()
 mglNamedBufferData buf size ptr usage =
     if gl_ARB_direct_state_access
-    then glNamedBufferData buf (fromIntegral size) ptr usage
-    else withBoundBuffer buf $ glBufferData GL_ARRAY_BUFFER size ptr usage
+    then glNamedBufferData buf (fromIntegral size) (castPtr ptr) usage
+    else withBoundBuffer buf $ glBufferData GL_ARRAY_BUFFER size (castPtr ptr) usage
 
 mglProgramUniform1ui :: GLuint -> GLint -> GLuint -> IO ()
 mglProgramUniform1ui program loc v1 =
@@ -366,8 +366,8 @@ mglProgramUniformMatrix3fv program loc count transpose m33 =
     else withBoundProgram program $ glUniformMatrix3fv loc count transpose m33
 
 mglMapNamedBufferRange :: GLuint -> GLintptr
-                       -> GLsizeiptr -> GLbitfield -> IO (Ptr ())
-mglMapNamedBufferRange buffer offset length access =
+                       -> GLsizeiptr -> GLbitfield -> IO (Ptr a)
+mglMapNamedBufferRange buffer offset length access = fmap castPtr $
     withBoundBuffer buffer $
         if | openGLVersion >= OpenGLVersion 3 0 ||
              gl_ARB_map_buffer_range

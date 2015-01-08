@@ -6,6 +6,7 @@
 --
 
 {-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Graphics.Caramia.Buffer
     ( -- * Creation
@@ -259,7 +260,7 @@ bufferMap2 :: MonadIO m
            -> Int
            -> AccessFlags
            -> Buffer
-           -> m (Ptr ())
+           -> m (Ptr a)
 bufferMap2 map_flags offset num_bytes access_flags buffer
     -- a lot of this implementation is just error checking...
 
@@ -322,7 +323,7 @@ bufferMap :: MonadIO m
           -> Int         -- ^ How many bytes to map.
           -> AccessFlags -- ^ What access is allowed in the mapping.
           -> Buffer
-          -> m (Ptr ())
+          -> m (Ptr a)
 bufferMap = bufferMap2 S.empty
 
 -- | Exception that is thrown from `bufferUnmap` when buffer corruption is detected.
@@ -364,7 +365,7 @@ withMapping2 :: (MonadIO m, MonadMask m)
              -> Int
              -> AccessFlags
              -> Buffer
-             -> (Ptr () -> m a)
+             -> (Ptr b -> m a)
              -> m a
 withMapping2 map_flags offset num_bytes access_flags buffer action =
     mask $ \restore -> do
@@ -398,7 +399,7 @@ withMapping :: (MonadIO m, MonadMask m)
             -> Int
             -> AccessFlags
             -> Buffer
-            -> (Ptr () -> m a)   -- ^ The pointer is valid during this action.
+            -> (Ptr b -> m a)   -- ^ The pointer is valid during this action.
             -> m a
 withMapping = withMapping2 S.empty
 
