@@ -399,13 +399,15 @@ withParams (DrawParams {..}) action =
 data PrimitiveRestartFuns = PrimitiveRestartFuns {
     prIndex :: !GLenum
   , prRestart :: !GLenum
-  , prPrimitiveRestartIndex :: !(GLuint -> IO ()) }
+  , prPrimitiveRestartIndex :: !(GLuint -> IO ())
+  , prEnable :: !(GLenum -> IO ())
+  , prDisable :: !(GLenum -> IO ()) }
 
 withPrimitiveRestartFuns :: (Monad m, MonadIO m)
                          => Bool -> m a -> (PrimitiveRestartFuns -> m a) -> m a
 withPrimitiveRestartFuns do_backup backup_action action =
-    if | gl_NV_primitive_restart -> action nvfuns
-       | openGLVersion >= OpenGLVersion 3 1 -> action o31funs
+    if | openGLVersion >= OpenGLVersion 3 1 -> action o31funs
+       | gl_NV_primitive_restart -> action nvfuns
        | do_backup -> backup_action
        | otherwise ->
            liftIO $ throwM $ NoSupport "Primitive restart requires OpenGL 3.1 or GL_NV_primitive_restart."
@@ -413,10 +415,14 @@ withPrimitiveRestartFuns do_backup backup_action action =
     nvfuns = PrimitiveRestartFuns GL_PRIMITIVE_RESTART_INDEX_NV
                                   GL_PRIMITIVE_RESTART_NV
                                   glPrimitiveRestartIndexNV
+                                  glEnableClientState
+                                  glDisableClientState
 
     o31funs = PrimitiveRestartFuns GL_PRIMITIVE_RESTART_INDEX
                                    GL_PRIMITIVE_RESTART
                                    glPrimitiveRestartIndex
+                                   glEnable
+                                   glDisable
 
 withPrimitiveRestart :: (MonadIO m, MonadMask m) => Maybe Word32 -> m a -> m a
 withPrimitiveRestart pr action =
@@ -424,16 +430,16 @@ withPrimitiveRestart pr action =
         old_primitive_restart_enabled <- liftIO $ glIsEnabled prRestart
         old_i <- gi prIndex
         finally (activate funs >> action)
-                (do if old_primitive_restart_enabled /= 0
-                        then glEnable prRestart
-                        else glDisable prRestart
-                    liftIO $ prPrimitiveRestartIndex old_i)
+                (liftIO $ do if old_primitive_restart_enabled /= 0
+                                 then prEnable prRestart
+                                 else prDisable prRestart
+                             prPrimitiveRestartIndex old_i)
   where
-    activate (PrimitiveRestartFuns{..}) = case pr of
-        Nothing -> glDisable prRestart
+    activate (PrimitiveRestartFuns{..}) = liftIO $ case pr of
+        Nothing -> prDisable prRestart
         Just value -> do
-            glEnable prRestart
-            liftIO $ prPrimitiveRestartIndex (fromIntegral value)
+            prEnable prRestart
+            prPrimitiveRestartIndex (fromIntegral value)
 
 withPolygonOffset :: (MonadIO m, MonadMask m) => (Float, Float) -> m a -> m a
 withPolygonOffset (factor, units) action = do
@@ -459,10 +465,10 @@ setPrimitiveRestart restart = DrawT $
         pr <- return . boundPrimitiveRestart =<< get
         liftIO $ case (pr, restart) of
             (Nothing, Just x) -> do
-                glEnable prRestart
+                prEnable prRestart
                 prPrimitiveRestartIndex (fromIntegral x)
             (Just _, Nothing) -> do
-                glDisable prRestart
+                prDisable prRestart
             (Just y, Just x) | y /= x ->
                 prPrimitiveRestartIndex (fromIntegral x)
             _ -> return ()
