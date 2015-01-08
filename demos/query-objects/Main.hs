@@ -32,6 +32,7 @@ main =
         giveContext $ do
             color_program <- newPipelineVF passThroughVertex2DShader
                                            coloredFragmentProgram
+                                           mempty
             color_loc <- getUniformLocation "color" color_program
             offset_loc <- getUniformLocation "offset" color_program
             vao <- newVAO
@@ -124,7 +125,7 @@ newImmutableBufferFromVector vec =
         let byte_size = sizeOf (undefined :: Float) * V.length vec
         newBuffer defaultBufferCreation {
                  size = byte_size
-               , initialData = Just (castPtr ptr)
+               , initialData = Just $ castPtr ptr
                , accessHints = (Static, Draw)
                , accessFlags = NoAccess }
 

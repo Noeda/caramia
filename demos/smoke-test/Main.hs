@@ -64,7 +64,7 @@ program =
 
                 -- Compile a gazillion shaders
                 sh1 <- newShader fragmentShaderSrc Fragment
-                pipeline <- newPipeline [sh1]
+                pipeline <- newPipeline [sh1] mempty
                 loc <- getUniformLocation "tutturuu" pipeline
                 setUniform (transpose eye4 :: M44 CFloat)
                            loc
