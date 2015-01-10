@@ -135,7 +135,7 @@ library
                       ,linear       >=1.15 && <2.0
                       ,semigroups   >=0.15 && <1.0
                       ,text         >=0.9 && <2.0
-                      ,transformers >=0.4 && <1.0
+                      ,transformers >=0.3 && <1.0
                       ,vector       >=0.10 && <1.0
                       ,gl           >=0.6.2 && <0.7
 
@@ -235,7 +235,7 @@ executable query-objects
     build-depends:       base, caramia
                         ,sdl2 ==1.2.*
                         ,text >=0.9 && <2.0
-                        ,transformers >=0.4 && <1.0
+                        ,transformers >=0.3 && <1.0
                         ,vector >=0.10 && <1.0
   else
     buildable:           False
