@@ -5,7 +5,7 @@ homepage:            https://github.com/Noeda/caramia/
 license:             MIT
 license-file:        LICENSE
 author:              Mikko Juola
-copyright:           Copyright (c) 2014 Mikko Juola
+copyright:           Copyright (c) 2014-2015 Mikko Juola
 maintainer:          mikjuo@gmail.com
 category:            Graphics
 build-type:          Simple
