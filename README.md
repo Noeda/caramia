@@ -23,9 +23,6 @@ Here are the most important features of this library:
     monad for mass-rendering that has implicit state but the state is localized
     to running of that monad. (see Caramia.Render).
 
-  * Only vanilla OpenGL 3.3 required. Some extensions will be used if they are
-    available.
-
 Here are some curious features that you might find useful.
 
   * This library plays nice with other OpenGL libraries. It does not mess up
