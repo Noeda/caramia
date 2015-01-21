@@ -101,7 +101,11 @@ mglDeleteVertexArray :: GLuint -> IO ()
 mglDeleteVertexArray x = with x $ \x_ptr -> GL33.glDeleteVertexArrays 1 x_ptr
 
 mglGenBuffer :: IO GLuint
-mglGenBuffer = alloca $ \x_ptr -> glGenBuffers 1 x_ptr *> peek x_ptr
+mglGenBuffer = alloca $ \x_ptr -> do
+    if gl_ARB_direct_state_access
+      then glCreateBuffers 1 x_ptr
+      else glGenBuffers 1 x_ptr
+    peek x_ptr
 
 mglGenVertexArray :: IO GLuint
 mglGenVertexArray =
