@@ -372,9 +372,17 @@ mglProgramUniformMatrix3fv program loc count transpose m33 =
 mglMapNamedBufferRange :: GLuint -> GLintptr
                        -> GLsizeiptr -> GLbitfield -> IO (Ptr a)
 mglMapNamedBufferRange buffer offset length access = fmap castPtr $
-    withBoundBuffer buffer $
-        if | openGLVersion >= OpenGLVersion 3 0 ||
-             gl_ARB_map_buffer_range
+    if gl_ARB_direct_state_access && we_have_map_buffer_range
+      then dsaWay
+      else nonDsaWay
+  where
+    dsaWay = glMapNamedBufferRange buffer
+                                   offset
+                                   (safeFromIntegral length)
+                                   access
+
+    nonDsaWay = withBoundBuffer buffer $
+        if | we_have_map_buffer_range
              -> glMapBufferRange GL_ARRAY_BUFFER offset length access
            | otherwise
              -- it is time to be sneaky. We only have the plain glMapBuffer. We
@@ -388,7 +396,10 @@ mglMapNamedBufferRange buffer offset length access = fmap castPtr $
                     -- return just some arbitrary pointer. Client specified
                     -- they don't read or write to it so does it matter?
                     Nothing -> return $ nullPtr `plusPtr` 1
-  where
+
+    we_have_map_buffer_range = openGLVersion >= OpenGLVersion 3 0 ||
+                               gl_ARB_map_buffer_range
+
     oldwayflags =
         let can_read = access .&. GL_MAP_READ_BIT /= 0
             can_write = access .&. GL_MAP_WRITE_BIT /= 0
@@ -400,21 +411,30 @@ mglMapNamedBufferRange buffer offset length access = fmap castPtr $
 
 mglUnmapNamedBuffer :: GLuint -> IO GLboolean
 mglUnmapNamedBuffer buffer =
-    withBoundBuffer buffer $ glUnmapBuffer GL_ARRAY_BUFFER
+    if gl_ARB_direct_state_access
+      then glUnmapNamedBuffer buffer
+      else withBoundBuffer buffer $ glUnmapBuffer GL_ARRAY_BUFFER
 
 mglNamedCopyBufferSubData :: GLuint -> GLuint
                           -> GLintptr -> GLintptr -> GLsizeiptr -> IO ()
 mglNamedCopyBufferSubData src dst src_offset dst_offset num_bytes =
-    withBoundElementBuffer src $
-        withBoundBuffer dst $ do
-            checkOpenGLOrExtensionM (OpenGLVersion 3 1)
-                                    "GL_ARB_copy_buffer"
-                                    gl_ARB_copy_buffer $
-                GL33.glCopyBufferSubData GL_ELEMENT_ARRAY_BUFFER
-                                         GL_ARRAY_BUFFER
-                                         src_offset
-                                         dst_offset
-                                         num_bytes
+    if gl_ARB_direct_state_access && gl_ARB_copy_buffer
+      then dsaWay
+      else nonDsaWay
+  where
+    dsaWay =
+        glCopyNamedBufferSubData src dst src_offset dst_offset
+                                 (safeFromIntegral num_bytes)
+
+    nonDsaWay = withBoundElementBuffer src $ withBoundBuffer dst $
+        checkOpenGLOrExtensionM (OpenGLVersion 3 1)
+                                "GL_ARB_copy_buffer"
+                                gl_ARB_copy_buffer $
+            GL33.glCopyBufferSubData GL_ELEMENT_ARRAY_BUFFER
+                                        GL_ARRAY_BUFFER
+                                        src_offset
+                                        dst_offset
+                                        num_bytes
 
 -- | Shortcut to `glGetIntegerv` when you query only one integer.
 gi :: MonadIO m => GLenum -> m GLuint
