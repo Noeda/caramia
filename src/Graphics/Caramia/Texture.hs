@@ -135,9 +135,10 @@ isMultisamplingTopology _ = False
 -- Initially the contents of the texture are undefined.
 --
 -- Texture dimensions must be positive.
-newTexture :: TextureSpecification
-           -> IO Texture
-newTexture spec = mask_ $ do
+newTexture :: MonadIO m
+           => TextureSpecification
+           -> m Texture
+newTexture spec = liftIO $ mask_ $ do
     topologySanityCheck (topology spec)
     when (not (isMultisamplingTopology (topology spec)) &&
           mipmapLevels spec < 1) $
