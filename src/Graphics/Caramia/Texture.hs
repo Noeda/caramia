@@ -46,6 +46,8 @@ module Graphics.Caramia.Texture
     , viewHeight
     , viewDepth
     , viewMipmapLevels
+    , viewSize2D
+    , viewSize3D
     -- * Utilities
     , maxMipmapLevels )
     where
@@ -66,6 +68,8 @@ import Graphics.GL.Ext.EXT.TextureFilterAnisotropic
 import Control.Monad.IO.Class
 import Control.Monad.Catch
 import Foreign
+import Linear.V2 ( V2(..) )
+import Linear.V3 ( V3(..) )
 
 textureSpecification :: TextureSpecification
 textureSpecification = TextureSpecification {
@@ -89,6 +93,22 @@ viewWidth (viewSpecification -> spec) = viewWidth' (topology spec)
         error "viewWidth: buffer texture has no meaningful width."
         -- TODO: you can actually infer that from the buffer size
         -- so implement it
+
+-- | Returns the size of a texture, as a `V2`. Width and height.
+--
+-- @
+-- viewSize2D tex = V2 (viewWidth tex) (viewHeight tex)
+-- @
+viewSize2D :: Texture -> V2 Int
+viewSize2D tex = V2 (viewWidth tex) (viewHeight tex)
+
+-- | Returns the size of a texture, as a `V3`. Width, height and depth.
+--
+-- @
+-- viewSize3D tex = V3 (viewWidth tex) (viewHeight tex) (viewDepth tex)
+-- @
+viewSize3D :: Texture -> V3 Int
+viewSize3D tex = V3 (viewWidth tex) (viewHeight tex) (viewDepth tex)
 
 -- | Returns the height of a texture.
 --
