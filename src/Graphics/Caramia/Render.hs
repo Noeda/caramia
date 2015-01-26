@@ -3,6 +3,11 @@
 
 {-# LANGUAGE RecordWildCards, GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ViewPatterns, NoImplicitPrelude, DeriveDataTypeable #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
@@ -43,10 +48,15 @@ module Graphics.Caramia.Render
     , Culling(..) )
     where
 
+import Control.Monad.Cont.Class
+import Control.Monad.Error.Class
+import Control.Monad.Reader.Class
+import Control.Monad.RWS.Class
+
 import Control.Monad.Trans.Class
 import Control.Monad.IO.Class
 import Control.Monad.Catch
-import Control.Monad.Trans.State.Strict
+import Control.Monad.State.Strict hiding ( forM_ )
 import qualified Data.IntMap.Strict as IM
 import Foreign
 import Foreign.C.Types
@@ -322,17 +332,28 @@ data DrawState = DrawState
 newtype DrawT m a = DrawT (StateT DrawState m a)
                     deriving ( Monad, Applicative, Functor, Typeable )
 
+deriving instance MonadCont m => MonadCont (DrawT m)
+deriving instance MonadError e m => MonadError e (DrawT m)
+deriving instance MonadReader r m => MonadReader r (DrawT m)
+deriving instance MonadRWS r w s m => MonadRWS r w s (DrawT m)
+deriving instance MonadWriter w m => MonadWriter w (DrawT m)
+
 type Draw = DrawT IO
 
 -- | Using `liftIO` is safe inside a `DrawT` stream. It is possible to run
 -- nested `DrawT` streams this way as well.
---
--- One useful thing to do is to set uniforms to pipelines with `setUniform`.
 instance MonadIO m => MonadIO (DrawT m) where
   liftIO = DrawT . liftIO
 
 instance MonadTrans DrawT where
   lift = DrawT . lift
+
+-- State looks like it cannot be derived automatically...maybe the `StateT`
+-- inside `DrawT` interferes with it? Whatever, let's just manually do it.
+instance MonadState s m => MonadState s (DrawT m) where
+    get = DrawT $ lift get
+    put = DrawT . lift . put
+    state = DrawT . lift . state
 
 -- | Use to hoist the base monad in a `DrawT`.
 hoistDrawT :: Monad n => (forall a. m a -> n a) -> DrawT m a -> DrawT n a
