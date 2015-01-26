@@ -10,6 +10,7 @@ maintainer:          mikjuo@gmail.com
 category:            Graphics
 build-type:          Simple
 stability:           experimental
+bug-reports:         https://github.com/Noeda/caramia/issues/
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
