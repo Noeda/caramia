@@ -3,9 +3,13 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Graphics.Caramia.Buffer.Internal where
 
+import Data.Data
+import qualified Data.Set as S
+import GHC.Generics
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.OpenGLResource
 import Graphics.Caramia.Prelude
@@ -31,7 +35,7 @@ instance Ord Buffer where
     (ordIndex -> o1) `compare` (ordIndex -> o2) = o1 `compare` o2
 
 data BufferStatus = BufferStatus
-    { mapped :: !Bool }
+    { mapped :: !(Maybe (S.Set MapFlag)) }
 
 instance Show Buffer where
     show (Buffer{..}) = "<Buffer bytesize(" <> show viewSize <> ")>"
@@ -56,5 +60,12 @@ data MapFlag =
                           --   You will have to use synchronization primitives
                           --   to make sure you and OpenGL won't be using
                           --   the buffer at the same time.
-  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
+  | ExplicitFlush         -- ^ If set, you need to explicitly flush ranges of
+                          --   the mapping after you have modified them, with
+                          --   `explicitFlush`. The mapping must allow writes.
+                          --   Requires OpenGL 3.0 or greater or
+                          --   \"GL_ARB_map_buffer_range\", but if neither of
+                          --   these are available, then this flag is no-op and
+                          --   so is `explicitFlush`.
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 

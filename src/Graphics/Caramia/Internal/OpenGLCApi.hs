@@ -64,6 +64,7 @@ module Graphics.Caramia.Internal.OpenGLCApi
     , mglMapNamedBufferRange
     , mglUnmapNamedBuffer
     , mglNamedCopyBufferSubData
+    , mglFlushMappedNamedBufferRange
     )
     where
 
@@ -408,6 +409,20 @@ mglMapNamedBufferRange buffer offset length access = fmap castPtr $
                | can_write -> Just GL_WRITE_ONLY
                | otherwise -> Nothing
 
+-- | This function is a no-op if the required extensions are not available.
+mglFlushMappedNamedBufferRange :: GLuint -> GLintptr -> GLsizei -> IO ()
+mglFlushMappedNamedBufferRange buffer offset length =
+    if gl_ARB_direct_state_access && we_have_map_buffer_range
+      then dsaWay
+      else when we_have_map_buffer_range $ nonDsaWay
+  where
+    dsaWay = glFlushMappedNamedBufferRange buffer offset length
+
+    nonDsaWay = withBoundBuffer buffer $
+        glFlushMappedBufferRange GL_ARRAY_BUFFER offset (fromIntegral length)
+
+    we_have_map_buffer_range = openGLVersion >= OpenGLVersion 3 0 ||
+                               gl_ARB_map_buffer_range
 
 mglUnmapNamedBuffer :: GLuint -> IO GLboolean
 mglUnmapNamedBuffer buffer =

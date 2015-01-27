@@ -24,6 +24,8 @@ module Graphics.Caramia.Buffer
     , defaultBufferCreation
       -- * Invalidation
     , invalidateBuffer
+      -- * Explicit flushing
+    , explicitFlush
       -- * Manipulation
     , bufferMap
     , bufferMap2
@@ -110,9 +112,12 @@ toConstantMF :: S.Set MapFlag -> GLbitfield
 toConstantMF ss
     | S.null ss = 0
     | otherwise =
-        if UnSynchronized `S.member` ss
-          then GL_MAP_UNSYNCHRONIZED_BIT
-          else 0
+        flag GL_MAP_UNSYNCHRONIZED_BIT UnSynchronized .|.
+        flag GL_MAP_FLUSH_EXPLICIT_BIT ExplicitFlush
+  where
+    flag bits hi = if hi `S.member` ss
+                     then bits
+                     else 0
 
 -- | This data describes how a buffer should behave and what operations can be
 -- done with it.
@@ -162,7 +167,7 @@ newBuffer creation
             newResource createBuffer
                         (\(Buffer_ bufname) -> mglDeleteBuffer bufname)
                         (return ())
-        initial_status <- newIORef BufferStatus { mapped = False }
+        initial_status <- newIORef BufferStatus { mapped = Nothing }
         oi <- newUnique
         return Buffer { resource = resource
                       , status = initial_status
@@ -279,11 +284,16 @@ bufferMap2 map_flags offset num_bytes access_flags buffer
       (access_flags == ReadWriteAccess ||
        access_flags == ReadAccess) =
           error "bufferMap2: cannot map for reading with unsynchronized flag."
+    -- if explicitly flushing, writing must be allowed
+    | S.member ExplicitFlush map_flags &&
+      (access_flags /= WriteAccess &&
+       access_flags /= ReadWriteAccess) =
+           error "bufferMap: explicit flush mapping requires write access."
     | otherwise =
     liftIO $ withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
         bufstatus <- readIORef (status buffer)
         -- make sure buffer has not been already mapped
-        when (mapped bufstatus) $
+        when (isJust $ mapped bufstatus) $
             error "bufferMap2: buffer is already mapped."
         -- can we really map with these access flags
         unless (canMapWith (viewAllowedMappings buffer) access_flags) $
@@ -306,7 +316,7 @@ bufferMap2 map_flags offset num_bytes access_flags buffer
                     "You might want to check OpenGL debug log."
 
         atomicModifyIORef' (status buffer) $ \old ->
-            ( old { mapped = True }, () )
+            ( old { mapped = Just map_flags }, () )
 
         return ptr
 
@@ -348,13 +358,13 @@ instance Exception BufferCorruption
 bufferUnmap :: MonadIO m => Buffer -> m ()
 bufferUnmap buffer = liftIO $ do
     bufstatus <- readIORef (status buffer)
-    when (mapped bufstatus) $
+    when (isJust $ mapped bufstatus) $
         withResource (resource buffer) $ \(Buffer_ buf) -> mask_ $ do
             result <- mglUnmapNamedBuffer buf
             when (result == GL_FALSE) $
                 throwM $ BufferCorruption buffer
             atomicModifyIORef' (status buffer) $ \old ->
-                ( old { mapped = False }, () )
+                ( old { mapped = Nothing }, () )
 
 -- | Same as `withMapping` but with map flags.
 --
@@ -457,10 +467,10 @@ copy dst_buffer dst_offset src_buffer src_offset num_bytes
         liftIO $ withResource (resource dst_buffer) $ \(Buffer_ dst) ->
             withResource (resource src_buffer) $ \(Buffer_ src) -> do
                 dst_status <- readIORef (status dst_buffer)
-                when (mapped dst_status) $
+                when (isJust $ mapped dst_status) $
                     error "copy: destination buffer is mapped."
                 src_status <- readIORef (status src_buffer)
-                when (mapped src_status) $
+                when (isJust $ mapped src_status) $
                     error "copy: source buffer is mapped."
 
                 when (num_bytes > 0) $
@@ -502,4 +512,30 @@ invalidateBuffer buf =
     when gl_ARB_invalidate_subdata $
         withResource (resource buf) $ \(Buffer_ name) ->
             glInvalidateBufferData name
+
+-- | Explicitly flushes part of a buffer mapping.
+--
+-- The buffer must have been mapped with `ExplicitFlush` set. Furthermore,
+-- either OpenGL 3.0 or \"GL_ARB_map_buffer_range\" is required; however this
+-- function does nothing is neither of those are available.
+explicitFlush :: MonadIO m
+              => Buffer
+              -> Int          -- ^ Offset, in bytes, from start of the mapped
+                              --   region.
+              -> Int          -- ^ How many bytes to flush.
+              -> m ()
+explicitFlush buf offset size = liftIO $ do
+    s <- readIORef (status buf)
+    case mapped s of
+        Just x | ExplicitFlush `S.notMember` x ->
+            error $ "explicitFlush: buffer is not " <>
+                    "mapped with `ExplicitFlush` set."
+        Nothing ->
+            error "explicitFlush: buffer is not mapped."
+        _ -> return ()
+
+    withResource (resource buf) $ \(Buffer_ name) ->
+        mglFlushMappedNamedBufferRange name
+                                       (safeFromIntegral offset)
+                                       (safeFromIntegral size)
 

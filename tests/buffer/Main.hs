@@ -58,7 +58,54 @@ tests = [
   , testCase "Mapping with offset works" offsetMappingTest
   , testCase "Mapping with unsynchronized flag set doesn't crash" unsyncTest
   , testCase "Buffer copying works" copyBuffersTest
+  , testCase "Explicit flushing tentatively works" explicitFlushTest
+  , testCase ("I cannot invoke `explicitFlush` on a mapping without " <>
+              "`ExplicitFlush` flag.") incorrectExplicitFlushTest
+  , testCase "I cannot map with `ExplicitFlush` and no writing access."
+             noWriteExplicitFlushTest
+  , testCase "I cannot invoke `explicitFlush` without a mapping."
+             explicitFlushNoMapTest
     ]
+
+explicitFlushNoMapTest :: IO ()
+explicitFlushNoMapTest = setup $ do
+    buf <- newBufferFromList (take 10000 $ repeat (12 :: Word8))
+                             (\old -> old { accessFlags = ReadWriteAccess })
+    expectException $ explicitFlush buf 10 10
+
+noWriteExplicitFlushTest :: IO ()
+noWriteExplicitFlushTest = setup $ do
+    buf <- newBufferFromList (take 10000 $ repeat (12 :: Word8))
+                             (\old -> old { accessFlags = ReadWriteAccess })
+    expectException $ withMapping2 (S.singleton ExplicitFlush)
+                      100 100 ReadAccess buf $ const $ return ()
+    expectException $ withMapping2 (S.singleton ExplicitFlush)
+                      100 100 NoAccess buf $ const $ return ()
+
+incorrectExplicitFlushTest :: IO ()
+incorrectExplicitFlushTest = setup $ do
+    buf <- newBufferFromList (take 10000 $ repeat (12 :: Word8))
+                             (\old -> old { accessFlags = ReadWriteAccess })
+    withMapping 100 100 WriteAccess buf $ \_ -> do
+        expectException $ explicitFlush buf 10 10
+
+
+explicitFlushTest :: IO ()
+explicitFlushTest = setup $ do
+    buf <- newBufferFromList (take 10000 $ repeat (12 :: Word8))
+                             (\old -> old { accessFlags = ReadWriteAccess })
+    withMapping2 (S.singleton ExplicitFlush) 7800 1000 WriteAccess buf $ \ptr -> do
+        pokeElemOff (ptr :: Ptr Word8) 10 8
+        pokeElemOff (ptr :: Ptr Word8) 11 9
+        pokeElemOff (ptr :: Ptr Word8) 12 10
+        explicitFlush buf 8 3
+    withMapping 7800 100 ReadAccess buf $ \ptr -> do
+        let assM x y = do z <- peekElemOff (ptr :: Ptr Word8) x
+                          assertEqual "explicitly flushed bytes are the same"
+                                      y z
+        assM 10 8
+        assM 11 9
+        assM 12 10
 
 copyBuffersTest :: IO ()
 copyBuffersTest = setup $ do
