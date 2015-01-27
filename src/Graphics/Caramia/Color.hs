@@ -3,6 +3,7 @@
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Graphics.Caramia.Color
     (
@@ -29,6 +30,8 @@ module Graphics.Caramia.Color
     where
 
 import Control.Lens
+import Data.Data
+import GHC.Generics
 import Graphics.Caramia.Prelude
 import Foreign.Storable
 import Linear.V4
@@ -42,7 +45,8 @@ import Linear.V4
 -- `Color`'s `Storable` instance is equal to `V4` `Float`'s
 -- `Storable` instance, in the order \"r g b a\".
 newtype Color = Color { toV4 :: (V4 Float) }
-                deriving ( Eq, Ord, Show, Read, Typeable, Storable )
+                deriving ( Eq, Ord, Show, Read, Typeable, Storable
+                         , Data, Generic )
 
 v4 :: Lens' Color (V4 Float)
 v4 = lens toV4 (\_ new -> Color new)
