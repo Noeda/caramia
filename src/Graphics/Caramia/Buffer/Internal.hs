@@ -70,6 +70,6 @@ data MapFlag =
                           --
                           --   Explicit flushing can be useful when you map a
                           --   large buffer but don't know beforehand how much
-                          --   that buffer you are going to modify.
+                          --   of that buffer you are going to modify.
   deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
