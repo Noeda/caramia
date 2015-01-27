@@ -442,9 +442,9 @@ uploadVector vec offset buffer =
 -- When @ GL_ARB_copy_buffer @ is not available, this is implemented in terms
 -- of `withMapping` and is subject to mapping restrictions.
 --
--- This is faster than mapping both buffers and then doing a memcpy() style
--- copying in system memory because this call does not require a round-trip to
--- the driver.
+-- This is faster (when the required extensions are available) than mapping
+-- both buffers and then doing a memcpy() style copying in system memory
+-- because this call usually does not require a round-trip to the driver.
 --
 -- You can use the same buffer for both destination and source but the copying
 -- area may not overlap.

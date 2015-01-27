@@ -67,5 +67,9 @@ data MapFlag =
                           --   \"GL_ARB_map_buffer_range\", but if neither of
                           --   these are available, then this flag is no-op and
                           --   so is `explicitFlush`.
+                          --
+                          --   Explicit flushing can be useful when you map a
+                          --   large buffer but don't know beforehand how much
+                          --   that buffer you are going to modify.
   deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
