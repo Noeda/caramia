@@ -23,6 +23,6 @@ class OpenGLResource innertype a | a -> innertype where
 
     -- | Promptly finalizes the resource.
     --
-    -- This can be unsafe; see `Graphics.Caramia.Resource.newResource`.
+    -- This can be unsafe; see `Graphics.Caramia.Resource.finalizeNow`.
     finalize :: MonadIO m => a -> m ()
 
