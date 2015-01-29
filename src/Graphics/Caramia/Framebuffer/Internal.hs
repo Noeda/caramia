@@ -33,6 +33,7 @@ instance OpenGLResource GLuint Framebuffer where
         Framebuffer_ name <- getRaw (WrappedOpenGLResource $ resource fbuf)
         return name
     touch fbuf = touch (WrappedOpenGLResource $ resource fbuf)
+    finalize fbuf = finalize (WrappedOpenGLResource $ resource fbuf)
 
 data Attachment = ColorAttachment !Int
                 | DepthAttachment

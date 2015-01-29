@@ -21,3 +21,8 @@ class OpenGLResource innertype a | a -> innertype where
     -- point this function is invoked.
     touch :: MonadIO m => a -> m ()
 
+    -- ^ Promptly finalizes the resource.
+    --
+    -- This can be unsafe; see `Graphics.Caramia.Resource.newResource`.
+    finalize :: MonadIO m => a -> m ()
+

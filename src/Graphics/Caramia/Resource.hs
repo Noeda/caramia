@@ -23,6 +23,7 @@ module Graphics.Caramia.Resource
     ( Resource()
     , newResource
     , withResource
+    , finalizeNow
     , WrappedOpenGLResource(..) )
     where
 
@@ -55,6 +56,9 @@ instance OpenGLResource a (WrappedOpenGLResource a) where
 
     touch (WrappedOpenGLResource managed) =
         liftIO $ touchIORef (rawResource managed)
+
+    finalize (WrappedOpenGLResource managed) =
+        liftIO $ finalizeNow managed
 
 instance Eq (Resource a) where
     res1 == res2 = rawResource res1 == rawResource res2
@@ -102,6 +106,10 @@ newResource resource_creator finalizer normal_finalizer = mask_ $
 
 -- | Promptly finalize a resource.
 --
+-- This is UNSAFE if you finalize a resource that is being referred to from
+-- another resource that you will still use. Consequences will be unpredictable
+-- (although you are unlikely to hit a hard crash).
+--
 -- The ordinary finalizer will be run immediately. The OpenGL finalizer will be
 -- run if the current thread is the same OpenGL thread where the resource was
 -- created.
@@ -111,12 +119,6 @@ newResource resource_creator finalizer normal_finalizer = mask_ $
 -- this call to you.
 --
 -- Does nothing if the resource is already finalized.
---
--- ***********************
--- TODO: this is not actually exported API. Some resources cannot be finalized
--- like this because other resources might refer to them. How do we handle
--- resources that can refer to each other? Right now, we cannot. So we can't
--- allow users to finalize things by themselves.
 finalizeNow :: Resource a -> IO ()
 finalizeNow resource = mask_ $ do
     maybe_res <- atomicModifyIORef (rawResource resource) $

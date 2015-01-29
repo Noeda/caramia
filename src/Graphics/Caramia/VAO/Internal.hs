@@ -32,4 +32,5 @@ instance OpenGLResource GLuint VAO where
         VAO_ name <- getRaw (WrappedOpenGLResource $ resource vao)
         return name
     touch vao = touch (WrappedOpenGLResource $ resource vao)
+    finalize vao = finalize (WrappedOpenGLResource $ resource vao)
 

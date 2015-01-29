@@ -42,6 +42,7 @@ data Fence = Fence { resource :: !(Resource GLsync)
 instance OpenGLResource GLsync Fence where
     getRaw (Fence r _) = getRaw $ WrappedOpenGLResource r
     touch (Fence r _) = touch $ WrappedOpenGLResource r
+    finalize (Fence r _) = finalize $ WrappedOpenGLResource r
 
 instance Ord Fence where
     (ordIndex -> o1) `compare` (ordIndex -> o2) = o1 `compare` o2

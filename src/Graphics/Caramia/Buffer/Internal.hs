@@ -30,6 +30,7 @@ instance OpenGLResource GLuint Buffer where
         Buffer_ name <- getRaw (WrappedOpenGLResource $ resource buf)
         return name
     touch buf = touch (WrappedOpenGLResource $ resource buf)
+    finalize buf = finalize (WrappedOpenGLResource $ resource buf)
 
 instance Ord Buffer where
     (ordIndex -> o1) `compare` (ordIndex -> o2) = o1 `compare` o2

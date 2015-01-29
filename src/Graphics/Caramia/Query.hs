@@ -95,6 +95,7 @@ instance OpenGLResource GLuint (Query a) where
         Query_ name <- getRaw (WrappedOpenGLResource $ resource query)
         return name
     touch query = touch (WrappedOpenGLResource $ resource query)
+    finalize query = finalize (WrappedOpenGLResource $ resource query)
 
 newtype Query_ = Query_ GLuint
 

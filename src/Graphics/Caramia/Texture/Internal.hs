@@ -21,11 +21,14 @@ data Texture = Texture
     , viewSpecification :: !TextureSpecification }
     deriving ( Typeable )
 
+-- | If you use `finalize`, be careful of any resource that might refer to the
+-- texture.
 instance OpenGLResource GLuint Texture where
     getRaw tex = do
         Texture_ name <- getRaw (WrappedOpenGLResource $ resource tex)
         return name
     touch tex = touch (WrappedOpenGLResource $ resource tex)
+    finalize tex = finalize (WrappedOpenGLResource $ resource tex)
 
 newtype Texture_ = Texture_ GLuint
 

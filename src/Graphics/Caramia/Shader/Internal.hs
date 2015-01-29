@@ -26,6 +26,7 @@ instance OpenGLResource GLuint Shader where
         CompiledShader name <- getRaw (WrappedOpenGLResource $ resource shader)
         return name
     touch shader = touch (WrappedOpenGLResource $ resource shader)
+    finalize shader = finalize (WrappedOpenGLResource $ resource shader)
 
 instance Eq Shader where
     (resource -> res1) == (resource -> res2) = res1 == res2
@@ -53,6 +54,7 @@ instance OpenGLResource GLuint Pipeline where
         Pipeline_ name <- getRaw (WrappedOpenGLResource $ resourcePL program)
         return name
     touch program = touch (WrappedOpenGLResource $ resourcePL program)
+    finalize program = finalize (WrappedOpenGLResource $ resourcePL program)
 
 instance Eq Pipeline where
     p1 == p2 = resourcePL p1 == resourcePL p2
