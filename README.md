@@ -17,7 +17,8 @@ You need to use `-threaded` flag in executables that use this library.
 
 Here are the most important features of this library:
 
-  * Safe and automatic finalization of OpenGL resources
+  * Safe and automatic finalization of OpenGL resources, with optional prompt
+    finalization.
 
   * No implicit state (that is, no glBind* mess or equivalent). There is a
     monad for mass-rendering that has implicit state but the state is localized
