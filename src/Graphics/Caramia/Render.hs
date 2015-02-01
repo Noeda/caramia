@@ -67,7 +67,6 @@ import qualified Graphics.Caramia.Framebuffer as FBuf
 import qualified Graphics.Caramia.Framebuffer.Internal as FBuf
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Internal.Exception
-import Graphics.Caramia.OpenGLResource ( touch )
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Render.Internal hiding ( setFragmentPassTests )
 import qualified Graphics.Caramia.Render.Internal as I
@@ -560,7 +559,6 @@ setTextureBindings texes = do
                     modify $ IM.insert index $ do
                         setActiveTexture (safeFromIntegral index)
                         glBindTexture bind_point old_tex
-                        touch tex
 
             case IM.lookup index old_texes of
                 Just _ -> return ()   -- already handled in the above forM_
