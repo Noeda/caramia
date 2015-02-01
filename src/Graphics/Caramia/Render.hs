@@ -56,7 +56,7 @@ import Control.Monad.RWS.Class
 import Control.Monad.Trans.Class
 import Control.Monad.IO.Class
 import Control.Monad.Catch
-import Control.Monad.State.Strict hiding ( forM_ )
+import Control.Monad.State.Strict hiding ( forM_, sequence_ )
 import qualified Data.IntMap.Strict as IM
 import Foreign
 import Foreign.C.Types
@@ -67,6 +67,7 @@ import qualified Graphics.Caramia.Framebuffer as FBuf
 import qualified Graphics.Caramia.Framebuffer.Internal as FBuf
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Internal.Exception
+import Graphics.Caramia.OpenGLResource ( touch )
 import Graphics.Caramia.Prelude
 import Graphics.Caramia.Render.Internal hiding ( setFragmentPassTests )
 import qualified Graphics.Caramia.Render.Internal as I
@@ -322,12 +323,13 @@ data DrawState = DrawState
     { boundPipeline :: !Shader.Pipeline
     , boundEbo :: !GLuint
     , boundTextures :: !(IM.IntMap Texture)
+    , restoreTextures :: !(IM.IntMap (IO ()))
     , boundBlending :: !BlendSpec
     , boundFramebuffer :: !FBuf.Framebuffer
     , boundFragmentPassTests :: !FragmentPassTests
     , boundPrimitiveRestart :: !(Maybe Word32)
     , activeTexture :: !GLuint }
-    deriving ( Eq, Ord, Typeable )
+    deriving ( Typeable )
 
 newtype DrawT m a = DrawT (StateT DrawState m a)
                     deriving ( Monad, Applicative, Functor, Typeable )
@@ -386,11 +388,15 @@ runDraws params (DrawT cmd_stream) =
                 , boundEbo = 0
                 , boundBlending = blending params
                 , boundFramebuffer = targetFramebuffer params
-                , boundTextures = bindTextures params
+                , boundTextures = bind_textures
+                , restoreTextures = fmap (const (return ())) bind_textures
                 , boundPrimitiveRestart = primitiveRestart params
                 , activeTexture = 0
                 }
+        liftIO $ sequence_ $ restoreTextures st
         st `seq` return result
+  where
+    bind_textures = bindTextures params
 
 withParams :: (MonadIO m, MonadMask m) => DrawParams -> m a -> m a
 withParams (DrawParams {..}) action =
@@ -500,6 +506,8 @@ setTextureBindings :: MonadIO m => IM.IntMap Texture -> DrawT m ()
 setTextureBindings texes = do
     state <- DrawT get
     let old_texes = boundTextures state
+        old_restorations = restoreTextures state
+
     -- Iterate over the old bindings.
     forM_ (IM.assocs old_texes) $ \(index, tex) ->
         case IM.lookup index texes of
@@ -526,21 +534,46 @@ setTextureBindings texes = do
                             Texture.getTopologyBindPoints $
                             topology $ viewSpecification new_tex
                         in liftIO $ glBindTexture bind_target name
+
     -- Iterate over new bindings. We need to only check those that were not
     -- part of the old bindings.
-    forM_ (IM.assocs texes) $ \(index, tex) ->
-        case IM.lookup index old_texes of
-            Just _ -> return ()   -- already handled in the above forM_
-            Nothing -> do
-                name <- liftIO $ withResource (Texture.resource tex) $
-                            \(Texture.Texture_ name) -> return name
-                setActiveTexture (safeFromIntegral index)
-                let (bind_target, _) =
-                        Texture.getTopologyBindPoints $
-                        topology $ viewSpecification tex
-                 in liftIO $ glBindTexture bind_target name
+    new_restorations <-
+        flip execStateT old_restorations $
+        forM_ (IM.assocs texes) $ \(index, tex) -> do
+            -- Do we need to restore texture binding afterwards?
+            restorations <- get
+            case IM.lookup index restorations of
+                Just _ -> return () -- nope, handled already
+                Nothing -> do
+                    -- messily make sure that texture binding is restored when
+                    -- we return from runDrawT
+                    old_active <- gi GL_ACTIVE_TEXTURE
+                    glActiveTexture $ GL_TEXTURE0 + fromIntegral index
+                    let (bind_point, bind_point_get) =
+                            Texture.getTopologyBindPoints $
+                            topology $ viewSpecification tex
+                    old_tex <- gi bind_point_get
+                    glActiveTexture old_active
+                    modify $ IM.insert index $ do
+                        old_active <- gi GL_ACTIVE_TEXTURE
+                        glActiveTexture $ GL_TEXTURE0 + fromIntegral index
+                        glBindTexture bind_point old_tex
+                        glActiveTexture old_active
+                        touch tex
 
-    DrawT $ modify (\old -> old { boundTextures = texes })
+            case IM.lookup index old_texes of
+                Just _ -> return ()   -- already handled in the above forM_
+                Nothing -> do
+                    name <- liftIO $ withResource (Texture.resource tex) $
+                                \(Texture.Texture_ name) -> return name
+                    lift $ setActiveTexture (safeFromIntegral index)
+                    let (bind_target, _) =
+                            Texture.getTopologyBindPoints $
+                            topology $ viewSpecification tex
+                     in liftIO $ glBindTexture bind_target name
+
+    DrawT $ modify (\old -> old { boundTextures = texes
+                                , restoreTextures = new_restorations })
 
 -- | Changes the pipeline in a `Draw` command stream.
 setPipeline :: MonadIO m => Shader.Pipeline -> DrawT m ()
