@@ -323,7 +323,7 @@ data DrawState = DrawState
     { boundPipeline :: !Shader.Pipeline
     , boundEbo :: !GLuint
     , boundTextures :: !(IM.IntMap Texture)
-    , restoreTextures :: !(IM.IntMap (IO ()))
+    , restoreTextures :: !(IM.IntMap (DrawT IO ()))
     , boundBlending :: !BlendSpec
     , boundFramebuffer :: !FBuf.Framebuffer
     , boundFragmentPassTests :: !FragmentPassTests
@@ -382,7 +382,7 @@ runDraws :: (MonadIO m, MonadMask m)
 runDraws params (DrawT cmd_stream) =
     withParams params $ do
         (result, st) <-
-            runStateT cmd_stream DrawState
+            runStateT commands DrawState
                 { boundPipeline = pipeline params
                 , boundFragmentPassTests = fragmentPassTests params
                 , boundEbo = 0
@@ -393,10 +393,15 @@ runDraws params (DrawT cmd_stream) =
                 , boundPrimitiveRestart = primitiveRestart params
                 , activeTexture = 0
                 }
-        liftIO $ sequence_ $ restoreTextures st
         st `seq` return result
   where
     bind_textures = bindTextures params
+
+    commands = finally cmd_stream $ do
+        st <- get
+        sequence_ $ fmap (unwrapDrawT . hoistDrawT liftIO) $ restoreTextures st
+
+    unwrapDrawT (DrawT ac) = ac
 
 withParams :: (MonadIO m, MonadMask m) => DrawParams -> m a -> m a
 withParams (DrawParams {..}) action =
@@ -547,18 +552,14 @@ setTextureBindings texes = do
                 Nothing -> do
                     -- messily make sure that texture binding is restored when
                     -- we return from runDrawT
-                    old_active <- gi GL_ACTIVE_TEXTURE
-                    glActiveTexture $ GL_TEXTURE0 + fromIntegral index
+                    lift $ setActiveTexture (safeFromIntegral index)
                     let (bind_point, bind_point_get) =
                             Texture.getTopologyBindPoints $
                             topology $ viewSpecification tex
                     old_tex <- gi bind_point_get
-                    glActiveTexture old_active
                     modify $ IM.insert index $ do
-                        old_active <- gi GL_ACTIVE_TEXTURE
-                        glActiveTexture $ GL_TEXTURE0 + fromIntegral index
+                        setActiveTexture (safeFromIntegral index)
                         glBindTexture bind_point old_tex
-                        glActiveTexture old_active
                         touch tex
 
             case IM.lookup index old_texes of
