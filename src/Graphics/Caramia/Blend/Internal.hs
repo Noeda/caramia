@@ -1,14 +1,16 @@
 {-# LANGUAGE RecordWildCards, NoImplicitPrelude, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Graphics.Caramia.Blend.Internal where
 
-import Graphics.Caramia.Prelude
-
-import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Color
 import Control.Monad.Catch
 import Control.Monad.IO.Class
+import Data.Data ( Data )
 import Foreign
+import GHC.Generics ( Generic )
+import Graphics.Caramia.Color
+import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude
 
 -- | Describes which equation to use in blending.
 --
@@ -19,7 +21,7 @@ data BlendEquation =
   | BEReverseSubtract
   | BEMin
   | BEMax
-  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
 -- | Describes the arithmetic to use in blending.
 --
@@ -40,7 +42,7 @@ data BlendFunc =
   | BFConstantAlpha
   | BFOneMinusConstantAlpha
   | BFSrcAlphaSaturate
-  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
 toConstantBE :: BlendEquation -> GLenum
 toConstantBE BEAdd = GL_FUNC_ADD
@@ -75,7 +77,7 @@ data BlendSpec = BlendSpec
     , dstColorFunc  :: !BlendFunc
     , dstAlphaFunc  :: !BlendFunc
     , blendColor    :: !Color }
-    deriving ( Eq, Ord, Show, Read, Typeable )
+    deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic )
 
 setBlendings :: MonadIO m => BlendSpec -> m ()
 setBlendings (BlendSpec{..}) = do

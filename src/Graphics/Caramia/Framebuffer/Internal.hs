@@ -2,13 +2,16 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Graphics.Caramia.Framebuffer.Internal where
 
 import Control.Monad.IO.Class
 import Control.Monad.Catch
+import Data.Data ( Data )
 import Data.Unique
 import Foreign
+import GHC.Generics
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.OpenGLResource
 import Graphics.Caramia.Prelude
@@ -38,7 +41,7 @@ instance OpenGLResource GLuint Framebuffer where
 data Attachment = ColorAttachment !Int
                 | DepthAttachment
                 | StencilAttachment
-                deriving ( Eq, Ord, Show, Read, Typeable )
+                deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic )
 
 instance Eq Framebuffer where
     ScreenFramebuffer == ScreenFramebuffer = True
@@ -57,6 +60,7 @@ newtype Framebuffer_ = Framebuffer_ GLuint
 data TextureTarget = TextureTarget
     { attacher :: GLuint -> IO ()
     , texture :: Tex.Texture }
+    deriving ( Typeable )
 
 setBinding :: MonadIO m => Framebuffer -> m ()
 setBinding ScreenFramebuffer = do

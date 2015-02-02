@@ -4,15 +4,17 @@
 --
 
 {-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Graphics.Caramia.ImageFormats.Internal where
 
-import Graphics.Caramia.Prelude
-
+import Data.Data ( Data )
+import Foreign.C.Types
+import GHC.Generics
 import Graphics.Caramia.Internal.OpenGLCApi
+import Graphics.Caramia.Prelude
 import Graphics.GL.Ext.EXT.TextureCompressionS3tc
 import Graphics.GL.Ext.EXT.TextureSRGB
-import Foreign.C.Types
 
 -- | Given a format, returns `True` if that format can be rendered to. That is,
 -- if it can be one of the targets in a framebuffer.
@@ -183,7 +185,7 @@ data ImageFormat =
   | DEPTH_COMPONENT16
   | DEPTH32F_STENCIL8
   | DEPTH24_STENCIL8
-  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
 toConstantIF :: ImageFormat -> GLenum
 toConstantIF R8 = GL_R8
@@ -264,7 +266,7 @@ data SpecificationType =
   | FInt32
   | FFloat
   | FHalfFloat
-  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
 toConstantST :: SpecificationType -> GLenum
 toConstantST FWord8 = GL_UNSIGNED_BYTE

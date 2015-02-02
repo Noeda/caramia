@@ -4,6 +4,7 @@
 {-# LANGUAGE RecordWildCards, ScopedTypeVariables, NoImplicitPrelude #-}
 {-# LANGUAGE MultiWayIf, ViewPatterns, DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Graphics.Caramia.Texture
     (
@@ -52,21 +53,23 @@ module Graphics.Caramia.Texture
     , maxMipmapLevels )
     where
 
-import Graphics.Caramia.Prelude
 
-import Graphics.Caramia.Texture.Internal
+import Control.Monad.IO.Class
+import Control.Monad.Catch
+import Data.Data ( Data )
+import GHC.Generics
+import qualified Graphics.Caramia.Buffer.Internal as Buf
+import Graphics.Caramia.ImageFormats.Internal
 import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.TexStorage
 import Graphics.Caramia.Internal.OpenGLCApi
-import qualified Graphics.Caramia.Buffer.Internal as Buf
-import Graphics.Caramia.ImageFormats.Internal
+import Graphics.Caramia.Prelude
 import Graphics.Caramia.Resource
+import Graphics.Caramia.Texture.Internal
 import Graphics.GL.Ext.ARB.TextureBufferObject
-import Graphics.GL.Ext.ARB.TextureStorage
-import Graphics.GL.Ext.ARB.TextureMultisample
 import Graphics.GL.Ext.EXT.TextureFilterAnisotropic
-import Control.Monad.IO.Class
-import Control.Monad.Catch
+import Graphics.GL.Ext.ARB.TextureMultisample
+import Graphics.GL.Ext.ARB.TextureStorage
 import Foreign
 import Linear.V2 ( V2(..) )
 import Linear.V3 ( V3(..) )
@@ -392,7 +395,7 @@ data UploadFormat =
   | UBGRA
   | UDEPTH_COMPONENT   -- ^ Depth values.
   | USTENCIL_INDEX     -- ^ Stencil values.
-  deriving ( Eq, Ord, Show, Read, Typeable )
+  deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic )
 
 -- TODO: add UDEPTH_STENCIL when `SpecificationType` has special interpretation
 -- formats.
@@ -461,7 +464,7 @@ data CubeSide =
   | NegativeX
   | PositiveZ
   | NegativeZ
-    deriving ( Eq, Ord, Show, Read, Typeable )
+    deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic )
 
 toConstantCS :: CubeSide -> GLenum
 toConstantCS PositiveX = GL_TEXTURE_CUBE_MAP_POSITIVE_X
@@ -683,17 +686,17 @@ data MinFilter =
   | MiLinearMipmapNearest
   | MiNearestMipmapLinear
   | MiLinearMipmapLinear
-  deriving ( Eq, Ord, Show, Read, Typeable )
+  deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic, Enum )
 
 data MagFilter =
    MaNearest
  | MaLinear
- deriving ( Eq, Ord, Show, Read, Typeable )
+ deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic, Enum )
 
 data Wrapping =
    Clamp
  | Repeat
- deriving ( Eq, Ord, Show, Read, Typeable )
+ deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic, Enum )
 
 -- | Texture comparison modes.
 --
@@ -701,7 +704,7 @@ data Wrapping =
 data CompareMode
  = NoCompare
  | CompareRefToTexture
- deriving ( Eq, Ord, Show, Read, Typeable )
+ deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic, Enum )
 
 toConstantC :: CompareMode -> GLenum
 toConstantC NoCompare = GL_NONE

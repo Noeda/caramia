@@ -2,9 +2,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Graphics.Caramia.Shader.Internal where
 
+import Data.Data ( Data )
+import GHC.Generics ( Generic )
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.OpenGLResource
 import Graphics.Caramia.Prelude
@@ -68,5 +71,5 @@ data ShaderStage =
     Vertex
   | Fragment
   | Geometry
-  deriving ( Eq, Ord, Show, Read )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 

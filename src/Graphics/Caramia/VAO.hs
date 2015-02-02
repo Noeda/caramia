@@ -9,7 +9,9 @@
 -- use operations from this module.
 --
 
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Graphics.Caramia.VAO
     ( -- * Creation
@@ -28,7 +30,9 @@ module Graphics.Caramia.VAO
 
 import Control.Monad.IO.Class
 import Control.Monad.Catch
+import Data.Data ( Data )
 import Data.Unique
+import GHC.Generics ( Generic )
 import qualified Graphics.Caramia.Buffer.Internal as Buf
 import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
@@ -71,7 +75,7 @@ data SourceType =
    | SHalfFloat   -- ^ 16-bit floating point value.
    | SFloat
    | SDouble
-   deriving ( Eq, Ord, Show, Read )
+   deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic )
 
 -- | This returns the size of a `SourceType`, in bytes.
 sourceTypeSize :: SourceType -> Int
@@ -185,6 +189,7 @@ data Sourcing = Sourcing
     -- ^ The data type of values in the buffer. It tells the type of a single
     -- component.
     }
+    deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic )
 
 -- | The default sourcing.
 --

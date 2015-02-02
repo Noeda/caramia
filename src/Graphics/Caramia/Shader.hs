@@ -20,6 +20,7 @@
 
 {-# LANGUAGE NoImplicitPrelude, FlexibleInstances, DeriveDataTypeable #-}
 {-# LANGUAGE ExistentialQuantification, ViewPatterns, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Graphics.Caramia.Shader
     (
@@ -57,6 +58,7 @@ import Control.Monad.IO.Class
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Unsafe as B
 import qualified Data.ByteString.Lazy as BL
+import Data.Data ( Data )
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -64,6 +66,7 @@ import qualified Data.Text.Foreign as T
 import Foreign
 import Foreign.C.Types
 import GHC.Float ( double2Float )
+import GHC.Generics ( Generic )
 import Graphics.Caramia.Color
 import Graphics.Caramia.Context
 import Graphics.Caramia.Internal.OpenGLCApi
@@ -98,14 +101,14 @@ instance Show ShaderBuildingError where
 --
 -- Can also be caught as `ShaderBuildingError`.
 data ShaderCompilationError = ShaderCompilationError !T.Text
-                              deriving ( Eq, Typeable, Show )
+                              deriving ( Eq, Typeable, Show, Data, Generic )
 
 -- | Thrown when a shader linking error occurs. The text is the error log for
 -- linking.
 --
 -- Can also be caught as `ShaderBuildingError`.
 data ShaderLinkingError = ShaderLinkingError !T.Text
-                          deriving ( Eq, Typeable, Show )
+                          deriving ( Eq, Typeable, Show, Data, Generic )
 
 instance Exception ShaderBuildingError
 

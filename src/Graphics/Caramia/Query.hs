@@ -15,6 +15,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -43,11 +44,13 @@ module Graphics.Caramia.Query
 
 import Control.Monad.Catch
 import Control.Monad.IO.Class
+import Data.Data ( Data )
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Unique
 import Foreign.Marshal.Alloc
 import Foreign.Storable
+import GHC.Generics ( Generic )
 import Graphics.Caramia.Internal.ContextLocalData
 import Graphics.Caramia.Internal.Exception
 import Graphics.Caramia.Internal.OpenGLCApi
@@ -64,14 +67,14 @@ data NumericQueryType
     | PrimitivesGenerated
     | TransformFeedbackPrimitivesWritten
     | TimeElapsed  -- ^ Requires OpenGL 3.3 or @ GL_ARB_timer_query @.
-    deriving ( Eq, Ord, Show, Read, Typeable, Enum )
+    deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
 -- | What of query to make? These queries return boolean results.
 data BooleanQueryType
     = AnySamplesPassed   -- ^ If @ GL_ARB_occlusion_query2 @ or OpenGL 3.3 is
                          --   not available, this is implemented with
                          --   `SamplesPassed` behind the scenes.
-    deriving ( Eq, Ord, Show, Read, Typeable, Enum )
+    deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
 -- | Which queries cannot be used together?
 illPairs :: M.Map SomeQuery (S.Set SomeQuery)

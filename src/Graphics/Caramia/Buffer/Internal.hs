@@ -53,7 +53,7 @@ data AccessFlags =
   | ReadWriteAccess -- ^ Both reading and writing can be done.
   | NoAccess        -- ^ No access; you cannot map the buffer at all after
                     --   creation.
-  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
 -- | Additional mapping flags.
 data MapFlag =

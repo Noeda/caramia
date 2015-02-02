@@ -9,6 +9,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE CPP #-}
@@ -48,18 +49,18 @@ module Graphics.Caramia.Render
     , Culling(..) )
     where
 
+import Control.Monad.Catch
 import Control.Monad.Cont.Class
 import Control.Monad.Error.Class
+import Control.Monad.IO.Class
 import Control.Monad.Reader.Class
 import Control.Monad.RWS.Class
-
-import Control.Monad.Trans.Class
-import Control.Monad.IO.Class
-import Control.Monad.Catch
 import Control.Monad.State.Strict hiding ( forM_, sequence_ )
+import Data.Data ( Data )
 import qualified Data.IntMap.Strict as IM
 import Foreign
 import Foreign.C.Types
+import GHC.Generics
 import Graphics.Caramia.Blend
 import Graphics.Caramia.Blend.Internal
 import Graphics.Caramia.Buffer.Internal
@@ -94,7 +95,7 @@ data Primitive =
   | LineStripAdjacency
   | TriangleStripAdjacency
   | TrianglesAdjacency
-  deriving ( Eq, Ord, Show, Read, Typeable, Enum )
+  deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
 toConstant :: Primitive -> GLenum
 toConstant Triangles = GL_TRIANGLES
@@ -114,7 +115,7 @@ data IndexType =
     IWord32
   | IWord16
   | IWord8
-    deriving ( Eq, Ord, Show, Read, Typeable, Enum )
+    deriving ( Eq, Ord, Show, Read, Typeable, Enum, Data, Generic )
 
 toConstantIT :: IndexType -> GLenum
 toConstantIT IWord32 = GL_UNSIGNED_INT

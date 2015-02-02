@@ -6,6 +6,7 @@
 --
 
 {-# LANGUAGE DeriveDataTypeable, NoImplicitPrelude #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Graphics.Caramia.Buffer
@@ -47,9 +48,11 @@ import Control.Monad.IO.Class
 import Data.Bits
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Unsafe as B
+import Data.Data ( Data )
 import qualified Data.Set as S
 import qualified Data.Vector.Storable as V
 import Foreign
+import GHC.Generics
 import Graphics.Caramia.Buffer.Internal
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude hiding ( map )
@@ -68,7 +71,7 @@ data AccessFrequency =
     Stream
   | Static
   | Dynamic
-  deriving ( Eq, Ord, Show, Read )
+  deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic )
 
 -- | The nature of access to a buffer.
 --
@@ -80,7 +83,7 @@ data AccessNature =
     Draw
   | Read
   | Copy
-  deriving ( Eq, Ord, Show, Read )
+  deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic )
 
 canMapWith :: AccessFlags -> AccessFlags -> Bool
 canMapWith ReadWriteAccess _ = True
@@ -141,6 +144,7 @@ data BufferCreation = BufferCreation
     , accessFlags :: !AccessFlags       -- ^ What kind of mapping access is
                                         --   allowed. See `map`.
     }
+    deriving ( Eq, Ord, Show, Typeable, Data, Generic )
 
 -- | The default buffer creation flags.
 --
