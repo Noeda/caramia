@@ -71,7 +71,7 @@ data AccessFrequency =
     Stream
   | Static
   | Dynamic
-  deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic )
+  deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic, Enum )
 
 -- | The nature of access to a buffer.
 --
@@ -83,7 +83,7 @@ data AccessNature =
     Draw
   | Read
   | Copy
-  deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic )
+  deriving ( Eq, Ord, Show, Read, Typeable, Data, Generic, Enum )
 
 canMapWith :: AccessFlags -> AccessFlags -> Bool
 canMapWith ReadWriteAccess _ = True
