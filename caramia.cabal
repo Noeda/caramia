@@ -140,7 +140,7 @@ library
                       ,text         >=0.9 && <2.0
                       ,transformers >=0.3 && <1.0
                       ,vector       >=0.10 && <1.0
-                      ,gl           >=0.6.2 && <0.7
+                      ,gl           >=0.7.3 && <1.0
 
   if flag(fix-opengl21)
     cpp-options:       -DFIXED_OPENGL_MAJOR_VERSION=2

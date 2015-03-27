@@ -410,7 +410,7 @@ mglMapNamedBufferRange buffer offset length access = fmap castPtr $
                | otherwise -> Nothing
 
 -- | This function is a no-op if the required extensions are not available.
-mglFlushMappedNamedBufferRange :: GLuint -> GLintptr -> GLsizei -> IO ()
+mglFlushMappedNamedBufferRange :: GLuint -> GLintptr -> GLsizeiptr -> IO ()
 mglFlushMappedNamedBufferRange buffer offset length =
     if gl_ARB_direct_state_access && we_have_map_buffer_range
       then dsaWay
