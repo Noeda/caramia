@@ -4,34 +4,31 @@
 
 module Main ( main ) where
 
+import Foreign.C.String
+import Data.Bits
 import Control.Concurrent
 import Control.Exception
 import Control.Monad.IO.Class ( liftIO )
 import qualified Data.IntMap.Strict as IM
-import Linear.V2
 import Graphics.Caramia
 import Graphics.Caramia.Internal.OpenGLCApi
-import Graphics.Caramia.Prelude
-import SDL
-import System.IO.Unsafe ( unsafePerformIO )
+import Graphics.Caramia.Prelude hiding ( init )
+import Graphics.UI.SDL
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit hiding ( Test )
 
-sdlLock :: MVar ()
-sdlLock = unsafePerformIO $ newMVar ()
-{-# NOINLINE sdlLock #-}
-
 setup :: IO a -> IO a
-setup action = runInBoundThread $ withMVar sdlLock $ \_ -> do
-    initialize [InitEverything]
-    let glconfig = defaultOpenGL {
-                    glProfile = Core Normal 3 3
-                    }
-    w <- createWindow "texture" defaultWindow {
-            windowOpenGL = Just glconfig
-        , windowSize = V2 1500 1000
-        }
+setup action = runInBoundThread $ withCString "texture" $ \cstr -> do
+    _ <- init SDL_INIT_VIDEO
+    _ <- glSetAttribute SDL_GL_CONTEXT_MAJOR_VERSION 3
+    _ <- glSetAttribute SDL_GL_CONTEXT_MINOR_VERSION 3
+    _ <- glSetAttribute SDL_GL_CONTEXT_PROFILE_MASK SDL_GL_CONTEXT_PROFILE_CORE
+    _ <- glSetAttribute SDL_GL_CONTEXT_FLAGS SDL_GL_CONTEXT_DEBUG_FLAG
+    w <- createWindow cstr SDL_WINDOWPOS_UNDEFINED SDL_WINDOWPOS_UNDEFINED
+                           1500 1000
+                           (SDL_WINDOW_OPENGL .|.
+                            SDL_WINDOW_SHOWN)
     ctx <- glCreateContext w
     finally (giveContext action) $ do
         glDeleteContext ctx

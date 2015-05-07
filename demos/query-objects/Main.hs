@@ -19,15 +19,14 @@ import Graphics.UI.SDL
 main :: IO ()
 main =
     withCString "query-objects" $ \cstr -> do
-        void $ init initFlagVideo
-        _ <- glSetAttribute glAttrContextMajorVersion 3
-        _ <- glSetAttribute glAttrContextMinorVersion 3
-        _ <- glSetAttribute glAttrContextProfileMask glProfileCore
-        _ <- glSetAttribute glAttrContextFlags glContextFlagDebug
-        window <- createWindow cstr windowPosUndefined windowPosUndefined
+        _ <- glSetAttribute SDL_GL_CONTEXT_MAJOR_VERSION 3
+        _ <- glSetAttribute SDL_GL_CONTEXT_MINOR_VERSION 3
+        _ <- glSetAttribute SDL_GL_CONTEXT_PROFILE_MASK SDL_GL_CONTEXT_PROFILE_CORE
+        _ <- glSetAttribute  SDL_GL_CONTEXT_FLAGS SDL_GL_CONTEXT_DEBUG_FLAG
+        window <- createWindow cstr SDL_WINDOWPOS_UNDEFINED SDL_WINDOWPOS_UNDEFINED
                                     500 500
-                                    (windowFlagOpenGL .|.
-                                     windowFlagShown)
+                                    (SDL_WINDOW_OPENGL .|.
+                                     SDL_WINDOW_SHOWN)
         _ <- glCreateContext window
         giveContext $ do
             color_program <- newPipelineVF passThroughVertex2DShader

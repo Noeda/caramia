@@ -10,7 +10,6 @@ import Foreign.C.Types
 import Graphics.Caramia.Prelude hiding ( init )
 import Graphics.Caramia
 import Graphics.UI.SDL
-import qualified Graphics.UI.SDL as SDL
 import Linear.Matrix
 import System.Mem
 
@@ -26,22 +25,21 @@ main = do
     putStrLn "Press enter to start the smoke test."
     _ <- getLine
     putStrLn "Running the smoke test..."
-    bracket_ (SDL.init initFlagVideo)
+    bracket_ (init SDL_INIT_VIDEO)
              quit
              program
 
 program :: IO ()
 program =
     withCString "smoke-test" $ \cstr -> do
-        void $ init initFlagVideo
-        _ <- glSetAttribute glAttrContextMajorVersion 3
-        _ <- glSetAttribute glAttrContextMinorVersion 3
-        _ <- glSetAttribute glAttrContextProfileMask glProfileCore
-        _ <- glSetAttribute glAttrContextFlags glContextFlagDebug
-        window <- createWindow cstr windowPosUndefined windowPosUndefined
+        _ <- glSetAttribute SDL_GL_CONTEXT_MAJOR_VERSION 3
+        _ <- glSetAttribute SDL_GL_CONTEXT_MINOR_VERSION 3
+        _ <- glSetAttribute SDL_GL_CONTEXT_PROFILE_MASK SDL_GL_CONTEXT_PROFILE_CORE
+        _ <- glSetAttribute  SDL_GL_CONTEXT_FLAGS SDL_GL_CONTEXT_DEBUG_FLAG
+        window <- createWindow cstr SDL_WINDOWPOS_UNDEFINED SDL_WINDOWPOS_UNDEFINED
                                     500 500
-                                    (windowFlagOpenGL .|.
-                                     windowFlagShown)
+                                    (SDL_WINDOW_OPENGL .|.
+                                     SDL_WINDOW_SHOWN)
         _ <- glCreateContext window
         giveContext $ do
             -- Make some buffers.

@@ -1,11 +1,11 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Main ( main ) where
 
-import Prelude hiding (init )
 import Graphics.UI.SDL
 import Graphics.Rendering.OpenGL.Raw
 import Data.Bits
-import Control.Applicative
-import Control.Monad
+import Graphics.Caramia.Prelude hiding ( init )
 import Foreign.C.String
 import Foreign.Storable
 import Foreign.Marshal.Alloc
@@ -15,14 +15,14 @@ main :: IO ()
 main =
     withCString "gl-test" $ \cstr -> do
         let errCheck s x = unless (x == 0) $ error s
-        errCheck "Can't initialize SDL" =<< init initFlagVideo
-        errCheck "Can't set major version" =<< glSetAttribute glAttrContextMajorVersion 3
-        errCheck "Can't set minor version" =<< glSetAttribute glAttrContextMinorVersion 3
-        errCheck "Can't set profile mask" =<< glSetAttribute glAttrContextProfileMask glProfileCore
-        window <- createWindow cstr windowPosUndefined windowPosUndefined
+        errCheck "Can't initialize SDL" =<< init SDL_INIT_VIDEO
+        errCheck "Can't set major version" =<< glSetAttribute SDL_GL_CONTEXT_MAJOR_VERSION 3
+        errCheck "Can't set minor version" =<< glSetAttribute SDL_GL_CONTEXT_MINOR_VERSION 3
+        errCheck "Can't set profile mask" =<< glSetAttribute SDL_GL_CONTEXT_PROFILE_MASK SDL_GL_CONTEXT_PROFILE_CORE
+        window <- createWindow cstr SDL_WINDOWPOS_UNDEFINED SDL_WINDOWPOS_UNDEFINED
                                     500 500
-                                    (windowFlagOpenGL .|.
-                                     windowFlagShown)
+                                    (SDL_WINDOW_OPENGL .|.
+                                     SDL_WINDOW_SHOWN)
         c <- glCreateContext window
         _ <- glMakeCurrent window c
         (major1, minor1) <- alloca $ \major_ptr -> alloca $ \minor_ptr -> do
