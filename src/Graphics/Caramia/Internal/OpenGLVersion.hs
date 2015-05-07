@@ -14,7 +14,10 @@
 {-# LANGUAGE CPP #-}
 
 module Graphics.Caramia.Internal.OpenGLVersion
-  ( openGLVersion
+  ( vendor
+  , renderer
+  , gles
+  , openGLVersion
   , OpenGLVersion(..)
   , shadingLanguageVersion
   , shadingLanguageVersions
@@ -22,7 +25,6 @@ module Graphics.Caramia.Internal.OpenGLVersion
 
 
 import Control.Monad
-import Data.Functor
 import Data.List (isPrefixOf)
 import Data.Maybe
 import Data.Set as Set
