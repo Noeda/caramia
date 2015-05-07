@@ -66,16 +66,16 @@ program =
                 sh1 <- newShader fragmentShaderSrc Fragment
                 pipeline <- newPipeline [sh1] mempty
                 loc <- getUniformLocation "tutturuu" pipeline
-                setUniform (transpose eye4 :: M44 CFloat)
+                setUniform (transpose identity :: M44 CFloat)
                            loc
                            pipeline
-                setUniform (eye4 :: M44 CDouble)
+                setUniform (identity :: M44 CDouble)
                            loc
                            pipeline
-                setUniform (eye3 :: M33 Float)
+                setUniform (identity :: M33 Float)
                            loc
                            pipeline
-                setUniform (transpose eye3 :: M33 Double)
+                setUniform (transpose identity :: M33 Double)
                            loc
                            pipeline
 
