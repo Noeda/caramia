@@ -12,7 +12,7 @@ build-type:          Simple
 stability:           experimental
 bug-reports:         https://github.com/Noeda/caramia/issues/
 cabal-version:       >=1.10
-extra-source-files:  README.md
+extra-source-files:  README.md changelog.md
 
 description:
     This is a highish-level OpenGL bindings library for real-time graphics for
