@@ -134,7 +134,7 @@ library
                       ,containers   >=0.5 && <1.0
                       ,exceptions   >=0.6 && <1.0
                       ,lens         >=4.6  && <5.0
-                      ,linear       >=1.15 && <2.0
+                      ,linear       >=1.18 && <2.0
                       ,mtl          >=2.1 && <3.0
                       ,semigroups   >=0.15 && <1.0
                       ,text         >=0.9 && <2.0
@@ -160,7 +160,7 @@ test-suite buffer
   build-depends:       base, caramia
                       ,containers >=0.5.5 && <1.0
                       ,HUnit >=1.2.5.2 && <2.0
-                      ,linear >=1.15 && <2.0
+                      ,linear >=1.18 && <2.0
                       ,sdl2 >=1.3 && <2.0
                       ,test-framework >=0.8.1 && <1.0
                       ,test-framework-hunit >=0.3.0.1 && <1.0
@@ -173,7 +173,7 @@ test-suite shader
   hs-source-dirs:      tests/shader
   build-depends:       base, caramia
                       ,HUnit >=1.2.5.2 && <2.0
-                      ,linear >=1.15 && <2.0
+                      ,linear >=1.18 && <2.0
                       ,sdl2 >=1.3 && <2.0
                       ,test-framework >=0.8.1 && <1.0
                       ,test-framework-hunit >=0.3.0.1 && <1.0
@@ -187,7 +187,7 @@ test-suite texture
   build-depends:       base, caramia
                       ,containers >=0.5.5 && <1.0
                       ,HUnit >=1.2.5.2 && <2.0
-                      ,linear >=1.15 && <2.0
+                      ,linear >=1.18 && <2.0
                       ,sdl2 >=1.3 && <2.0
                       ,test-framework >=0.8.1 && <1.0
                       ,test-framework-hunit >=0.3.0.1 && <1.0
@@ -200,7 +200,7 @@ test-suite color
   ghc-options:         -Wall -fno-warn-name-shadowing -threaded -rtsopts -with-rtsopts=-N
   hs-source-dirs:      tests/color
   build-depends:       base, caramia
-                      ,linear >=1.15 && <2.0
+                      ,linear >=1.18 && <2.0
                       ,test-framework >=0.8.1 && <1.0
                       ,test-framework-quickcheck2 >=0.3.0.3 && <1.0
   default-language:    Haskell2010
