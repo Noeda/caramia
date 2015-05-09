@@ -32,6 +32,7 @@ main = do
 program :: IO ()
 program =
     withCString "smoke-test" $ \cstr -> do
+        _ <- init SDL_INIT_VIDEO
         _ <- glSetAttribute SDL_GL_CONTEXT_MAJOR_VERSION 3
         _ <- glSetAttribute SDL_GL_CONTEXT_MINOR_VERSION 3
         _ <- glSetAttribute SDL_GL_CONTEXT_PROFILE_MASK SDL_GL_CONTEXT_PROFILE_CORE
