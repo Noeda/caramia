@@ -11,11 +11,16 @@ import Control.Exception
 import Graphics.Caramia
 import Graphics.Caramia.Prelude hiding ( init )
 import Graphics.UI.SDL
+import System.IO.Unsafe ( unsafePerformIO )
 import Test.Framework
 import Test.Framework.Providers.HUnit
 
+sdlLock :: MVar ()
+sdlLock = unsafePerformIO $ newMVar ()
+{-# NOINLINE sdlLock #-}
+
 setup :: IO a -> IO a
-setup action = runInBoundThread $ withCString "shader" $ \cstr -> do
+setup action = runInBoundThread $ withMVar sdlLock $ \_ -> withCString "shader" $ \cstr -> do
     _ <- init SDL_INIT_VIDEO
     _ <- glSetAttribute SDL_GL_CONTEXT_MAJOR_VERSION 3
     _ <- glSetAttribute SDL_GL_CONTEXT_MINOR_VERSION 3

@@ -14,12 +14,17 @@ import Graphics.Caramia
 import Graphics.Caramia.Internal.OpenGLCApi
 import Graphics.Caramia.Prelude hiding ( init )
 import Graphics.UI.SDL
+import System.IO.Unsafe ( unsafePerformIO )
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit hiding ( Test )
 
+sdlLock :: MVar ()
+sdlLock = unsafePerformIO $ newMVar ()
+{-# NOINLINE sdlLock #-}
+
 setup :: IO a -> IO a
-setup action = runInBoundThread $ withCString "texture" $ \cstr -> do
+setup action = runInBoundThread $ withMVar sdlLock $ \_ -> withCString "texture" $ \cstr -> do
     _ <- init SDL_INIT_VIDEO
     _ <- glSetAttribute SDL_GL_CONTEXT_MAJOR_VERSION 3
     _ <- glSetAttribute SDL_GL_CONTEXT_MINOR_VERSION 3
