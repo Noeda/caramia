@@ -23,7 +23,7 @@ module Graphics.Caramia.Internal.OpenGLVersion
   , shadingLanguageVersions
   ) where
 
-
+import Control.Applicative
 import Control.Monad
 import Data.List (isPrefixOf)
 import Data.Maybe
