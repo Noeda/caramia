@@ -1,0 +1,8 @@
+flags:
+  caramia:
+    build-toys: false
+    fix-opengl21: false
+packages:
+- '.'
+extra-deps: []
+resolver: lts-2.15
