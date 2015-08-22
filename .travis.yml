@@ -1,4 +1,5 @@
 language: haskell
+sudo: false
 
 install:
   - cabal install --only-dependencies
